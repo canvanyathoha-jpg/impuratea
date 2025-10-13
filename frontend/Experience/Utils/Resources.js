@@ -1,6 +1,7 @@
 import Loaders from "./Loaders.js";
 import { EventEmitter } from "events";
 import * as THREE from "three";
+import SceneManager from "./SceneManager.js";
 
 export default class Resources extends EventEmitter {
     constructor(assets) {
@@ -8,7 +9,12 @@ export default class Resources extends EventEmitter {
 
         this.items = {};
         this.assets = assets;
-        this.location = "westgate";
+        this.isReady = false;
+        // Get scene from URL parameter or default to westgate
+        this.currentScene = SceneManager.getSceneFromURL();
+
+        console.log(`[Resources] Current scene: ${this.currentScene}`);
+        console.log(`[Resources] Assets to load:`, this.assets[0][this.currentScene]);
 
         this.loaders = new Loaders().loaders;
 
@@ -17,9 +23,9 @@ export default class Resources extends EventEmitter {
 
     startLoading() {
         this.loaded = 0;
-        this.queue = this.assets[0][this.location].assets.length;
+        this.queue = this.assets[0][this.currentScene].assets.length;
 
-        for (const asset of this.assets[0][this.location].assets) {
+        for (const asset of this.assets[0][this.currentScene].assets) {
             if (asset.type === "glbModel") {
                 this.loaders.gltfLoader.load(asset.path, (file) => {
                     this.singleAssetLoaded(asset, file);
@@ -61,9 +67,12 @@ export default class Resources extends EventEmitter {
     singleAssetLoaded(asset, file) {
         this.items[asset.name] = file;
         this.loaded++;
+        console.log(`[Resources] Loaded ${this.loaded}/${this.queue}: ${asset.name}`);
         this.emit("loading", this.loaded, this.queue);
 
         if (this.loaded === this.queue) {
+            console.log(`[Resources] All assets loaded! Emitting 'ready' event.`);
+            this.isReady = true;
             this.emit("ready");
         }
     }

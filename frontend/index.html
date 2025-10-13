@@ -200,6 +200,64 @@
             <canvas class="experience-canvas"></canvas>
         </div>
 
+        <!-- Scene Choice Overlay -->
+        <div class="scene-choice-overlay hidden" id="sceneChoiceOverlay">
+            <!-- Psychology Question Screen -->
+            <div class="psychology-question-container" id="psychologyQuestion">
+                <h2 class="scene-choice-title">Kenali Dirimu</h2>
+                <p class="psychology-question-text">
+                    Bayangkan kamu punya waktu luang satu hari penuh. Apa yang paling ingin kamu lakukan?
+                </p>
+                <div class="psychology-options">
+                    <button class="psychology-option-btn" data-answer="akademik">
+                        <div class="option-number">A</div>
+                        <div class="option-text">Membaca buku atau mempelajari hal baru yang menarik perhatianku</div>
+                    </button>
+                    <button class="psychology-option-btn" data-answer="organisasi">
+                        <div class="option-number">B</div>
+                        <div class="option-text">Berkumpul dengan teman-teman dan mengorganisir kegiatan seru bersama</div>
+                    </button>
+                    <button class="psychology-option-btn" data-answer="akademik">
+                        <div class="option-number">C</div>
+                        <div class="option-text">Mengerjakan proyek pribadi atau riset yang sudah lama ingin ku selesaikan</div>
+                    </button>
+                    <button class="psychology-option-btn" data-answer="organisasi">
+                        <div class="option-number">D</div>
+                        <div class="option-text">Merencanakan event atau acara untuk komunitas kampus</div>
+                    </button>
+                </div>
+                <div class="question-progress">Pertanyaan 1 dari 3</div>
+            </div>
+
+            <!-- Path Recommendation Screen -->
+            <div class="scene-choice-container hidden" id="pathRecommendation">
+                <h2 class="scene-choice-title">Rekomendasi Jalur Untukmu</h2>
+                <div class="recommendation-result" id="recommendationText">
+                    <div class="recommendation-icon" id="recommendationIcon">📚</div>
+                    <h3 class="recommendation-path" id="recommendationPath">Jalur Akademik</h3>
+                    <p class="recommendation-description" id="recommendationDesc">
+                        Berdasarkan jawabanmu, kamu memiliki kecenderungan untuk fokus pada pembelajaran dan pengembangan pengetahuan.
+                        Jalur Akademik cocok untukmu!
+                    </p>
+                </div>
+                <p class="scene-choice-narration">
+                    Namun, keputusan akhir ada di tanganmu. Silakan pilih jalur yang ingin kamu ambil:
+                </p>
+                <div class="scene-choice-buttons">
+                    <button class="scene-choice-btn" id="btnAkademik">
+                        <div class="btn-icon">📚</div>
+                        <div class="btn-title">Akademik</div>
+                        <div class="btn-desc">Masuk ke ruang kelas untuk belajar</div>
+                    </button>
+                    <button class="scene-choice-btn" id="btnOrganisasi">
+                        <div class="btn-icon">🎭</div>
+                        <div class="btn-title">Organisasi</div>
+                        <div class="btn-desc">Ikuti kegiatan organisasi kampus</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <script type="module" src="/index.js"></script>
     </body>
 </html>

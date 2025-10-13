@@ -3,6 +3,7 @@ import * as THREE from "three";
 import Sizes from "./Utils/Sizes.js";
 import Time from "./Utils/Time.js";
 import Resources from "./Utils/Resources.js";
+import SceneManager from "./Utils/SceneManager.js";
 import assets from "./Utils/assets.js";
 
 import Camera from "./Camera.js";
@@ -32,12 +33,27 @@ export default class Experience {
         this.setResources();
         this.setPreloader();
         this.setWorld();
+        this.setSceneManager();
 
         this.sizes.on("resize", () => {
             this.onResize();
         });
 
         this.update();
+    }
+
+    setSceneManager() {
+        this.sceneManager = new SceneManager();
+
+        // Show choice overlay only on westgate scene after resources are loaded
+        if (this.resources.currentScene === 'westgate') {
+            this.resources.on("ready", () => {
+                // Show overlay after 2 seconds
+                setTimeout(() => {
+                    this.sceneManager.showChoiceOverlay();
+                }, 2000);
+            });
+        }
     }
 
     setScene() {
@@ -57,7 +73,11 @@ export default class Experience {
     }
 
     setPreloader() {
-        this.preloader = new Preloader();
+        // Only show preloader on westgate scene (initial scene)
+        if (this.resources.currentScene === 'westgate') {
+            this.preloader = new Preloader();
+        }
+        // No loader for other scenes - load directly
     }
 
     setWorld() {

@@ -61,9 +61,11 @@ export default class Player {
         this.player.velocity = new THREE.Vector3();
         this.player.direction = new THREE.Vector3();
 
+        // Initialize player collider at school spawn position (0, 10, 0)
+        const initialSpawnPos = new THREE.Vector3(0, 10, 0);
         this.player.collider = new Capsule(
-            new THREE.Vector3(),
-            new THREE.Vector3(),
+            initialSpawnPos.clone(),
+            initialSpawnPos.clone().add(new THREE.Vector3(0, this.player.height, 0)),
             0.35
         );
 
@@ -105,7 +107,21 @@ export default class Player {
     }
 
     setPlayerSocket() {
-        this.socket.on("setID", (setID, name) => {});
+        this.socket.on("setID", (setID, name) => {
+            // Auto-load avatar from localStorage if not on westgate scene
+            if (this.resources.currentScene !== 'westgate') {
+                const savedAvatar = localStorage.getItem('psu-vr-avatar');
+                const savedUsername = localStorage.getItem('psu-vr-username');
+
+                if (savedAvatar && savedUsername) {
+                    // Emit avatar choice automatically
+                    setTimeout(() => {
+                        this.socket.emit("setAvatar", savedAvatar);
+                        this.socket.emit("setName", savedUsername);
+                    }, 100);
+                }
+            }
+        });
 
         this.socket.on("setAvatarSkin", (avatarSkin, id) => {
             if (!this.avatar && id === this.socket.id) {
@@ -332,7 +348,8 @@ export default class Player {
     resize() {}
 
     spawnPlayerOutOfBounds() {
-        const spawnPos = new THREE.Vector3(-22.4437, 8 + 5, -15.0529);
+        // Spawn player at school location (0, 10, 0) - slightly above ground
+        const spawnPos = new THREE.Vector3(0, 10, 0);
         this.player.velocity = this.player.spawn.velocity;
 
         this.player.collider.start.copy(spawnPos);

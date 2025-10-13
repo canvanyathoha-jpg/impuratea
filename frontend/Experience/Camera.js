@@ -36,14 +36,23 @@ export default class Camera {
 
     setOrbitControls() {
         this.controls = new OrbitControls(this.perspectiveCamera, this.canvas);
+        this.controls.enabled = true; // Ensure controls are enabled
         this.controls.enableDamping = true;
-        // this.controls.enableZoom = true;
-        this.controls.enablePan = false;
+        this.controls.enableZoom = true; // Enable zoom with mouse wheel
+        this.controls.enableRotate = true; // Enable rotation with left click
+        this.controls.enablePan = true; // Enable pan with right click or middle mouse
         // this.controls.maxPolarAngle = Math.PI / 2;
-        // this.controls.minDistance = 0.1;
-        this.controls.maxDistance = 6;
+        this.controls.minDistance = 1;
+        this.controls.maxDistance = 50; // Increased from 6 to 50 for more zoom out range
 
         this.controls.dampingFactor = 0.1;
+
+        console.log('[Camera] OrbitControls initialized:', {
+            enabled: this.controls.enabled,
+            enableZoom: this.controls.enableZoom,
+            enableRotate: this.controls.enableRotate,
+            enablePan: this.controls.enablePan
+        });
     }
 
     enableOrbitControls() {

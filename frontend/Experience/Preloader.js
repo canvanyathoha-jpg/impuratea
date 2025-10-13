@@ -41,6 +41,9 @@ export default class Preloader {
             description: ".description",
         });
 
+        // Show preloader by adding 'active' class
+        this.domElements.preloader.classList.add('active');
+
         // **** This is for updating a percentage ****
         this.resources.on("loading", (loaded, queue) => {
             this.updateProgress(loaded, queue);
@@ -160,10 +163,20 @@ export default class Preloader {
 
     onNameInput = () => {
         if (this.domElements.nameInput.value === "") return;
+
+        // Save username to localStorage
+        localStorage.setItem('psu-vr-username', this.domElements.nameInput.value);
+
         this.nameInputOutro();
     };
 
-    onCharacterSelect = () => {
+    onCharacterSelect = (event) => {
+        // Determine which avatar was selected
+        const avatarSkin = event.target.classList.contains('avatar-left') ? 'male' : 'female';
+
+        // Save avatar selection to localStorage
+        localStorage.setItem('psu-vr-avatar', avatarSkin);
+
         this.preloaderOutro();
     };
 

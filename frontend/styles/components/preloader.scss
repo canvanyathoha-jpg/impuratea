@@ -7,6 +7,13 @@
     height: 100vh;
     touch-action: none;
     overflow: hidden;
+
+    // Hide by default (will be shown by Preloader.js in westgate scene)
+    display: none;
+
+    &.active {
+        display: flex;
+    }
 }
 
 .preloader-title {
