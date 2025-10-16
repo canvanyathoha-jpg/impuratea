@@ -15,6 +15,7 @@ const io = new Server(server, {
 });
 
 app.use(express.static("dist"));
+app.use(express.static("public")); // Serve public files directly
 
 const indexPath = path.join(process.cwd(), "dist", "index.html");
 
@@ -134,5 +135,5 @@ updateNameSpace.on("connection", (socket) => {
 });
 
 server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+    console.log(`🚀 Aku Cabul at: http://localhost:${port}`);
 });

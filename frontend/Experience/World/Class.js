@@ -1,5 +1,6 @@
 import Experience from "../Experience.js";
 import * as THREE from "three";
+import Portal from "./Portal.js"; // Import Portal
 
 export default class Class {
     constructor() {
@@ -9,20 +10,23 @@ export default class Class {
         this.octree = this.experience.world.octree;
 
         this.setWorld();
+        this.createPortals(); // Tambahkan portal
     }
 
     setWorld() {
+        // Create a group for all collidable objects
+        const collidableGroup = new THREE.Group();
+
         // Load the class model (Kelas-C.glb)
         this.classModel = this.resources.items.class.scene;
-
-        // Set class position far forward (600 units ahead)
-        this.classModel.position.set(0, 5, -600);
+        this.classModel.position.set(0, 0, 0);
         this.classModel.rotation.set(0, 0, 0);
-        this.classModel.scale.set(10, 10, 10); // Same scale as school
+        this.classModel.scale.set(10, 10, 10);
+        collidableGroup.add(this.classModel);
 
-        // Setup collider for physics (using the original optimized collider.glb)
+        // Setup collider for physics
         this.collider = this.resources.items.collider.scene;
-        this.collider.position.set(0, 5, -600);
+        this.collider.position.set(0, 0, 0);
         this.collider.rotation.set(0, 0, 0);
         this.collider.scale.set(10, 10, 10);
 
@@ -32,45 +36,48 @@ export default class Class {
                 child.visible = false;
             }
         });
+        collidableGroup.add(this.collider);
 
-        // Add collider to octree
-        this.octree.fromGraphNode(this.collider);
+        // Add the group to the scene
+        this.scene.add(collidableGroup);
 
-        // Create ground plane at spawn area
-        const spawnGroundGeometry = new THREE.BoxGeometry(500, 1, 500);
-        const spawnGroundMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            transparent: true,
-            opacity: 0
-        });
-        this.spawnGround = new THREE.Mesh(spawnGroundGeometry, spawnGroundMaterial);
-        this.spawnGround.position.set(0, 8, 0); // Ground at spawn point
-        this.spawnGround.visible = false;
+        // Build the octree
+        this.octree.fromGraphNode(collidableGroup);
 
-        // Create ground plane near class building
-        const classGroundGeometry = new THREE.BoxGeometry(1000, 1, 1000);
-        const classGroundMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0000ff,
-            transparent: true,
-            opacity: 0
-        });
-        this.classGround = new THREE.Mesh(classGroundGeometry, classGroundMaterial);
-        this.classGround.position.set(0, 8, -600); // Ground near class building
-        this.classGround.visible = false;
+        console.log("Class scene loaded with full collision enabled.");
+    }
+    
+    createPortals() {
+        // Portal ke Lab (sesuaikan posisi dengan lokasi pintu)
+        this.labPortal = new Portal(
+            new THREE.Vector3(49, 2, 30), // Posisi portal (depan pintu)
+            "science-room", // Target scene
+            new THREE.Vector3(0, 10, 0), // Posisi spawn di scene baru (tinggi dari lantai)
+            "Lab" // Nama ruangan
+        );
+    }
 
-        // Add both grounds to octree
-        this.octree.fromGraphNode(this.spawnGround);
-        this.octree.fromGraphNode(this.classGround);
+    update() {
+        // Update portal animation
+        if (this.labPortal) {
+            this.labPortal.update();
+        }
+    }
 
-        // Add the class model and grounds to the scene
-        this.scene.add(this.classModel);
-        this.scene.add(this.spawnGround);
-        this.scene.add(this.classGround);
+    dispose() {
+        console.log("[Class] Disposing Class scene...");
 
-        console.log("Class scene loaded");
-        console.log("Class building position:", this.classModel.position);
-        console.log("Class building scale:", this.classModel.scale);
-        console.log("Collider position:", this.collider.position);
-        console.log("Collider scale:", this.collider.scale);
+        // Hapus portal
+        if (this.labPortal) {
+            this.labPortal.dispose();
+            this.labPortal = null;
+        }
+
+        // Hapus model dari scene
+        if (this.classModel && this.classModel.parent) {
+            this.scene.remove(this.classModel.parent);
+        }
+
+        console.log("[Class] Class scene disposed");
     }
 }

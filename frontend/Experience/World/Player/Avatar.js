@@ -19,7 +19,7 @@ export default class Avatar {
 
     setAvatar() {
         this.speedAdjustment = 1;
-        this.avatar.scale.set(3.96, 3.96, 3.96); // 2x bigger than previous (1.98 x 2 = 3.96)
+        this.avatar.scale.set(9, 9, 9); // 2x bigger than previous (1.98 x 2 = 3.96)
         this.setAnimation();
         this.scene.add(this.avatar);
 

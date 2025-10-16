@@ -96,6 +96,10 @@ export default class Experience {
         if (this.world) this.world.update();
         if (this.time) this.time.update();
 
+        // World.update() sudah memanggil currentScene.update()
+        // Tidak perlu update individual scenes lagi
+        // Legacy code dihapus karena sudah dihandle di World.update()
+
         window.requestAnimationFrame(() => {
             this.update();
         });
