@@ -15,14 +15,14 @@ export default class Organization {
         // Load the organization model (OSIS-C.glb)
         this.organizationModel = this.resources.items.organization.scene;
 
-        // Set organization position at spawn point (right where player spawns)
-        this.organizationModel.position.set(0, 5, 0);
+        // Set organization position far ahead and slightly elevated (same as school)
+        this.organizationModel.position.set(0, 5, -500);
         this.organizationModel.rotation.set(0, 0, 0);
         this.organizationModel.scale.set(10, 10, 10); // Same scale as school and class
 
         // Setup collider for physics (using the original optimized collider.glb)
         this.collider = this.resources.items.collider.scene;
-        this.collider.position.set(0, 5, 0);
+        this.collider.position.set(0, 5, -500);
         this.collider.rotation.set(0, 0, 0);
         this.collider.scale.set(10, 10, 10);
 
@@ -55,7 +55,7 @@ export default class Organization {
             opacity: 0
         });
         this.organizationGround = new THREE.Mesh(organizationGroundGeometry, organizationGroundMaterial);
-        this.organizationGround.position.set(0, 8, 0); // Ground at spawn point with organization building
+        this.organizationGround.position.set(0, 8, -500); // Ground near organization building
         this.organizationGround.visible = false;
 
         // Add both grounds to octree
