@@ -31,9 +31,9 @@ export default class ScienceRoom {
 
         this.model = this.resources.items["science-room"].scene;
         console.log("[ScienceRoom] Model loaded:", this.model);
-        this.model.position.set(0, 0, 0);
+        this.model.position.set(0, 1.8, 0);
         this.model.rotation.set(0, 0, 0);
-        this.model.scale.set(11, 11, 11);
+        this.model.scale.set(3, 3, 3);
         collidableGroup.add(this.model);
 
         console.log("[ScienceRoom] Adding to scene");

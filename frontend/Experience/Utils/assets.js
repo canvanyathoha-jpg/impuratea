@@ -128,7 +128,7 @@ export default [
                 {
                     name: "science-room",
                     type: "glbModel",
-                    path: "/models/science room.glb",
+                    path: "/models/science room.glb?v=" + Date.now(),
                 },
                 {
                     name: "male",
