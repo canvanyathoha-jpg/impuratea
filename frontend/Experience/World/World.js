@@ -48,50 +48,84 @@ export default class World extends EventEmitter {
     }
 
     loadScene(sceneName, targetPosition = null) {
+        console.log(`[World] loadScene called with: ${sceneName}`);
+        console.log(`[World] targetPosition:`, targetPosition);
+
         // Clear existing scene
         if (this.currentScene) {
+            console.log(`[World] Clearing existing scene before loading new one`);
             this.clearCurrentScene();
         }
 
         // Load new scene based on name
-        switch (sceneName) {
-            case "westgate":
-                this.currentScene = new Westgate();
-                break;
-            case "class":
-                this.currentScene = new Class();
-                break;
-            case "organization":
-                this.currentScene = new Organization();
-                break;
-            case "science-room":
-                this.currentScene = new ScienceRoom();
-                break;
-            default:
-                this.currentScene = new Westgate();
+        console.log(`[World] Creating new scene: ${sceneName}`);
+        try {
+            switch (sceneName) {
+                case "westgate":
+                    console.log(`[World] Instantiating Westgate`);
+                    this.currentScene = new Westgate();
+                    break;
+                case "class":
+                    console.log(`[World] Instantiating Class`);
+                    this.currentScene = new Class();
+                    break;
+                case "organization":
+                    console.log(`[World] Instantiating Organization`);
+                    this.currentScene = new Organization();
+                    break;
+                case "science-room":
+                    console.log(`[World] Instantiating ScienceRoom`);
+                    this.currentScene = new ScienceRoom();
+                    console.log(`[World] ScienceRoom instantiated successfully`);
+                    break;
+                default:
+                    console.log(`[World] Unknown scene, defaulting to Westgate`);
+                    this.currentScene = new Westgate();
+            }
+            console.log(`[World] Scene instance created successfully`);
+        } catch (error) {
+            console.error(`[World] ❌ Error creating scene:`, error);
+            console.error(`[World] Error stack:`, error.stack);
+            throw error;
         }
 
         // After loading a new scene, if the player exists, update its spawn point
+        console.log(`[World] Setting player spawn point`);
         if (this.player) {
             // Gunakan targetPosition jika disediakan, atau default spawn point
             const newSpawnPoint = targetPosition ||
                 this.spawnPoints[sceneName] ||
                 this.spawnPoints.westgate;
+            console.log(`[World] New spawn point:`, newSpawnPoint);
             this.player.setSpawnPoint(newSpawnPoint);
+            console.log(`[World] Player spawn point set`);
+        } else {
+            console.log(`[World] No player found, skipping spawn point`);
         }
+
+        console.log(`[World] loadScene completed`);
     }
 
     clearCurrentScene() {
+        console.log("[World] clearCurrentScene called");
+
         // Dispose current scene jika punya method dispose
-        if (this.currentScene && this.currentScene.dispose) {
-            this.currentScene.dispose();
+        if (this.currentScene) {
+            console.log("[World] Current scene exists, disposing...");
+            if (this.currentScene.dispose) {
+                try {
+                    this.currentScene.dispose();
+                    console.log("[World] Scene disposed successfully");
+                } catch (error) {
+                    console.error("[World] Error disposing scene:", error);
+                }
+            } else {
+                console.log("[World] Scene has no dispose method");
+            }
         }
 
-        // Clear octree
-        this.octree = new Octree();
-
-        // Remove old scene objects from Three.js scene
-        // This will be implemented based on what objects need cleanup
+        // Octree akan dibuat ulang setelah clear, di switchSceneWithPosition
+        console.log("[World] clearCurrentScene completed");
     }
 
     switchScene(sceneName) {
@@ -99,19 +133,58 @@ export default class World extends EventEmitter {
         this.resources.loadScene(sceneName);
     }
 
-    switchSceneWithPosition(sceneName, targetPosition) {
+    switchSceneWithPosition(sceneName, targetPosition, sourcePortal = null) {
         console.log(`[World] Switching to scene: ${sceneName} at position:`, targetPosition);
 
-        // Simpan reference ke resources
-        const resources = this.experience.resources;
+        // Load assets untuk scene baru dulu
+        this.experience.resources.loadSceneAssets(sceneName, () => {
+            console.log(`[World] Assets loaded, now switching scene...`);
 
-        // Clear current scene
-        this.clearCurrentScene();
+            try {
+                // Clear current scene
+                console.log(`[World] Clearing current scene...`);
+                this.clearCurrentScene();
+                console.log(`[World] Current scene cleared`);
 
-        // Load scene baru langsung tanpa reload resources jika sudah dimuat
-        this.loadScene(sceneName, targetPosition);
+                // PENTING: Buat octree baru SEBELUM load scene
+                console.log(`[World] Creating fresh Octree for new scene`);
+                this.octree = new Octree();
+                console.log(`[World] Fresh Octree created`);
 
-        console.log(`[World] Scene switched successfully to: ${sceneName}`);
+                // Load scene baru
+                console.log(`[World] Loading new scene: ${sceneName}`);
+                this.loadScene(sceneName, targetPosition);
+                console.log(`[World] ✅ Scene loaded successfully!`);
+
+                console.log(`[World] ✅ Scene switched successfully to: ${sceneName}`);
+
+                // Remove fade effect setelah scene loaded
+                setTimeout(() => {
+                    console.log("[World] Removing fade effect...");
+                    // Gunakan source portal jika ada
+                    if (sourcePortal && sourcePortal.removeFade) {
+                        sourcePortal.removeFade();
+                        console.log("[World] Fade removed via source portal");
+                    } else {
+                        // Fallback: cari portal di scene baru
+                        if (this.currentScene && this.currentScene.classPortal) {
+                            this.currentScene.classPortal.removeFade();
+                        }
+                        if (this.currentScene && this.currentScene.labPortal) {
+                            this.currentScene.labPortal.removeFade();
+                        }
+                        console.log("[World] Fade removed via scene portals");
+                    }
+                }, 100); // Dikurangi dari 800ms ke 100ms
+            } catch (error) {
+                console.error("[World] ❌ Error during scene switch:", error);
+                console.error("[World] Error stack:", error.stack);
+                // Hapus fade jika error
+                if (sourcePortal && sourcePortal.removeFade) {
+                    sourcePortal.removeFade();
+                }
+            }
+        });
     }
 
     update() {

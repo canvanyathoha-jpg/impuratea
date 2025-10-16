@@ -7,15 +7,19 @@ export default class Portal {
         this.scene = this.experience.scene;
         this.camera = this.experience.camera;
         this.player = this.experience.world.player;
-        
+
         this.position = position;
         this.targetScene = targetScene;
         this.targetPosition = targetPosition;
         this.promptText = promptText;
-        
+
         this.isPlayerNear = false;
-        this.activationRadius = 2;
-        
+        this.activationRadius = 10; // Diperbesar untuk testing dari 2 ke 10
+
+        console.log(`[Portal] Creating portal at position:`, this.position);
+        console.log(`[Portal] Target scene: ${this.targetScene}, Target position:`, this.targetPosition);
+        console.log(`[Portal] Activation radius: ${this.activationRadius}`);
+
         this.createPortalVisual();
         this.createUI();
     }
@@ -138,15 +142,34 @@ export default class Portal {
         `;
         
         document.body.appendChild(this.promptDiv);
-        
+
         // Event listeners untuk tombol
-        document.getElementById('portal-yes').addEventListener('click', () => {
-            this.teleport();
-        });
-        
-        document.getElementById('portal-no').addEventListener('click', () => {
-            this.hidePrompt();
-        });
+        const yesButton = document.getElementById('portal-yes');
+        const noButton = document.getElementById('portal-no');
+
+        if (yesButton) {
+            yesButton.addEventListener('click', (e) => {
+                console.log("[Portal] 👆 YES button clicked!");
+                e.preventDefault();
+                e.stopPropagation();
+                this.teleport();
+            });
+            console.log("[Portal] YES button listener attached");
+        } else {
+            console.error("[Portal] YES button not found!");
+        }
+
+        if (noButton) {
+            noButton.addEventListener('click', (e) => {
+                console.log("[Portal] 👆 NO button clicked!");
+                e.preventDefault();
+                e.stopPropagation();
+                this.hidePrompt();
+            });
+            console.log("[Portal] NO button listener attached");
+        } else {
+            console.error("[Portal] NO button not found!");
+        }
         
         // Tambahkan hover effects
         const style = document.createElement('style');
@@ -158,7 +181,9 @@ export default class Portal {
     }
     
     showPrompt() {
+        console.log("[Portal] 📢 Showing prompt dialog");
         this.promptDiv.style.display = 'block';
+        this.promptDiv.style.pointerEvents = 'auto'; // Pastikan bisa diklik
         // Pause game jika perlu
         document.body.style.cursor = 'default';
     }
@@ -169,26 +194,53 @@ export default class Portal {
     }
     
     checkPlayerProximity() {
-        if (!this.player || !this.player.avatar || !this.player.avatar.avatar) return;
+        // Update player reference jika belum ada
+        if (!this.player) {
+            this.player = this.experience.world.player;
+        }
+
+        if (!this.player || !this.player.avatar || !this.player.avatar.avatar) {
+            // Log hanya sekali untuk menghindari spam
+            if (!this.playerNotReadyLogged) {
+                console.log("[Portal] Player not ready yet, waiting...");
+                this.playerNotReadyLogged = true;
+            }
+            return;
+        }
+
+        // Player sudah ready, log sekali
+        if (!this.playerReadyLogged) {
+            console.log("[Portal] Player is now ready! Starting proximity detection.");
+            this.playerReadyLogged = true;
+        }
 
         const playerPos = this.player.avatar.avatar.position;
         const distance = playerPos.distanceTo(this.position);
 
+        // Debug: log setiap beberapa frame (1% chance)
+        if (Math.random() < 0.01) {
+            console.log(`[Portal] Distance to player: ${distance.toFixed(2)} units (activation: ${this.activationRadius})`);
+            console.log(`[Portal] Player pos: (${playerPos.x.toFixed(1)}, ${playerPos.y.toFixed(1)}, ${playerPos.z.toFixed(1)})`);
+            console.log(`[Portal] Portal pos: (${this.position.x.toFixed(1)}, ${this.position.y.toFixed(1)}, ${this.position.z.toFixed(1)})`);
+        }
+
         if (distance < this.activationRadius && !this.isPlayerNear) {
             this.isPlayerNear = true;
+            console.log("[Portal] ✅ Player entered portal zone! Showing prompt...");
             this.showPrompt();
         } else if (distance >= this.activationRadius && this.isPlayerNear) {
             this.isPlayerNear = false;
+            console.log("[Portal] Player left portal zone");
             this.hidePrompt();
         }
     }
     
     teleport() {
-        console.log(`Teleporting to ${this.targetScene}`);
-        
+        console.log(`[Portal] 🚀 Teleporting to ${this.targetScene}...`);
+
         // Fade effect
-        const fadeDiv = document.createElement('div');
-        fadeDiv.style.cssText = `
+        this.fadeDiv = document.createElement('div');
+        this.fadeDiv.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -200,44 +252,93 @@ export default class Portal {
             transition: opacity 0.5s;
             pointer-events: none;
         `;
-        document.body.appendChild(fadeDiv);
-        
+        document.body.appendChild(this.fadeDiv);
+
+        console.log("[Portal] Fade effect created");
+
         setTimeout(() => {
-            fadeDiv.style.opacity = '1';
+            this.fadeDiv.style.opacity = '1';
+            console.log("[Portal] Fade started");
         }, 10);
-        
+
         setTimeout(() => {
+            console.log("[Portal] Calling loadNewScene()...");
             // Load scene baru atau pindahkan player
             this.loadNewScene();
         }, 500);
     }
+
+    removeFade() {
+        console.log("[Portal] removeFade called");
+        if (this.fadeDiv) {
+            console.log("[Portal] Fade div exists, removing...");
+            this.fadeDiv.style.opacity = '0';
+            setTimeout(() => {
+                if (this.fadeDiv && this.fadeDiv.parentNode) {
+                    this.fadeDiv.remove();
+                    this.fadeDiv = null;
+                    console.log("[Portal] Fade div removed successfully");
+                }
+            }, 300);
+        } else {
+            console.log("[Portal] No fade div to remove");
+        }
+
+        // Fallback: hapus semua fade div yang mungkin tertinggal
+        const allFadeDivs = document.querySelectorAll('div[style*="z-index: 9999"]');
+        allFadeDivs.forEach(div => {
+            console.log("[Portal] Found stray fade div, removing...");
+            div.remove();
+        });
+    }
     
     loadNewScene() {
-        console.log("Loading new scene:", this.targetScene);
+        console.log("[Portal] 🔄 Loading new scene:", this.targetScene);
+        console.log("[Portal] Target position:", this.targetPosition);
 
         // Gunakan sistem scene switching yang sudah ada
         if (this.experience.world && this.experience.world.switchSceneWithPosition) {
-            this.experience.world.switchSceneWithPosition(this.targetScene, this.targetPosition);
+            console.log("[Portal] Calling switchSceneWithPosition...");
+            try {
+                // Pass reference ke portal ini agar World bisa memanggil removeFade
+                this.experience.world.switchSceneWithPosition(
+                    this.targetScene,
+                    this.targetPosition,
+                    this // Pass portal reference
+                );
+                console.log("[Portal] ✅ Scene switch initiated!");
+            } catch (error) {
+                console.error("[Portal] ❌ Error switching scene:", error);
+                this.removeFade(); // Hapus fade jika error
+            }
         } else {
-            console.error("World.switchSceneWithPosition not found!");
+            console.error("[Portal] ❌ World.switchSceneWithPosition not found!");
+            console.log("[Portal] Available methods:", Object.keys(this.experience.world));
+            this.removeFade(); // Hapus fade jika error
         }
 
         this.hidePrompt();
     }
     
     update() {
+        // Debug: log sekali saja untuk memastikan update dipanggil
+        if (!this.updateLogged) {
+            console.log("[Portal] Update method is being called");
+            this.updateLogged = true;
+        }
+
         // Animasi portal
         if (this.portalMesh) {
             this.portalMesh.material.opacity = 0.6 + Math.sin(Date.now() * 0.003) * 0.2;
         }
-        
+
         if (this.ringMesh) {
             this.ringMesh.rotation.z += 0.01;
         }
-        
+
         if (this.particles) {
             this.particles.rotation.y += 0.005;
-            
+
             // Animasi partikel naik
             const positions = this.particles.geometry.attributes.position.array;
             for (let i = 1; i < positions.length; i += 3) {
@@ -248,15 +349,33 @@ export default class Portal {
             }
             this.particles.geometry.attributes.position.needsUpdate = true;
         }
-        
+
         // Check player proximity
         this.checkPlayerProximity();
     }
     
     dispose() {
-        this.scene.remove(this.portalMesh);
-        this.scene.remove(this.ringMesh);
-        this.scene.remove(this.particles);
-        this.promptDiv.remove();
+        console.log("[Portal] Disposing portal...");
+
+        if (this.portalMesh) {
+            this.scene.remove(this.portalMesh);
+        }
+        if (this.ringMesh) {
+            this.scene.remove(this.ringMesh);
+        }
+        if (this.particles) {
+            this.scene.remove(this.particles);
+        }
+        if (this.debugSphere) {
+            this.scene.remove(this.debugSphere);
+        }
+        if (this.promptDiv && this.promptDiv.parentNode) {
+            this.promptDiv.remove();
+        }
+        if (this.fadeDiv && this.fadeDiv.parentNode) {
+            this.fadeDiv.remove();
+        }
+
+        console.log("[Portal] Portal disposed");
     }
 }

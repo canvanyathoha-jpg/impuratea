@@ -80,14 +80,27 @@ export default class Player {
     }
 
     setSpawnPoint(position) {
-        this.spawnPosition = position;
+        console.log(`[Player] Setting spawn point to:`, position);
+        this.spawnPosition = position.clone();
+
         // Immediately move the player to the new spawn point
         this.player.velocity.set(0, 0, 0);
         this.player.collider.start.copy(this.spawnPosition);
         this.player.collider.end.copy(this.spawnPosition);
         this.player.collider.end.y += this.player.height;
+
+        console.log(`[Player] Collider start:`, this.player.collider.start);
+        console.log(`[Player] Collider end:`, this.player.collider.end);
+
         if (this.camera.controls) {
             this.camera.controls.target.copy(this.player.collider.end);
+        }
+
+        // Force update camera and avatar position
+        if (this.avatar && this.avatar.avatar) {
+            this.avatar.avatar.position.copy(this.player.collider.end);
+            this.avatar.avatar.position.y -= 6.2;
+            console.log(`[Player] Avatar position set to:`, this.avatar.avatar.position);
         }
     }
 
