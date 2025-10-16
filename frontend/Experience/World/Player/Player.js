@@ -8,7 +8,7 @@ import elements from "../../Utils/functions/elements.js";
 import Avatar from "./Avatar.js";
 
 export default class Player {
-    constructor() {
+    constructor(initialSpawnPos = new THREE.Vector3(0, 10, 0)) {
         this.experience = new Experience();
         this.time = this.experience.time;
         this.scene = this.experience.scene;
@@ -16,6 +16,8 @@ export default class Player {
         this.octree = this.experience.world.octree;
         this.resources = this.experience.resources;
         this.socket = this.experience.socket;
+
+        this.spawnPosition = initialSpawnPos; // Store spawn position
 
         this.domElements = elements({
             joystickArea: ".joystick-area",
@@ -50,7 +52,8 @@ export default class Player {
         this.player.raycaster = new THREE.Raycaster();
         this.player.raycaster.far = 5;
 
-        this.player.height = 1.2;
+        // MODIFIED: Sesuaikan dengan scale avatar 3.96
+        this.player.height = 4.75; // 1.2 * 3.96 ≈ 4.75
         this.player.speedMultiplier = 0.35;
         this.player.position = new THREE.Vector3();
         this.player.quaternion = new THREE.Euler();
@@ -61,18 +64,52 @@ export default class Player {
         this.player.velocity = new THREE.Vector3();
         this.player.direction = new THREE.Vector3();
 
-        // Initialize player collider at school spawn position (0, 10, 0)
-        const initialSpawnPos = new THREE.Vector3(0, 10, 0);
+        // Use the stored spawn position
         this.player.collider = new Capsule(
-            initialSpawnPos.clone(),
-            initialSpawnPos.clone().add(new THREE.Vector3(0, this.player.height, 0)),
-            0.35
+            this.spawnPosition.clone(),
+            this.spawnPosition
+                .clone()
+                .add(new THREE.Vector3(0, this.player.height, 0)),
+            1.4
         );
 
         this.otherPlayers = {};
 
         this.socket.emit("setID");
         this.socket.emit("initPlayer", this.player);
+    }
+
+    setSpawnPoint(position) {
+        console.log(`[Player] Setting spawn point to:`, position);
+        this.spawnPosition = position.clone();
+
+        // Immediately move the player to the new spawn point
+        this.player.velocity.set(0, 0, 0);
+        this.player.collider.start.copy(this.spawnPosition);
+        this.player.collider.end.copy(this.spawnPosition);
+        this.player.collider.end.y += this.player.height;
+
+        console.log(`[Player] Collider start:`, this.player.collider.start);
+        console.log(`[Player] Collider end:`, this.player.collider.end);
+
+        if (this.camera.controls) {
+            this.camera.controls.target.copy(this.player.collider.end);
+        }
+
+        // Force update camera and avatar position
+        if (this.avatar && this.avatar.avatar) {
+            this.avatar.avatar.position.copy(this.player.collider.end);
+            this.avatar.avatar.position.y -= 6.2;
+            console.log(`[Player] Avatar position set to:`, this.avatar.avatar.position);
+        }
+    }
+
+    spawnPlayerOutOfBounds() {
+        // Use the stored spawn position
+        this.player.velocity.set(0, 0, 0);
+        this.player.collider.start.copy(this.spawnPosition);
+        this.player.collider.end.copy(this.spawnPosition);
+        this.player.collider.end.y += this.player.height;
     }
 
     initControls() {
@@ -109,9 +146,9 @@ export default class Player {
     setPlayerSocket() {
         this.socket.on("setID", (setID, name) => {
             // Auto-load avatar from localStorage if not on westgate scene
-            if (this.resources.currentScene !== 'westgate') {
-                const savedAvatar = localStorage.getItem('psu-vr-avatar');
-                const savedUsername = localStorage.getItem('psu-vr-username');
+            if (this.resources.currentScene !== "westgate") {
+                const savedAvatar = localStorage.getItem("psu-vr-avatar");
+                const savedUsername = localStorage.getItem("psu-vr-username");
 
                 if (savedAvatar && savedUsername) {
                     // Emit avatar choice automatically
@@ -347,17 +384,6 @@ export default class Player {
 
     resize() {}
 
-    spawnPlayerOutOfBounds() {
-        // Spawn player at school location (0, 10, 0) - slightly above ground
-        const spawnPos = new THREE.Vector3(0, 10, 0);
-        this.player.velocity = this.player.spawn.velocity;
-
-        this.player.collider.start.copy(spawnPos);
-        this.player.collider.end.copy(spawnPos);
-
-        this.player.collider.end.y += this.player.height;
-    }
-
     updateColliderMovement() {
         const speed =
             (this.player.onFloor ? 1.75 : 0.1) *
@@ -397,7 +423,7 @@ export default class Player {
 
         if (this.player.onFloor) {
             if (this.actions.jump && this.jumpOnce) {
-                this.player.velocity.y = 12;
+                this.player.velocity.y = 18;
             }
             this.jumpOnce = false;
         }
@@ -471,7 +497,8 @@ export default class Player {
 
     updateAvatarPosition() {
         this.avatar.avatar.position.copy(this.player.collider.end);
-        this.avatar.avatar.position.y -= 1.56;
+        // MODIFIED: Sesuaikan offset dengan scale avatar 3.96
+        this.avatar.avatar.position.y -= 6.2; // -1.56 * 3.96 ≈ -6.2
 
         this.avatar.animation.update(this.time.delta);
     }
@@ -499,7 +526,7 @@ export default class Player {
 
             this.otherPlayers[player].model.nametag.position.set(
                 this.otherPlayers[player].position.position_x,
-                this.otherPlayers[player].position.position_y + 2.1,
+                this.otherPlayers[player].position.position_y + 5.5,
                 this.otherPlayers[player].position.position_z
             );
         }
