@@ -1,6 +1,6 @@
-import Experience from "../Experience.js";
+import Experience from "../../Experience.js";
 import * as THREE from "three";
-import Portal from "./Portal.js"; // Import Portal
+import Portal from "../Portal.js"; // Import Portal
 
 export default class Class {
     constructor() {

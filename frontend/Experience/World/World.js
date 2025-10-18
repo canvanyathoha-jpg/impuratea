@@ -7,7 +7,7 @@ import { Octree } from "three/examples/jsm/math/Octree";
 import Player from "./Player/Player.js";
 
 import Westgate from "./Westgate.js";
-import Class from "./Class.js";
+import Class from "./academic/Class.js";
 import Organization from "./Organization.js";
 import ScienceRoom from "./ScienceRoom.js";
 import Environment from "./Environment.js";
