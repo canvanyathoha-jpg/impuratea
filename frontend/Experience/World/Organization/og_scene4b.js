@@ -44,6 +44,12 @@ export default class OrganizationScene4B {
         // Build the octree
         this.octree.fromGraphNode(collidableGroup);
 
+        // Set collision objects for camera
+        if (this.experience.camera && this.experience.camera.controls) {
+            this.experience.camera.controls.collisionObjects = this.collider;
+            console.log("[OrganizationScene4B] Camera collision objects set");
+        }
+
         console.log("Organization Scene 4B (RuangGuru) loaded with full collision enabled.");
     }
 

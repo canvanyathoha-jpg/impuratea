@@ -2,7 +2,7 @@ import Experience from "../../Experience.js";
 import * as THREE from "three";
 import Portal from "../Portal.js";
 
-export default class OrganizationScene3B {
+export default class AcademicScene2B {
     constructor() {
         this.experience = new Experience();
         this.scene = this.experience.scene;
@@ -17,18 +17,18 @@ export default class OrganizationScene3B {
         // Create a group for all collidable objects
         const collidableGroup = new THREE.Group();
 
-        // Load the caffe model (caffe.glb)
-        this.caffeModel = this.resources.items.caffe.scene;
-        this.caffeModel.position.set(0, 0, 0);
-        this.caffeModel.rotation.set(0, 0, 0);
-        this.caffeModel.scale.set(12, 12, 12); // Slightly reduced from 15
-        collidableGroup.add(this.caffeModel);
+        // Load the class model (Kelas-C.glb)
+        this.classModel = this.resources.items.class.scene;
+        this.classModel.position.set(0, 0, 0);
+        this.classModel.rotation.set(0, 0, 0);
+        this.classModel.scale.set(10, 10, 10);
+        collidableGroup.add(this.classModel);
 
         // Setup collider for physics
         this.collider = this.resources.items.collider.scene;
         this.collider.position.set(0, 0, 0);
         this.collider.rotation.set(0, 0, 0);
-        this.collider.scale.set(12, 12, 12); // Match caffe model scale
+        this.collider.scale.set(10, 10, 10);
 
         // Make collider invisible
         this.collider.traverse((child) => {
@@ -47,16 +47,16 @@ export default class OrganizationScene3B {
         // Set collision objects for camera
         if (this.experience.camera && this.experience.camera.controls) {
             this.experience.camera.controls.collisionObjects = this.collider;
-            console.log("[OrganizationScene3B] Camera collision objects set");
+            console.log("[AcademicScene2B] Camera collision objects set");
         }
 
-        console.log("Organization Scene 3B (Caffe) loaded with full collision enabled.");
+        console.log("Academic Scene 2B (Class) loaded with full collision enabled.");
     }
 
     createPortals() {
         // Portal ke Westgate atau scene lain (sesuaikan posisi dengan lokasi pintu)
         this.westgatePortal = new Portal(
-            new THREE.Vector3(49, 2, 30), // Posisi portal (sesuaikan dengan pintu OSIS)
+            new THREE.Vector3(49, 2, 30), // Posisi portal (sesuaikan dengan pintu)
             "westgate", // Target scene
             new THREE.Vector3(0, 10, 0), // Posisi spawn di scene baru
             "Westgate" // Nama ruangan
@@ -71,7 +71,7 @@ export default class OrganizationScene3B {
     }
 
     dispose() {
-        console.log("[OrganizationScene3B] Disposing Organization Scene 3B (Caffe)...");
+        console.log("[AcademicScene2B] Disposing Academic Scene 2B (Class)...");
 
         // Hapus portal
         if (this.westgatePortal) {
@@ -80,10 +80,10 @@ export default class OrganizationScene3B {
         }
 
         // Hapus model dari scene
-        if (this.caffeModel && this.caffeModel.parent) {
-            this.scene.remove(this.caffeModel.parent);
+        if (this.classModel && this.classModel.parent) {
+            this.scene.remove(this.classModel.parent);
         }
 
-        console.log("[OrganizationScene3B] Organization Scene 3B (Caffe) disposed");
+        console.log("[AcademicScene2B] Academic Scene 2B (Class) disposed");
     }
 }

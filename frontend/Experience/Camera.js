@@ -47,11 +47,17 @@ export default class Camera {
 
         this.controls.dampingFactor = 0.1;
 
+        // Enable collision detection for camera
+        this.controls.enableCollisionDetection = true;
+        this.controls.collisionDistance = 0.5; // Minimum distance from collider
+
         console.log('[Camera] OrbitControls initialized:', {
             enabled: this.controls.enabled,
             enableZoom: this.controls.enableZoom,
             enableRotate: this.controls.enableRotate,
-            enablePan: this.controls.enablePan
+            enablePan: this.controls.enablePan,
+            enableCollisionDetection: this.controls.enableCollisionDetection,
+            collisionDistance: this.controls.collisionDistance
         });
     }
 

@@ -2,6 +2,7 @@ import {
     EventDispatcher,
     MOUSE,
     Quaternion,
+    Raycaster,
     Spherical,
     TOUCH,
     Vector2,
@@ -32,6 +33,12 @@ class OrbitControls extends EventDispatcher {
 
         // "target" sets the location of focus, where the object orbits around
         this.target = new Vector3();
+
+        // Collision detection
+        this.enableCollisionDetection = true;
+        this.collisionObjects = null;
+        this.raycaster = new Raycaster();
+        this.collisionDistance = 0.5; // Minimum distance from collider
 
         // How far you can dolly in and out ( PerspectiveCamera only )
         this.minDistance = 0;
@@ -173,6 +180,25 @@ class OrbitControls extends EventDispatcher {
 
                 // angle from z-axis around y-axis
                 spherical.setFromVector3(offset);
+
+                // Collision detection: check if camera will collide with objects
+                if (scope.enableCollisionDetection && scope.collisionObjects) {
+                    const direction = new Vector3();
+                    direction.copy(scope.target).sub(position).normalize();
+
+                    scope.raycaster.set(scope.target, direction.negate());
+                    scope.raycaster.far = spherical.radius;
+
+                    const intersects = scope.raycaster.intersectObject(scope.collisionObjects, true);
+
+                    if (intersects.length > 0) {
+                        const intersection = intersects[0];
+                        const maxRadius = intersection.distance - scope.collisionDistance;
+                        if (maxRadius > scope.minDistance) {
+                            spherical.radius = Math.min(spherical.radius, maxRadius);
+                        }
+                    }
+                }
 
                 if (scope.autoRotate && state === STATE.NONE) {
                     rotateLeft(getAutoRotationAngle());

@@ -2,48 +2,48 @@ import Experience from "../../Experience.js";
 import * as THREE from "three";
 import Portal from "../Portal.js";
 
-export default class ScienceRoom {
+export default class AcademicScene3A {
     constructor() {
-        console.log("[ScienceRoom] Constructor called");
+        console.log("[AcademicScene3A] Constructor called");
         this.experience = new Experience();
         this.scene = this.experience.scene;
         this.resources = this.experience.resources;
         this.octree = this.experience.world.octree;
 
-        console.log("[ScienceRoom] Calling setWorld()");
+        console.log("[AcademicScene3A] Calling setWorld()");
         this.setWorld();
-        console.log("[ScienceRoom] Calling createPortals()");
+        console.log("[AcademicScene3A] Calling createPortals()");
         this.createPortals();
-        console.log("[ScienceRoom] Constructor completed");
+        console.log("[AcademicScene3A] Constructor completed");
     }
 
     setWorld() {
-        console.log("[ScienceRoom] setWorld() called");
+        console.log("[AcademicScene3A] setWorld() called");
         const collidableGroup = new THREE.Group();
 
-        console.log("[ScienceRoom] Loading science-room model");
-        console.log("[ScienceRoom] Available resources:", Object.keys(this.resources.items));
+        console.log("[AcademicScene3A] Loading science-room model");
+        console.log("[AcademicScene3A] Available resources:", Object.keys(this.resources.items));
 
         if (!this.resources.items["science-room"]) {
-            console.error("[ScienceRoom] ❌ science-room model not found in resources!");
+            console.error("[AcademicScene3A] ❌ science-room model not found in resources!");
             return;
         }
 
         this.model = this.resources.items["science-room"].scene;
-        console.log("[ScienceRoom] Model loaded:", this.model);
+        console.log("[AcademicScene3A] Model loaded:", this.model);
         this.model.position.set(0, 1.8, 0);
         this.model.rotation.set(0, 0, 0);
         this.model.scale.set(3, 3, 3);
         collidableGroup.add(this.model);
 
-        console.log("[ScienceRoom] Adding to scene");
+        console.log("[AcademicScene3A] Adding to scene");
         this.scene.add(collidableGroup);
 
-        console.log("[ScienceRoom] ⚠️ SKIPPING octree build to avoid crash - no collision for now");
+        console.log("[AcademicScene3A] ⚠️ SKIPPING octree build to avoid crash - no collision for now");
         // SKIP OCTREE UNTUK SEMENTARA - nanti bisa ditambahkan setelah portal berfungsi
         // this.octree.fromGraphNode(this.model);
 
-        console.log("[ScienceRoom] Science Room scene loaded (without collision).");
+        console.log("[AcademicScene3A] Academic Scene 3A (Science Room) loaded (without collision).");
     }
 
     createPortals() {
@@ -63,16 +63,19 @@ export default class ScienceRoom {
     }
 
     dispose() {
+        console.log("[AcademicScene3A] Disposing Academic Scene 3A (Science Room)...");
+
+        // Hapus portal
+        if (this.classPortal) {
+            this.classPortal.dispose();
+            this.classPortal = null;
+        }
+
         // Hapus model dari scene
         if (this.model) {
             this.scene.remove(this.model.parent); // Hapus group
         }
 
-        // Hapus portal
-        if (this.classPortal) {
-            this.classPortal.dispose();
-        }
-        
-        console.log("ScienceRoom disposed");
+        console.log("[AcademicScene3A] Academic Scene 3A (Science Room) disposed");
     }
 }

@@ -1,5 +1,6 @@
 import Experience from "../Experience.js";
 import * as THREE from "three";
+import Portal from "./Portal.js";
 
 export default class Westgate {
     constructor() {
@@ -9,23 +10,25 @@ export default class Westgate {
         this.octree = this.experience.world.octree;
 
         this.setWorld();
+        this.createPortals();
     }
 
     setWorld() {
-        // Load the main school model
-        this.school = this.resources.items.school.scene;
+        // Create a group for all collidable objects
+        const collidableGroup = new THREE.Group();
 
-        // Set school position far ahead and slightly elevated
-        // Player spawns at (0, 10, 0), school is moved forward
-        this.school.position.set(0, 5, -500); // At Y=5, 500 units forward
-        this.school.rotation.set(0, 0, 0);
-        this.school.scale.set(10, 10, 10); // Make school HUGE (10x bigger)
+        // Load the school model (schooll.glb)
+        this.schoolModel = this.resources.items.school.scene;
+        this.schoolModel.position.set(0, 0, 0);
+        this.schoolModel.rotation.set(0, 0, 0);
+        this.schoolModel.scale.set(10, 10, 10);
+        collidableGroup.add(this.schoolModel);
 
-        // Setup collider for physics (using the original optimized collider.glb)
+        // Setup collider for physics
         this.collider = this.resources.items.collider.scene;
         this.collider.position.set(0, 0, 0);
         this.collider.rotation.set(0, 0, 0);
-        this.collider.scale.set(1, 1, 1);
+        this.collider.scale.set(10, 10, 10);
 
         // Make collider invisible
         this.collider.traverse((child) => {
@@ -33,26 +36,48 @@ export default class Westgate {
                 child.visible = false;
             }
         });
+        collidableGroup.add(this.collider);
 
-        // Add collider to octree
-        this.octree.fromGraphNode(this.collider);
+        // Add the group to the scene
+        this.scene.add(collidableGroup);
 
-        // Create additional ground plane for player spawn area
-        const groundGeometry = new THREE.BoxGeometry(500, 1, 500);
-        const groundMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            transparent: true,
-            opacity: 0
-        });
-        this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        this.ground.position.set(0, 8, 0); // Ground at Y=8, player spawns at Y=10
-        this.ground.visible = false;
+        // Build the octree
+        this.octree.fromGraphNode(collidableGroup);
 
-        // Add ground to octree as well
-        this.octree.fromGraphNode(this.ground);
+        console.log("Westgate scene loaded with full collision enabled.");
+    }
 
-        // Add the school model and ground to the scene
-        this.scene.add(this.school);
-        this.scene.add(this.ground);
+    createPortals() {
+        // Portal ke Class atau scene lain (sesuaikan posisi dengan lokasi pintu)
+        this.classPortal = new Portal(
+            new THREE.Vector3(49, 2, 30), // Posisi portal (sesuaikan dengan pintu)
+            "class", // Target scene
+            new THREE.Vector3(0, 10, 0), // Posisi spawn di scene baru
+            "Class" // Nama ruangan
+        );
+    }
+
+    update() {
+        // Update portal animation
+        if (this.classPortal) {
+            this.classPortal.update();
+        }
+    }
+
+    dispose() {
+        console.log("[Westgate] Disposing Westgate scene...");
+
+        // Hapus portal
+        if (this.classPortal) {
+            this.classPortal.dispose();
+            this.classPortal = null;
+        }
+
+        // Hapus model dari scene
+        if (this.schoolModel && this.schoolModel.parent) {
+            this.scene.remove(this.schoolModel.parent);
+        }
+
+        console.log("[Westgate] Westgate scene disposed");
     }
 }

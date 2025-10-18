@@ -7,7 +7,9 @@ import { Octree } from "three/examples/jsm/math/Octree";
 import Player from "./Player/Player.js";
 
 import Westgate from "./Westgate.js";
-import Class from "./academic/Class.js";
+import AcademicScene1 from "./academic/a_scene1.js";
+import AcademicScene2A from "./academic/a_scene2a.js";
+import AcademicScene2B from "./academic/a_scene2b.js";
 import Organization from "./Organization/og_scene1.js";
 import OrganizationScene2A from "./Organization/og_scene2a.js";
 import OrganizationScene2B from "./Organization/og_scene2b.js";
@@ -15,7 +17,10 @@ import OrganizationScene3A from "./Organization/og_scene3a.js";
 import OrganizationScene3B from "./Organization/og_scene3b.js";
 import OrganizationScene4A from "./Organization/og_scene4a.js";
 import OrganizationScene4B from "./Organization/og_scene4b.js";
-import ScienceRoom from "./academic/ScienceRoom.js";
+import AcademicScene3A from "./academic/a_scene3a.js";
+import AcademicScene3B from "./academic/a_scene3b.js";
+import AcademicScene4A from "./academic/a_scene4a.js";
+import AcademicScene4B from "./academic/a_scene4b.js";
 import Environment from "./Environment.js";
 
 export default class World extends EventEmitter {
@@ -33,6 +38,12 @@ export default class World extends EventEmitter {
         this.spawnPoints = {
             westgate: new THREE.Vector3(0, 10, 0),
             class: new THREE.Vector3(0, 10, 0),
+            a_scene1: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 1
+            a_scene2a: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 2a
+            a_scene2b: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 2b
+            a_scene3b: new THREE.Vector3(0, 10, 0), // Spawn inside the science room scene 3b
+            a_scene4a: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4a
+            a_scene4b: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4b
             og_scene1: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room
             og_scene2a: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2a
             og_scene2b: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2b
@@ -78,8 +89,20 @@ export default class World extends EventEmitter {
                     this.currentScene = new Westgate();
                     break;
                 case "class":
-                    console.log(`[World] Instantiating Class`);
-                    this.currentScene = new Class();
+                    console.log(`[World] Instantiating Academic Scene 1 (Class)`);
+                    this.currentScene = new AcademicScene1();
+                    break;
+                case "a_scene1":
+                    console.log(`[World] Instantiating Academic Scene 1 (Class)`);
+                    this.currentScene = new AcademicScene1();
+                    break;
+                case "a_scene2a":
+                    console.log(`[World] Instantiating Academic Scene 2A (Class)`);
+                    this.currentScene = new AcademicScene2A();
+                    break;
+                case "a_scene2b":
+                    console.log(`[World] Instantiating Academic Scene 2B (Class)`);
+                    this.currentScene = new AcademicScene2B();
                     break;
                 case "og_scene1":
                     console.log(`[World] Instantiating Organization (og_scene1)`);
@@ -110,9 +133,24 @@ export default class World extends EventEmitter {
                     this.currentScene = new OrganizationScene4B();
                     break;
                 case "science-room":
-                    console.log(`[World] Instantiating ScienceRoom`);
-                    this.currentScene = new ScienceRoom();
-                    console.log(`[World] ScienceRoom instantiated successfully`);
+                    console.log(`[World] Instantiating Academic Scene 3A (Science Room)`);
+                    this.currentScene = new AcademicScene3A();
+                    console.log(`[World] Academic Scene 3A instantiated successfully`);
+                    break;
+                case "a_scene3b":
+                    console.log(`[World] Instantiating Academic Scene 3B (Science Room)`);
+                    this.currentScene = new AcademicScene3B();
+                    console.log(`[World] Academic Scene 3B instantiated successfully`);
+                    break;
+                case "a_scene4a":
+                    console.log(`[World] Instantiating Academic Scene 4A (Class)`);
+                    this.currentScene = new AcademicScene4A();
+                    console.log(`[World] Academic Scene 4A instantiated successfully`);
+                    break;
+                case "a_scene4b":
+                    console.log(`[World] Instantiating Academic Scene 4B (Class)`);
+                    this.currentScene = new AcademicScene4B();
+                    console.log(`[World] Academic Scene 4B instantiated successfully`);
                     break;
                 default:
                     console.log(`[World] Unknown scene, defaulting to Westgate`);

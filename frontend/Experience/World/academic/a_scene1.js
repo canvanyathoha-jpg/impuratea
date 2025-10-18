@@ -2,7 +2,7 @@ import Experience from "../../Experience.js";
 import * as THREE from "three";
 import Portal from "../Portal.js"; // Import Portal
 
-export default class Class {
+export default class AcademicScene1 {
     constructor() {
         this.experience = new Experience();
         this.scene = this.experience.scene;
@@ -44,9 +44,15 @@ export default class Class {
         // Build the octree
         this.octree.fromGraphNode(collidableGroup);
 
-        console.log("Class scene loaded with full collision enabled.");
+        // Set collision objects for camera
+        if (this.experience.camera && this.experience.camera.controls) {
+            this.experience.camera.controls.collisionObjects = this.collider;
+            console.log("[AcademicScene1] Camera collision objects set");
+        }
+
+        console.log("Academic Scene 1 (Class) loaded with full collision enabled.");
     }
-    
+
     createPortals() {
         // Portal ke Lab (sesuaikan posisi dengan lokasi pintu)
         this.labPortal = new Portal(
@@ -65,7 +71,7 @@ export default class Class {
     }
 
     dispose() {
-        console.log("[Class] Disposing Class scene...");
+        console.log("[AcademicScene1] Disposing Academic Scene 1 (Class)...");
 
         // Hapus portal
         if (this.labPortal) {
@@ -78,6 +84,6 @@ export default class Class {
             this.scene.remove(this.classModel.parent);
         }
 
-        console.log("[Class] Class scene disposed");
+        console.log("[AcademicScene1] Academic Scene 1 (Class) disposed");
     }
 }

@@ -5,7 +5,7 @@ export default [
                 {
                     name: "school",
                     type: "glbModel",
-                    path: "/models/School-CC.glb",
+                    path: "/models/schooll.glb",
                 },
                 {
                     name: "male",
@@ -42,6 +42,129 @@ export default [
             ],
         },
         class: {
+            assets: [
+                {
+                    name: "class",
+                    type: "glbModel",
+                    path: "/models/Kelas-C.glb",
+                },
+                {
+                    name: "male",
+                    type: "glbModel",
+                    path: "/models/asian_male_animated.glb",
+                },
+                {
+                    name: "female",
+                    type: "glbModel",
+                    path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "collider",
+                    type: "glbModel",
+                    path: "/models/collider.glb",
+                },
+                {
+                    name: "environment",
+                    type: "cubeTexture",
+                    path: [
+                        "textures/environment/px.png",
+                        "textures/environment/nx.png",
+                        "textures/environment/py.png",
+                        "textures/environment/ny.png",
+                        "textures/environment/pz.png",
+                        "textures/environment/nz.png",
+                    ],
+                },
+                {
+                    name: "video",
+                    type: "videoTexture",
+                    path: "/videos/tour.mp4",
+                },
+            ],
+        },
+        a_scene1: {
+            assets: [
+                {
+                    name: "class",
+                    type: "glbModel",
+                    path: "/models/Kelas-C.glb",
+                },
+                {
+                    name: "male",
+                    type: "glbModel",
+                    path: "/models/asian_male_animated.glb",
+                },
+                {
+                    name: "female",
+                    type: "glbModel",
+                    path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "collider",
+                    type: "glbModel",
+                    path: "/models/collider.glb",
+                },
+                {
+                    name: "environment",
+                    type: "cubeTexture",
+                    path: [
+                        "textures/environment/px.png",
+                        "textures/environment/nx.png",
+                        "textures/environment/py.png",
+                        "textures/environment/ny.png",
+                        "textures/environment/pz.png",
+                        "textures/environment/nz.png",
+                    ],
+                },
+                {
+                    name: "video",
+                    type: "videoTexture",
+                    path: "/videos/tour.mp4",
+                },
+            ],
+        },
+        a_scene2a: {
+            assets: [
+                {
+                    name: "class",
+                    type: "glbModel",
+                    path: "/models/Kelas-C.glb",
+                },
+                {
+                    name: "male",
+                    type: "glbModel",
+                    path: "/models/asian_male_animated.glb",
+                },
+                {
+                    name: "female",
+                    type: "glbModel",
+                    path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "collider",
+                    type: "glbModel",
+                    path: "/models/collider.glb",
+                },
+                {
+                    name: "environment",
+                    type: "cubeTexture",
+                    path: [
+                        "textures/environment/px.png",
+                        "textures/environment/nx.png",
+                        "textures/environment/py.png",
+                        "textures/environment/ny.png",
+                        "textures/environment/pz.png",
+                        "textures/environment/nz.png",
+                    ],
+                },
+                {
+                    name: "video",
+                    type: "videoTexture",
+                    path: "/videos/tour.mp4",
+                },
+            ],
+        },
+        a_scene2b: {
             assets: [
                 {
                     name: "class",
@@ -129,6 +252,129 @@ export default [
                     name: "science-room",
                     type: "glbModel",
                     path: "/models/science room.glb?v=" + Date.now(),
+                },
+                {
+                    name: "male",
+                    type: "glbModel",
+                    path: "/models/asian_male_animated.glb",
+                },
+                {
+                    name: "female",
+                    type: "glbModel",
+                    path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "collider",
+                    type: "glbModel",
+                    path: "/models/collider.glb",
+                },
+                {
+                    name: "environment",
+                    type: "cubeTexture",
+                    path: [
+                        "textures/environment/px.png",
+                        "textures/environment/nx.png",
+                        "textures/environment/py.png",
+                        "textures/environment/ny.png",
+                        "textures/environment/pz.png",
+                        "textures/environment/nz.png",
+                    ],
+                },
+                {
+                    name: "video",
+                    type: "videoTexture",
+                    path: "/videos/tour.mp4",
+                },
+            ],
+        },
+        a_scene3b: {
+            assets: [
+                {
+                    name: "science-room",
+                    type: "glbModel",
+                    path: "/models/science room.glb?v=" + Date.now(),
+                },
+                {
+                    name: "male",
+                    type: "glbModel",
+                    path: "/models/asian_male_animated.glb",
+                },
+                {
+                    name: "female",
+                    type: "glbModel",
+                    path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "collider",
+                    type: "glbModel",
+                    path: "/models/collider.glb",
+                },
+                {
+                    name: "environment",
+                    type: "cubeTexture",
+                    path: [
+                        "textures/environment/px.png",
+                        "textures/environment/nx.png",
+                        "textures/environment/py.png",
+                        "textures/environment/ny.png",
+                        "textures/environment/pz.png",
+                        "textures/environment/nz.png",
+                    ],
+                },
+                {
+                    name: "video",
+                    type: "videoTexture",
+                    path: "/videos/tour.mp4",
+                },
+            ],
+        },
+        a_scene4a: {
+            assets: [
+                {
+                    name: "class",
+                    type: "glbModel",
+                    path: "/models/Kelas-C.glb",
+                },
+                {
+                    name: "male",
+                    type: "glbModel",
+                    path: "/models/asian_male_animated.glb",
+                },
+                {
+                    name: "female",
+                    type: "glbModel",
+                    path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "collider",
+                    type: "glbModel",
+                    path: "/models/collider.glb",
+                },
+                {
+                    name: "environment",
+                    type: "cubeTexture",
+                    path: [
+                        "textures/environment/px.png",
+                        "textures/environment/nx.png",
+                        "textures/environment/py.png",
+                        "textures/environment/ny.png",
+                        "textures/environment/pz.png",
+                        "textures/environment/nz.png",
+                    ],
+                },
+                {
+                    name: "video",
+                    type: "videoTexture",
+                    path: "/videos/tour.mp4",
+                },
+            ],
+        },
+        a_scene4b: {
+            assets: [
+                {
+                    name: "class",
+                    type: "glbModel",
+                    path: "/models/Kelas-C.glb",
                 },
                 {
                     name: "male",
