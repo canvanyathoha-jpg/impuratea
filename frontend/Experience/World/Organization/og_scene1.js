@@ -1,5 +1,6 @@
-import Experience from "../Experience.js";
+import Experience from "../../Experience.js";
 import * as THREE from "three";
+import Portal from "../Portal.js";
 
 export default class Organization {
     constructor() {
@@ -9,22 +10,25 @@ export default class Organization {
         this.octree = this.experience.world.octree;
 
         this.setWorld();
+        this.createPortals();
     }
 
     setWorld() {
-        // Load the organization model (OSIS-C.glb)
+        // Create a group for all collidable objects
+        const collidableGroup = new THREE.Group();
+
+        // Load the organization model (ruangan_osis.glb)
         this.organizationModel = this.resources.items.organization.scene;
-
-        // Set organization position far ahead and slightly elevated (same as school)
-        this.organizationModel.position.set(0, 5, -500);
+        this.organizationModel.position.set(0, 0, 0);
         this.organizationModel.rotation.set(0, 0, 0);
-        this.organizationModel.scale.set(10, 10, 10); // Same scale as school and class
+        this.organizationModel.scale.set(5, 5, 5);
+        collidableGroup.add(this.organizationModel);
 
-        // Setup collider for physics (using the original optimized collider.glb)
+        // Setup collider for physics
         this.collider = this.resources.items.collider.scene;
-        this.collider.position.set(0, 5, -500);
+        this.collider.position.set(0, 0, 0);
         this.collider.rotation.set(0, 0, 0);
-        this.collider.scale.set(10, 10, 10);
+        this.collider.scale.set(5, 5, 5);
 
         // Make collider invisible
         this.collider.traverse((child) => {
@@ -32,45 +36,48 @@ export default class Organization {
                 child.visible = false;
             }
         });
+        collidableGroup.add(this.collider);
 
-        // Add collider to octree
-        this.octree.fromGraphNode(this.collider);
+        // Add the group to the scene
+        this.scene.add(collidableGroup);
 
-        // Create ground plane at spawn area
-        const spawnGroundGeometry = new THREE.BoxGeometry(500, 1, 500);
-        const spawnGroundMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            transparent: true,
-            opacity: 0
-        });
-        this.spawnGround = new THREE.Mesh(spawnGroundGeometry, spawnGroundMaterial);
-        this.spawnGround.position.set(0, 8, 0); // Ground at spawn point
-        this.spawnGround.visible = false;
+        // Build the octree
+        this.octree.fromGraphNode(collidableGroup);
 
-        // Create ground plane near organization building
-        const organizationGroundGeometry = new THREE.BoxGeometry(1000, 1, 1000);
-        const organizationGroundMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0000ff,
-            transparent: true,
-            opacity: 0
-        });
-        this.organizationGround = new THREE.Mesh(organizationGroundGeometry, organizationGroundMaterial);
-        this.organizationGround.position.set(0, 8, -500); // Ground near organization building
-        this.organizationGround.visible = false;
+        console.log("Organization scene loaded with full collision enabled.");
+    }
 
-        // Add both grounds to octree
-        this.octree.fromGraphNode(this.spawnGround);
-        this.octree.fromGraphNode(this.organizationGround);
+    createPortals() {
+        // Portal ke Westgate atau scene lain (sesuaikan posisi dengan lokasi pintu)
+        this.westgatePortal = new Portal(
+            new THREE.Vector3(49, 2, 30), // Posisi portal (sesuaikan dengan pintu OSIS)
+            "westgate", // Target scene
+            new THREE.Vector3(0, 10, 0), // Posisi spawn di scene baru
+            "Westgate" // Nama ruangan
+        );
+    }
 
-        // Add the organization model and grounds to the scene
-        this.scene.add(this.organizationModel);
-        this.scene.add(this.spawnGround);
-        this.scene.add(this.organizationGround);
+    update() {
+        // Update portal animation
+        if (this.westgatePortal) {
+            this.westgatePortal.update();
+        }
+    }
 
-        console.log("Organization scene loaded");
-        console.log("Organization building position:", this.organizationModel.position);
-        console.log("Organization building scale:", this.organizationModel.scale);
-        console.log("Collider position:", this.collider.position);
-        console.log("Collider scale:", this.collider.scale);
+    dispose() {
+        console.log("[Organization] Disposing Organization scene...");
+
+        // Hapus portal
+        if (this.westgatePortal) {
+            this.westgatePortal.dispose();
+            this.westgatePortal = null;
+        }
+
+        // Hapus model dari scene
+        if (this.organizationModel && this.organizationModel.parent) {
+            this.scene.remove(this.organizationModel.parent);
+        }
+
+        console.log("[Organization] Organization scene disposed");
     }
 }

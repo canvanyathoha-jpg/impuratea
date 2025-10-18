@@ -16,7 +16,7 @@ export default class SceneManager {
         });
 
         this.btnOrganisasi.addEventListener('click', () => {
-            this.switchToScene('organization');
+            this.switchToScene('og_scene1');
         });
     }
 

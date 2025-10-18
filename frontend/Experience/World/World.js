@@ -8,8 +8,14 @@ import Player from "./Player/Player.js";
 
 import Westgate from "./Westgate.js";
 import Class from "./academic/Class.js";
-import Organization from "./Organization.js";
-import ScienceRoom from "./ScienceRoom.js";
+import Organization from "./Organization/og_scene1.js";
+import OrganizationScene2A from "./Organization/og_scene2a.js";
+import OrganizationScene2B from "./Organization/og_scene2b.js";
+import OrganizationScene3A from "./Organization/og_scene3a.js";
+import OrganizationScene3B from "./Organization/og_scene3b.js";
+import OrganizationScene4A from "./Organization/og_scene4a.js";
+import OrganizationScene4B from "./Organization/og_scene4b.js";
+import ScienceRoom from "./academic/ScienceRoom.js";
 import Environment from "./Environment.js";
 
 export default class World extends EventEmitter {
@@ -27,7 +33,13 @@ export default class World extends EventEmitter {
         this.spawnPoints = {
             westgate: new THREE.Vector3(0, 10, 0),
             class: new THREE.Vector3(0, 10, 0),
-            organization: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room
+            og_scene1: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room
+            og_scene2a: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2a
+            og_scene2b: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2b
+            og_scene3a: new THREE.Vector3(-5, 10, 20), // Spawn inside the caffe room (shifted left and back)
+            og_scene3b: new THREE.Vector3(-5, 10, 20), // Spawn inside the caffe room scene 3b
+            og_scene4a: new THREE.Vector3(0, 10, 0), // Spawn inside the RuangGuru room
+            og_scene4b: new THREE.Vector3(0, 10, 0), // Spawn inside the RuangGuru room scene 4b
             "science-room": new THREE.Vector3(0, 10, 0), // Spawn point untuk science room
         };
 
@@ -69,9 +81,33 @@ export default class World extends EventEmitter {
                     console.log(`[World] Instantiating Class`);
                     this.currentScene = new Class();
                     break;
-                case "organization":
-                    console.log(`[World] Instantiating Organization`);
+                case "og_scene1":
+                    console.log(`[World] Instantiating Organization (og_scene1)`);
                     this.currentScene = new Organization();
+                    break;
+                case "og_scene2a":
+                    console.log(`[World] Instantiating Organization Scene 2A (og_scene2a)`);
+                    this.currentScene = new OrganizationScene2A();
+                    break;
+                case "og_scene2b":
+                    console.log(`[World] Instantiating Organization Scene 2B (og_scene2b)`);
+                    this.currentScene = new OrganizationScene2B();
+                    break;
+                case "og_scene3a":
+                    console.log(`[World] Instantiating Organization Scene 3A - Caffe (og_scene3a)`);
+                    this.currentScene = new OrganizationScene3A();
+                    break;
+                case "og_scene3b":
+                    console.log(`[World] Instantiating Organization Scene 3B - Caffe (og_scene3b)`);
+                    this.currentScene = new OrganizationScene3B();
+                    break;
+                case "og_scene4a":
+                    console.log(`[World] Instantiating Organization Scene 4A - RuangGuru (og_scene4a)`);
+                    this.currentScene = new OrganizationScene4A();
+                    break;
+                case "og_scene4b":
+                    console.log(`[World] Instantiating Organization Scene 4B - RuangGuru (og_scene4b)`);
+                    this.currentScene = new OrganizationScene4B();
                     break;
                 case "science-room":
                     console.log(`[World] Instantiating ScienceRoom`);
