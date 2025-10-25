@@ -809,22 +809,21 @@ export default class Organization {
     handleChoice(choiceId) {
         console.log(`[OrgScene1] Player chose: ${choiceId}`);
 
-        // Determine score and next scene based on choice
+        // Determine score based on choice (all choices lead to og_scene2a)
         let scoreIncrease = 0;
-        let nextScene = '';
+        let nextScene = 'og_scene2a'; // All choices lead to og_scene2a
 
         if (choiceId === 'A') {
             scoreIncrease = 0;
-            nextScene = 'og_scene2a';
         } else if (choiceId === 'B') {
             scoreIncrease = 25;
-            nextScene = 'og_scene2b';
         }
 
         // Update corruption score (hidden from player but still tracked for ending)
         const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
         localStorage.setItem('corruption-score', totalScore.toString());
         console.log(`[OrgScene1] Total corruption score: ${totalScore} (hidden from player but tracked for ending)`);
+        console.log(`[OrgScene1] All choices lead to og_scene2a`);
 
         // Remove UI elements
         this.uiManager.removeSpeechBubble('senior');
