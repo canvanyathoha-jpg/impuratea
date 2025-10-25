@@ -77,6 +77,10 @@
                         fill="#1E407C"
                     />
                 </svg>
+                <div class="preloader-percentage">
+                    <span class="preloader-percentage1">0</span>
+                    <span class="preloader-percentage2">0</span>
+                </div>
                 <div class="progress-bar-container">
                     <div class="progress-bar"></div>
                 </div>
@@ -298,8 +302,13 @@
 
         <!-- <button class="switch-camera-view"></button> -->
 
-        <!-- Chat Box -->
-        <div class="chat-box">
+                <!-- Chat Box -->
+        <button class="toggle-chatbox-btn" id="toggleChatboxBtn" title="Toggle Chat">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            </svg>
+        </button>
+        <div class="chat-box" id="chatBox">
             <div class="chat-container"></div>
             <div class="form">
                 <label for="chat-message-input"></label>
@@ -319,6 +328,7 @@
                     </button>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- Experience -->
@@ -387,3 +397,4 @@
         <script type="module" src="/index.js"></script>
     </body>
 </html>
+

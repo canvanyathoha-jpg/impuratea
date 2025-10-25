@@ -1,3 +1,40 @@
+.toggle-chatbox-btn {
+    position: absolute;
+    bottom: 280px;
+    left: 48px;
+    width: 48px;
+    height: 48px;
+    background-color: $color-base-black-transparent;
+    color: $color-base-white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 51;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    @include media("<=tablet") {
+        display: none;
+    }
+}
+
 .chat-box {
     position: absolute;
     bottom: 48px;
@@ -9,6 +46,16 @@
     z-index: 50;
     font-size: 14px;
     word-wrap: break-word;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+
+    &.hidden {
+        opacity: 0;
+        transform: translateY(20px);
+        pointer-events: none;
+    }
+
     @include media("<=tablet") {
         display: none;
     }

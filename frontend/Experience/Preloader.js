@@ -74,14 +74,35 @@ export default class Preloader {
                     ease: "power4.out",
                 })
                 .to(
-                    this.domElements.progressBarContainer,
+                    [
+                        this.domElements.progressBarContainer,
+                        this.domElements.progressWrapper,
+                        this.domElements.preloaderWrapper
+                    ],
                     {
                         opacity: 0,
                         duration: 1.2,
                         ease: "power4.out",
                         onComplete: () => {
+                            // Remove all loading elements
                             this.domElements.svgLogo.remove();
                             this.domElements.progressBarContainer.remove();
+
+                            if (this.domElements.progressWrapper) {
+                                this.domElements.progressWrapper.remove();
+                            }
+                            if (this.domElements.preloaderWrapper) {
+                                this.domElements.preloaderWrapper.remove();
+                            }
+                            if (this.domElements.preloaderTitle) {
+                                this.domElements.preloaderTitle.remove();
+                            }
+                            if (this.domElements.text1) {
+                                this.domElements.text1.remove();
+                            }
+                            if (this.domElements.text2) {
+                                this.domElements.text2.remove();
+                            }
                         },
                     },
                     "-=1.05"
@@ -170,6 +191,18 @@ export default class Preloader {
         // Save avatar selection to localStorage
         localStorage.setItem('impuratea-avatar', avatarSkin);
 
+        // Get saved username
+        const savedUsername = localStorage.getItem('impuratea-username');
+
+        // Emit to socket to create player avatar
+        if (this.experience && this.experience.socket) {
+            this.experience.socket.emit('setAvatar', avatarSkin);
+            if (savedUsername) {
+                this.experience.socket.emit('setName', savedUsername);
+            }
+            console.log(`[Preloader] Avatar selected: ${avatarSkin}, Username: ${savedUsername}`);
+        }
+
         this.preloaderOutro();
     };
 
@@ -247,6 +280,10 @@ export default class Preloader {
 
     async preloaderOutro() {
         return new Promise((resolve) => {
+            // Immediately disable pointer events so camera can move
+            this.domElements.preloader.style.pointerEvents = 'none';
+            this.domElements.preloader.style.touchAction = 'auto';
+
             this.timeline4 = new gsap.timeline();
             this.timeline4.to(this.domElements.preloader, {
                 duration: 1.7,
@@ -255,7 +292,8 @@ export default class Preloader {
                 ease: "power3.out",
                 onComplete: () => {
                     this.domElements.preloader.remove();
-                    resolve;
+                    console.log('[Preloader] Preloader removed, camera should be moveable now');
+                    resolve();
                 },
             });
         });

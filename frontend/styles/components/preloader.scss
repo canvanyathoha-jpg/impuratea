@@ -1,12 +1,53 @@
 .preloader {
     @extend %center;
     @extend %cover;
-    background: $color-base-white;
+    background:
+        radial-gradient(ellipse at top, #0a0e27 0%, #020308 100%),
+        linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
     z-index: 9999999999999;
     width: 100vw;
     height: 100vh;
     touch-action: none;
     overflow: hidden;
+    position: relative;
+
+    // Animated hexagonal grid pattern
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(30, 64, 124, 0.03) 2px, rgba(30, 64, 124, 0.03) 4px),
+            repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(139, 0, 0, 0.03) 2px, rgba(139, 0, 0, 0.03) 4px);
+        background-size: 50px 50px;
+        animation: gridMove 20s linear infinite;
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
+    // Glowing particles effect
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            radial-gradient(2px 2px at 20% 30%, rgba(139, 0, 0, 0.8), transparent),
+            radial-gradient(2px 2px at 60% 70%, rgba(30, 64, 124, 0.8), transparent),
+            radial-gradient(1px 1px at 50% 50%, rgba(218, 165, 32, 0.8), transparent),
+            radial-gradient(2px 2px at 80% 10%, rgba(139, 0, 0, 0.6), transparent),
+            radial-gradient(1px 1px at 90% 60%, rgba(30, 64, 124, 0.6), transparent),
+            radial-gradient(2px 2px at 33% 50%, rgba(218, 165, 32, 0.6), transparent),
+            radial-gradient(1px 1px at 70% 40%, rgba(139, 0, 0, 0.4), transparent);
+        background-size: 200% 200%;
+        animation: particleFloat 15s ease-in-out infinite;
+        pointer-events: none;
+    }
 
     // Hide by default (will be shown by Preloader.js in westgate scene)
     display: none;
@@ -16,22 +57,131 @@
     }
 }
 
+@keyframes gridMove {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 50px 50px;
+    }
+}
+
+@keyframes particleFloat {
+    0%, 100% {
+        background-position: 0% 0%;
+        opacity: 0.3;
+    }
+    50% {
+        background-position: 100% 100%;
+        opacity: 0.6;
+    }
+}
+
 .preloader-title {
     @extend %center;
-    @extend %light-font;
-    color: $color-base-gray;
     position: absolute;
     bottom: 14%;
-    width: 250px;
+    width: 500px;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    color: rgba(0, 255, 255, 0.8);
+    text-shadow:
+        0 0 10px rgba(0, 255, 255, 0.5),
+        0 0 20px rgba(30, 64, 124, 0.3);
+    animation: textPulse 2s ease-in-out infinite;
 
-    // letter-spacing: 2px;
-    // text-transform: uppercase;
+    @include media("<=phone") {
+        font-size: 12px;
+        width: 300px;
+        letter-spacing: 2px;
+    }
+}
+
+@keyframes textPulse {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 .preloader-wrapper {
     @extend %center;
     flex-direction: column;
     gap: 48px;
+    position: relative;
+    z-index: 1;
+
+    // Holographic scan lines
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -50%;
+        width: 200%;
+        height: 100%;
+        background:
+            repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(30, 64, 124, 0.1) 2px,
+                rgba(30, 64, 124, 0.1) 4px
+            );
+        animation: scanLines 8s linear infinite;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    // Rotating holographic ring
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 600px;
+        height: 600px;
+        border: 2px solid transparent;
+        border-radius: 50%;
+        border-top-color: rgba(139, 0, 0, 0.3);
+        border-right-color: rgba(30, 64, 124, 0.3);
+        border-bottom-color: rgba(218, 165, 32, 0.3);
+        transform: translate(-50%, -50%) rotate(0deg);
+        animation: rotateRing 10s linear infinite;
+        pointer-events: none;
+        box-shadow:
+            0 0 20px rgba(139, 0, 0, 0.2),
+            0 0 40px rgba(30, 64, 124, 0.2),
+            0 0 60px rgba(218, 165, 32, 0.2);
+        z-index: -1;
+
+        @include media("<=phone") {
+            width: 400px;
+            height: 400px;
+        }
+    }
+}
+
+@keyframes scanLines {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(100px);
+    }
+}
+
+@keyframes rotateRing {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
 }
 
 .preloader-progress {
@@ -45,6 +195,35 @@
     @extend %center;
     position: absolute;
     bottom: 17%;
+    gap: 16px;
+    padding: 40px;
+    position: relative;
+
+    // Futuristic corner brackets
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border: 2px solid rgba(0, 255, 255, 0.4);
+    }
+
+    &::before {
+        top: 0;
+        left: 0;
+        border-right: none;
+        border-bottom: none;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+
+    &::after {
+        bottom: 0;
+        right: 0;
+        border-left: none;
+        border-top: none;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
 }
 
 .preloader-wrapper {
@@ -54,41 +233,255 @@
 
 .preloader-percentage1 {
     text-align: right;
+    font-size: 96px;
+    font-weight: 100;
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 8px;
+    position: relative;
+    text-shadow:
+        0 0 10px rgba(0, 255, 255, 0.8),
+        0 0 20px rgba(30, 64, 124, 0.6),
+        0 0 30px rgba(0, 255, 255, 0.4),
+        2px 2px 0 rgba(139, 0, 0, 0.3);
+    animation: digitGlitch 3s infinite;
+
+    @include media("<=phone") {
+        font-size: 64px;
+        letter-spacing: 4px;
+    }
+}
+
+.preloader-percentage2 {
+    font-size: 96px;
+    font-weight: 100;
+    color: #ff0055;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 8px;
+    position: relative;
+    text-shadow:
+        0 0 10px rgba(255, 0, 85, 0.8),
+        0 0 20px rgba(139, 0, 0, 0.6),
+        0 0 30px rgba(255, 0, 85, 0.4),
+        -2px -2px 0 rgba(0, 255, 255, 0.3);
+    animation: digitGlitch 3s infinite reverse;
+
+    @include media("<=phone") {
+        font-size: 64px;
+        letter-spacing: 4px;
+    }
+}
+
+@keyframes digitGlitch {
+    0%, 90%, 100% {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    92% {
+        transform: translate(-2px, 2px);
+        opacity: 0.9;
+    }
+    94% {
+        transform: translate(2px, -2px);
+        opacity: 0.95;
+    }
+    96% {
+        transform: translate(-1px, 1px);
+        opacity: 0.85;
+    }
+    98% {
+        transform: translate(1px, -1px);
+        opacity: 0.9;
+    }
 }
 
 .symbol {
     position: absolute;
     right: -11px;
+    font-family: 'Courier New', monospace;
+    color: #DAA520;
+    text-shadow:
+        0 0 10px rgba(218, 165, 32, 0.8),
+        0 0 20px rgba(218, 165, 32, 0.4);
 }
 
 .percent {
     @extend %light-font;
     width: 16px;
-    color: $color-base-gray;
-    // @include media("<=tablet") {
-    //     font-size: 24px;
-    // }
+    font-family: 'Courier New', monospace;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 300;
+    text-shadow:
+        0 0 5px rgba(255, 255, 255, 0.5),
+        0 0 10px rgba(30, 64, 124, 0.3);
 }
 
 .progress-bar-container {
-    width: 300px;
-    height: 2px;
-    background-color: $color-base-light-gray;
-    border-radius: 7px;
+    width: 500px;
+    height: 8px;
+    background: rgba(10, 14, 39, 0.8);
+    border: 1px solid rgba(30, 64, 124, 0.4);
+    border-radius: 20px;
     position: absolute;
     top: 50%;
+    box-shadow:
+        inset 0 2px 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(30, 64, 124, 0.2),
+        0 0 40px rgba(139, 0, 0, 0.1);
+    overflow: hidden;
+
+    // Inner glow effect
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+        border-radius: 20px 20px 0 0;
+    }
+
+    @include media("<=phone") {
+        width: 300px;
+        height: 6px;
+    }
 }
 
 .progress-bar {
     width: 0%;
-    height: 2px;
-    background-color: $color-base-dark-blue;
-    border-radius: 7px;
+    height: 8px;
+    background: linear-gradient(90deg, #8B0000 0%, #1E407C 50%, #DAA520 100%);
+    border-radius: 20px;
+    position: relative;
+    transition: width 0.3s ease;
+    box-shadow:
+        0 0 10px rgba(139, 0, 0, 0.8),
+        0 0 20px rgba(30, 64, 124, 0.6),
+        0 0 30px rgba(218, 165, 32, 0.4),
+        inset 0 0 10px rgba(255, 255, 255, 0.2);
+    animation: neonPulse 2s ease-in-out infinite;
+
+    @include media("<=phone") {
+        height: 6px;
+    }
+
+    // Animated holographic shine effect
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 25%,
+            rgba(139, 0, 0, 0.4) 50%,
+            rgba(30, 64, 124, 0.4) 75%,
+            transparent 100%
+        );
+        animation: holoShine 3s linear infinite;
+    }
+
+    // Energy flow effect
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background:
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.1) 10px,
+                rgba(255, 255, 255, 0.1) 20px
+            );
+        animation: energyFlow 1s linear infinite;
+    }
+}
+
+@keyframes neonPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 10px rgba(139, 0, 0, 0.8),
+            0 0 20px rgba(30, 64, 124, 0.6),
+            0 0 30px rgba(218, 165, 32, 0.4),
+            inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 0 20px rgba(139, 0, 0, 1),
+            0 0 40px rgba(30, 64, 124, 0.8),
+            0 0 60px rgba(218, 165, 32, 0.6),
+            inset 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+}
+
+@keyframes holoShine {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 200%;
+    }
+}
+
+@keyframes energyFlow {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 20px 0;
+    }
 }
 
 .svgLogo {
     position: absolute;
     top: -100%;
+    filter:
+        drop-shadow(0 0 10px rgba(30, 64, 124, 0.6))
+        drop-shadow(0 0 20px rgba(139, 0, 0, 0.4))
+        drop-shadow(0 0 30px rgba(218, 165, 32, 0.3));
+    animation: logoFloat 4s ease-in-out infinite;
+
+    path {
+        transition: fill 0.3s ease;
+        animation: pathGlow 2s ease-in-out infinite alternate;
+    }
+
+    path:nth-child(1) {
+        fill: #1E407C;
+    }
+
+    path:nth-child(2),
+    path:nth-child(3),
+    path:nth-child(4) {
+        fill: #00ffff;
+        filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.8));
+    }
+}
+
+@keyframes logoFloat {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-10px) scale(1.02);
+    }
+}
+
+@keyframes pathGlow {
+    0% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 .fade-in-out {
@@ -97,13 +490,72 @@
 
 @keyframes fade-in-out {
     0% {
-        opacity: 0.35;
+        opacity: 0.4;
     }
     50% {
         opacity: 1;
     }
     100% {
-        opacity: 0.35;
+        opacity: 0.4;
+    }
+}
+
+// Futuristic loading badge
+.loading-badge {
+    display: inline-block;
+    background: rgba(10, 14, 39, 0.8);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    color: #00ffff;
+    padding: 10px 30px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    box-shadow:
+        0 0 10px rgba(0, 255, 255, 0.3),
+        inset 0 0 10px rgba(0, 255, 255, 0.1);
+    position: absolute;
+    top: 60%;
+    animation: badgePulse 2s ease-in-out infinite;
+    position: relative;
+
+    &::before {
+        content: '▸';
+        position: absolute;
+        left: 10px;
+        animation: arrowBlink 1s infinite;
+    }
+
+    &::after {
+        content: '◂';
+        position: absolute;
+        right: 10px;
+        animation: arrowBlink 1s infinite reverse;
+    }
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        box-shadow:
+            0 0 10px rgba(0, 255, 255, 0.3),
+            inset 0 0 10px rgba(0, 255, 255, 0.1);
+    }
+    50% {
+        box-shadow:
+            0 0 20px rgba(0, 255, 255, 0.5),
+            0 0 30px rgba(30, 64, 124, 0.3),
+            inset 0 0 15px rgba(0, 255, 255, 0.2);
+    }
+}
+
+@keyframes arrowBlink {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
     }
 }
 
@@ -616,36 +1068,61 @@
     z-index: 1;
 }
 
-// Second preloader screen
+// Second preloader screen - Futuristic style
 .welcome-title {
     @extend %center;
-    font-size: 48px;
+    font-size: 56px;
     opacity: 0;
-    color: $color-base-medium-blue;
-    font-weight: 200;
+    color: #00ffff;
+    font-weight: 100;
+    font-family: 'Courier New', monospace;
     position: absolute;
     top: 35%;
     left: 50%;
     width: 100%;
     transform: translate(-50%, -50%);
-    letter-spacing: 2px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    text-shadow:
+        0 0 10px rgba(0, 255, 255, 0.8),
+        0 0 20px rgba(30, 64, 124, 0.6),
+        0 0 30px rgba(0, 255, 255, 0.4);
+    animation: titleGlow 3s ease-in-out infinite;
+
     @include media("<=phone") {
-        font-size: 28px;
+        font-size: 32px;
+        letter-spacing: 4px;
+    }
+}
+
+@keyframes titleGlow {
+    0%, 100% {
+        text-shadow:
+            0 0 10px rgba(0, 255, 255, 0.8),
+            0 0 20px rgba(30, 64, 124, 0.6),
+            0 0 30px rgba(0, 255, 255, 0.4);
+    }
+    50% {
+        text-shadow:
+            0 0 20px rgba(0, 255, 255, 1),
+            0 0 40px rgba(30, 64, 124, 0.8),
+            0 0 60px rgba(0, 255, 255, 0.6);
     }
 }
 
 .description {
     @extend %center;
     font-size: 12px;
-    // opacity: 0;
-    color: $color-base-medium-blue;
+    color: rgba(255, 255, 255, 0.6);
     font-weight: 300;
+    font-family: 'Courier New', monospace;
     position: absolute;
     bottom: 30%;
     width: 500px;
     left: 50%;
     transform: translate(-50%, -50%);
-    letter-spacing: 2px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
 }
 
 .name-form {
@@ -659,13 +1136,18 @@
 }
 
 #name-input {
-    font-size: 18px;
+    font-size: 20px;
     border: none;
     width: 400px;
-    color: $color-base-medium-blue;
-    border-bottom: 1px solid $color-base-medium-blue;
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+    border-bottom: 2px solid rgba(0, 255, 255, 0.3);
     outline: none;
     background-color: transparent;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    transition: all 0.3s ease;
+
     @include media("<=phone") {
         width: 250px;
         font-size: 16px;
@@ -673,53 +1155,76 @@
 }
 
 #name-input::placeholder {
-    color: $color-base-light-blue;
-    opacity: 0.5;
+    color: rgba(0, 255, 255, 0.3);
+    opacity: 0.7;
+    font-family: 'Courier New', monospace;
 }
 
 #name-input:focus {
-    border-bottom: 1px solid $color-base-dark-blue;
+    border-bottom: 2px solid #00ffff;
+    box-shadow: 0 2px 20px rgba(0, 255, 255, 0.3);
 }
 
 #name-input-button {
-    color: $color-base-dark-blue;
-    outline: 1px solid $color-base-dark-blue;
-    background-color: transparent;
+    color: #00ffff;
+    border: 2px solid rgba(0, 255, 255, 0.5);
+    background: rgba(10, 14, 39, 0.6);
     position: absolute;
-    width: 100px;
-    height: 30px;
+    width: 140px;
+    height: 40px;
     bottom: 42%;
-    font-size: 14px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
     text-transform: uppercase;
+    letter-spacing: 3px;
     opacity: 0;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out,
-        letter-spacing 0.2s ease-in-out;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow:
+        0 0 10px rgba(0, 255, 255, 0.2),
+        inset 0 0 10px rgba(0, 255, 255, 0.1);
 
     &:hover {
-        background-color: $color-base-dark-blue;
-        color: white;
-        outline: 1px solid $color-base-dark-blue;
-        letter-spacing: 2px;
-        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out,
-            letter-spacing 0.2s ease-in-out;
+        background: rgba(0, 255, 255, 0.2);
+        color: #00ffff;
+        border: 2px solid #00ffff;
+        letter-spacing: 4px;
+        box-shadow:
+            0 0 20px rgba(0, 255, 255, 0.5),
+            0 0 30px rgba(30, 64, 124, 0.3),
+            inset 0 0 20px rgba(0, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 }
 
-// Character Selection Screen -----------------------
+// Character Selection Screen - Futuristic
 .character-select-title {
     @extend %center;
-    font-size: 48px;
+    font-size: 56px;
     opacity: 0;
-    color: $color-base-medium-blue;
-    font-weight: 200;
+    color: #ff0055;
+    font-weight: 100;
+    font-family: 'Courier New', monospace;
     position: absolute;
     top: 15%;
     left: 50%;
     width: 100%;
     transform: translate(-50%, -50%);
-    letter-spacing: 2px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    text-shadow:
+        0 0 10px rgba(255, 0, 85, 0.8),
+        0 0 20px rgba(139, 0, 0, 0.6),
+        0 0 30px rgba(255, 0, 85, 0.4);
+    animation: titleGlow 3s ease-in-out infinite;
+
     @include media("<=phone") {
-        font-size: 28px;
+        font-size: 32px;
+        letter-spacing: 4px;
     }
     z-index: -99;
 }
@@ -742,11 +1247,23 @@
     width: auto;
     height: 200px;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    padding: 10px;
+    border-radius: 8px;
+    position: relative;
 
     &:hover {
-        background-color: $color-base-light-gray;
-        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        border: 2px solid rgba(0, 255, 255, 0.6);
+        background: rgba(0, 255, 255, 0.05);
+        box-shadow:
+            0 0 20px rgba(0, 255, 255, 0.4),
+            0 0 40px rgba(30, 64, 124, 0.2);
+        transform: scale(1.05) translateY(-5px);
+    }
+
+    &:active {
+        transform: scale(0.98);
     }
 }
 
@@ -754,6 +1271,29 @@
     position: absolute;
     bottom: 30%;
     opacity: 0;
-    background-color: transparent;
+    background: rgba(10, 14, 39, 0.6);
+    color: #DAA520;
+    border: 2px solid rgba(218, 165, 32, 0.5);
+    padding: 12px 30px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow:
+        0 0 10px rgba(218, 165, 32, 0.2),
+        inset 0 0 10px rgba(218, 165, 32, 0.1);
     z-index: -99;
+
+    &:hover {
+        background: rgba(218, 165, 32, 0.2);
+        border: 2px solid #DAA520;
+        box-shadow:
+            0 0 20px rgba(218, 165, 32, 0.5),
+            0 0 30px rgba(218, 165, 32, 0.3),
+            inset 0 0 20px rgba(218, 165, 32, 0.2);
+        letter-spacing: 4px;
+        transform: translateY(-2px);
+    }
 }

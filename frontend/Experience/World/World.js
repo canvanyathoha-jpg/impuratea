@@ -44,7 +44,7 @@ export default class World extends EventEmitter {
             a_scene3b: new THREE.Vector3(0, 10, 0), // Spawn inside the science room scene 3b
             a_scene4a: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4a
             a_scene4b: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4b
-            og_scene1: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room
+            og_scene1: new THREE.Vector3(7, 5, 17), // Adjusted spawn point for 7x map scale
             og_scene2a: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2a
             og_scene2b: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2b
             og_scene3a: new THREE.Vector3(-5, 10, 20), // Spawn inside the caffe room (shifted left and back)
@@ -74,6 +74,16 @@ export default class World extends EventEmitter {
         console.log(`[World] loadScene called with: ${sceneName}`);
         console.log(`[World] targetPosition:`, targetPosition);
 
+        // Redirect deprecated scene names
+        if (sceneName === "class") {
+            console.log(`[World] ⚠️ Scene "class" is deprecated, redirecting to "a_scene1"`);
+            sceneName = "a_scene1";
+            // Update URL
+            const newUrl = `${window.location.origin}${window.location.pathname}?scene=a_scene1`;
+            window.history.replaceState({ scene: 'a_scene1' }, '', newUrl);
+            console.log(`[World] URL updated to: ${newUrl}`);
+        }
+
         // Clear existing scene
         if (this.currentScene) {
             console.log(`[World] Clearing existing scene before loading new one`);
@@ -87,10 +97,6 @@ export default class World extends EventEmitter {
                 case "westgate":
                     console.log(`[World] Instantiating Westgate`);
                     this.currentScene = new Westgate();
-                    break;
-                case "class":
-                    console.log(`[World] Instantiating Academic Scene 1 (Class)`);
-                    this.currentScene = new AcademicScene1();
                     break;
                 case "a_scene1":
                     console.log(`[World] Instantiating Academic Scene 1 (Class)`);
@@ -229,6 +235,11 @@ export default class World extends EventEmitter {
                 console.log(`[World] Loading new scene: ${sceneName}`);
                 this.loadScene(sceneName, targetPosition);
                 console.log(`[World] ✅ Scene loaded successfully!`);
+
+                // Update URL di browser
+                const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
+                window.history.pushState({ scene: sceneName }, '', newUrl);
+                console.log(`[World] URL updated to: ${newUrl}`);
 
                 console.log(`[World] ✅ Scene switched successfully to: ${sceneName}`);
 
