@@ -29,6 +29,8 @@ export default class Preloader {
             progressWrapper: ".progress-wrapper",
             preloaderTitle: ".preloader-title",
             preloaderWrapper: ".preloader-wrapper",
+            landingContainer: ".landing-container",
+            startButton: "#start-experience-button",
             welcomeTitle: ".welcome-title",
             nameForm: ".name-form",
             nameInput: "#name-input",
@@ -50,7 +52,7 @@ export default class Preloader {
         });
 
         this.resources.on("ready", () => {
-            this.playIntro();
+            this.onResourcesReady();
         });
 
         this.addEventListeners();
@@ -60,15 +62,15 @@ export default class Preloader {
         this.amountDone = Math.round((loaded / queue) * 100);
     }
 
-    async playIntro() {
+    async onResourcesReady() {
+        // When resources are loaded, hide loading elements and show landing page
         return new Promise((resolve) => {
             this.timeline = new gsap.timeline();
             this.timeline
                 .to(this.domElements.svgLogo, {
                     opacity: 0,
                     duration: 1.2,
-                    delay: 2.2,
-                    top: "-120%",
+                    delay: 0.5,
                     ease: "power4.out",
                 })
                 .to(
@@ -76,54 +78,46 @@ export default class Preloader {
                     {
                         opacity: 0,
                         duration: 1.2,
-                        top: "30%",
                         ease: "power4.out",
-                    },
-                    "-=1.05"
-                )
-                .to(
-                    this.domElements.progressWrapper,
-                    {
-                        opacity: 0,
-                        duration: 1.2,
-                        bottom: "21%",
-                        ease: "power4.out",
-                    },
-                    "-=1.05"
-                )
-                .to(
-                    this.domElements.description,
-                    {
-                        opacity: 0,
-                        duration: 1.2,
-                        bottom: "35%",
-                        ease: "power4.out",
-                    },
-                    "-=1.05"
-                )
-                .to(
-                    this.domElements.preloaderTitle,
-                    {
-                        opacity: 0,
-                        duration: 1.2,
-                        bottom: "18%",
-                        ease: "power4.out",
-                        onUpdate: () => {
-                            this.domElements.preloaderTitle.classList.remove(
-                                "fade-in-out"
-                            );
-                        },
-
                         onComplete: () => {
                             this.domElements.svgLogo.remove();
                             this.domElements.progressBarContainer.remove();
-                            this.domElements.progressWrapper.remove();
-                            this.domElements.preloaderTitle.remove();
-                            this.domElements.preloaderWrapper.remove();
                         },
                     },
                     "-=1.05"
                 )
+                .to(
+                    this.domElements.landingContainer,
+                    {
+                        opacity: 1,
+                        duration: 1.5,
+                        ease: "power4.out",
+                        onComplete: () => {
+                            resolve();
+                        },
+                    },
+                    "-=0.5"
+                );
+        });
+    }
+
+    onStartButtonClick = () => {
+        // Hide landing page and show name input
+        this.landingToNameInput();
+    };
+
+    async landingToNameInput() {
+        return new Promise((resolve) => {
+            this.timeline2 = new gsap.timeline();
+            this.timeline2
+                .to(this.domElements.landingContainer, {
+                    opacity: 0,
+                    duration: 1.2,
+                    ease: "power4.out",
+                    onComplete: () => {
+                        this.domElements.landingContainer.remove();
+                    },
+                })
                 .to(
                     this.domElements.welcomeTitle,
                     {
@@ -132,7 +126,7 @@ export default class Preloader {
                         top: "37%",
                         ease: "power4.out",
                     },
-                    "-=1"
+                    "-=0.5"
                 )
                 .to(
                     this.domElements.nameForm,
@@ -152,8 +146,7 @@ export default class Preloader {
                         bottom: "39%",
                         ease: "power4.out",
                         onComplete: () => {
-                            // this.domElements.preloader.remove();
-                            resolve;
+                            resolve();
                         },
                     },
                     "-=1"
@@ -165,7 +158,7 @@ export default class Preloader {
         if (this.domElements.nameInput.value === "") return;
 
         // Save username to localStorage
-        localStorage.setItem('psu-vr-username', this.domElements.nameInput.value);
+        localStorage.setItem('impuratea-username', this.domElements.nameInput.value);
 
         this.nameInputOutro();
     };
@@ -175,15 +168,15 @@ export default class Preloader {
         const avatarSkin = event.target.classList.contains('avatar-left') ? 'male' : 'female';
 
         // Save avatar selection to localStorage
-        localStorage.setItem('psu-vr-avatar', avatarSkin);
+        localStorage.setItem('impuratea-avatar', avatarSkin);
 
         this.preloaderOutro();
     };
 
     async nameInputOutro() {
         return new Promise((resolve) => {
-            this.timeline2 = new gsap.timeline();
-            this.timeline2
+            this.timeline3 = new gsap.timeline();
+            this.timeline3
                 .to(this.domElements.welcomeTitle, {
                     opacity: 0,
                     duration: 1.2,
@@ -254,8 +247,8 @@ export default class Preloader {
 
     async preloaderOutro() {
         return new Promise((resolve) => {
-            this.timeline3 = new gsap.timeline();
-            this.timeline3.to(this.domElements.preloader, {
+            this.timeline4 = new gsap.timeline();
+            this.timeline4.to(this.domElements.preloader, {
                 duration: 1.7,
                 // top: "-150%",
                 opacity: 0,
@@ -269,6 +262,10 @@ export default class Preloader {
     }
 
     addEventListeners() {
+        this.domElements.startButton.addEventListener(
+            "click",
+            this.onStartButtonClick
+        );
         this.domElements.nameInputButton.addEventListener(
             "click",
             this.onNameInput

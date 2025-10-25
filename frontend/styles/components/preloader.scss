@@ -107,6 +107,515 @@
     }
 }
 
+// ===== PROFESSIONAL LANDING PAGE STYLES =====
+
+.landing-container {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    padding: 60px 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #8B0000;
+        border-radius: 4px;
+
+        &:hover {
+            background: #A52A2A;
+        }
+    }
+}
+
+// Hero Section
+.hero-section {
+    text-align: center;
+    padding: 80px 20px 60px;
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 4px;
+        background: linear-gradient(90deg, transparent, #8B0000, transparent);
+    }
+}
+
+.hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #8B0000, #A52A2A);
+    color: white;
+    padding: 8px 24px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3);
+}
+
+.landing-title {
+    font-size: 96px;
+    font-weight: 900;
+    color: #8B0000;
+    letter-spacing: 12px;
+    margin: 20px 0;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #8B0000 0%, #1E407C 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 4px 8px rgba(139, 0, 0, 0.2));
+
+    @include media("<=tablet") {
+        font-size: 64px;
+        letter-spacing: 8px;
+    }
+
+    @include media("<=phone") {
+        font-size: 42px;
+        letter-spacing: 4px;
+    }
+}
+
+.landing-subtitle {
+    font-size: 28px;
+    color: #1E407C;
+    font-weight: 300;
+    letter-spacing: 4px;
+    margin: 15px 0;
+    font-style: italic;
+
+    @include media("<=phone") {
+        font-size: 18px;
+        letter-spacing: 2px;
+    }
+}
+
+.hero-tagline {
+    font-size: 18px;
+    color: #4a5568;
+    max-width: 800px;
+    margin: 30px auto 0;
+    line-height: 1.8;
+    font-weight: 400;
+
+    @include media("<=phone") {
+        font-size: 16px;
+        padding: 0 20px;
+    }
+}
+
+// Section Title (Reusable)
+.section-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: #1E407C;
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    padding-bottom: 15px;
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #8B0000, #DAA520);
+        border-radius: 2px;
+    }
+
+    @include media("<=phone") {
+        font-size: 32px;
+    }
+}
+
+// Game Overview Section
+.game-overview {
+    max-width: 900px;
+    margin: 80px auto;
+    padding: 60px 40px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+
+    @include media("<=phone") {
+        margin: 40px 20px;
+        padding: 40px 20px;
+    }
+}
+
+.overview-text {
+    font-size: 20px;
+    color: #4a5568;
+    line-height: 1.9;
+    text-align: center;
+    font-weight: 300;
+
+    @include media("<=phone") {
+        font-size: 16px;
+    }
+}
+
+// Features Grid
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    max-width: 1000px;
+    margin: 80px auto;
+    padding: 0 40px;
+
+    @include media("<=tablet") {
+        grid-template-columns: 1fr;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+}
+
+.feature-card {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+
+    &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 40px rgba(139, 0, 0, 0.15);
+        border-color: #8B0000;
+    }
+
+    h3 {
+        font-size: 24px;
+        color: #1E407C;
+        margin: 20px 0 15px;
+        font-weight: 600;
+    }
+
+    p {
+        font-size: 16px;
+        color: #4a5568;
+        line-height: 1.7;
+        font-weight: 300;
+    }
+}
+
+.feature-icon {
+    font-size: 48px;
+    display: inline-block;
+}
+
+// Story Section
+.story-section {
+    max-width: 900px;
+    margin: 80px auto;
+    padding: 0 40px;
+
+    @include media("<=phone") {
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+}
+
+.story-content {
+    background: linear-gradient(135deg, #1E407C 0%, #2E5090 100%);
+    padding: 50px 60px;
+    border-radius: 20px;
+    color: white;
+    box-shadow: 0 15px 50px rgba(30, 64, 124, 0.3);
+
+    @include media("<=phone") {
+        padding: 30px 20px;
+    }
+}
+
+.story-text {
+    font-size: 18px;
+    line-height: 1.9;
+    margin-bottom: 25px;
+    font-weight: 300;
+
+    @include media("<=phone") {
+        font-size: 16px;
+    }
+}
+
+.story-question {
+    font-size: 26px;
+    font-weight: 600;
+    text-align: center;
+    padding: 35px 20px;
+    margin: 35px 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border-left: 5px solid #DAA520;
+    font-style: italic;
+    color: #DAA520;
+
+    @include media("<=phone") {
+        font-size: 20px;
+        padding: 25px 15px;
+    }
+}
+
+// Gameplay Section
+.gameplay-section {
+    max-width: 900px;
+    margin: 80px auto;
+    padding: 60px 40px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+
+    @include media("<=phone") {
+        margin: 40px 20px;
+        padding: 40px 20px;
+    }
+}
+
+.gameplay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.gameplay-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: #e8eef5;
+        transform: translateX(10px);
+    }
+
+    strong {
+        color: #8B0000;
+        font-weight: 600;
+    }
+
+    div {
+        font-size: 16px;
+        color: #4a5568;
+        line-height: 1.7;
+    }
+}
+
+.gameplay-bullet {
+    font-size: 24px;
+    color: #8B0000;
+    font-weight: bold;
+    min-width: 24px;
+}
+
+// Themes Section
+.themes-section {
+    max-width: 1000px;
+    margin: 80px auto;
+    padding: 0 40px;
+
+    @include media("<=phone") {
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+}
+
+.themes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+
+    @include media("<=tablet") {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include media("<=phone") {
+        grid-template-columns: 1fr;
+    }
+}
+
+.theme-item {
+    text-align: center;
+    padding: 30px 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    h4 {
+        font-size: 20px;
+        color: #1E407C;
+        margin: 20px 0 10px;
+        font-weight: 600;
+    }
+
+    p {
+        font-size: 14px;
+        color: #4a5568;
+        line-height: 1.6;
+        font-weight: 300;
+    }
+}
+
+.theme-color {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+
+    &.justice {
+        background: linear-gradient(135deg, #1E407C, #2E5090);
+    }
+
+    &.integrity {
+        background: linear-gradient(135deg, #DAA520, #FFD700);
+    }
+
+    &.sacrifice {
+        background: linear-gradient(135deg, #8B0000, #A52A2A);
+    }
+
+    &.truth {
+        background: linear-gradient(135deg, #4a5568, #718096);
+    }
+}
+
+// Call to Action Section
+.cta-section {
+    text-align: center;
+    padding: 100px 40px 80px;
+    background: linear-gradient(135deg, #8B0000 0%, #1E407C 100%);
+    margin: 80px 0 0;
+
+    @include media("<=phone") {
+        padding: 60px 20px 50px;
+        margin: 40px 0 0;
+    }
+}
+
+.cta-title {
+    font-size: 48px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 25px;
+
+    @include media("<=phone") {
+        font-size: 32px;
+    }
+}
+
+.cta-text {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 50px;
+    font-weight: 300;
+    letter-spacing: 1px;
+
+    @include media("<=phone") {
+        font-size: 18px;
+    }
+}
+
+.start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    padding: 18px 50px;
+    font-size: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #8B0000;
+    background: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(139, 0, 0, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+
+    &:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+        letter-spacing: 3px;
+
+        &::before {
+            left: 100%;
+        }
+
+        .btn-arrow {
+            transform: translateX(5px);
+        }
+    }
+
+    &:active {
+        transform: translateY(-2px) scale(1.02);
+    }
+
+    @include media("<=phone") {
+        padding: 15px 40px;
+        font-size: 16px;
+    }
+}
+
+.btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-arrow {
+    font-size: 24px;
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
 // Second preloader screen
 .welcome-title {
     @extend %center;
