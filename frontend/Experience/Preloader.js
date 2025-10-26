@@ -8,7 +8,11 @@ import gsap from "gsap";
 
 export default class Preloader {
     constructor() {
-        this.experience = new Experience();
+        console.log('[Preloader] Initializing Preloader...');
+        
+        // Use the singleton instance to access socket and other resources
+        this.experience = Experience.instance;
+        console.log('[Preloader] Experience instance:', this.experience);
         this.resources = this.experience.resources;
 
         this.matchmedia = gsap.matchMedia();
@@ -43,6 +47,11 @@ export default class Preloader {
             description: ".description",
         });
 
+        console.log('[Preloader] DOM elements found:', {
+            startButton: !!this.domElements.startButton,
+            landingContainer: !!this.domElements.landingContainer
+        });
+
         // Show preloader by adding 'active' class
         this.domElements.preloader.classList.add('active');
 
@@ -52,10 +61,12 @@ export default class Preloader {
         });
 
         this.resources.on("ready", () => {
+            console.log('[Preloader] Resources ready!');
             this.onResourcesReady();
         });
 
         this.addEventListeners();
+        console.log('[Preloader] Initialized successfully');
     }
 
     updateProgress(loaded, queue) {
@@ -123,6 +134,7 @@ export default class Preloader {
     }
 
     onStartButtonClick = () => {
+        console.log('[Preloader] Start button clicked!');
         // Hide landing page and show name input
         this.landingToNameInput();
     };
@@ -300,6 +312,13 @@ export default class Preloader {
     }
 
     addEventListeners() {
+        // Debug: Check if button exists
+        if (!this.domElements.startButton) {
+            console.error('[Preloader] Start button not found!');
+        } else {
+            console.log('[Preloader] Start button found, adding event listener');
+        }
+        
         this.domElements.startButton.addEventListener(
             "click",
             this.onStartButtonClick
