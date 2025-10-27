@@ -1,0 +1,299 @@
+import Experience from "../../Experience.js";
+import * as THREE from "three";
+import Portal from "../Portal.js";
+import UIManager from "../../Utils/UIManager.js";
+
+export default class Organization {
+    constructor() {
+        this.experience = new Experience();
+        this.scene = this.experience.scene;
+        this.resources = this.experience.resources;
+        this.octree = this.experience.world.octree;
+
+        this.npcSenior = null;
+        this.uiManager = null;
+        this.isPlayerNear = false;
+        this.conversationStarted = false;
+
+        this.setWorld();
+        this.createPortals();
+        this.createNPC();
+    }
+
+    setWorld() {
+        // Create a group for all collidable objects
+        const collidableGroup = new THREE.Group();
+
+        // Load the organization model (ruangan_osis.glb)
+        this.organizationModel = this.resources.items.organization.scene;
+        this.organizationModel.position.set(0, 0, 0);
+        this.organizationModel.rotation.set(0, 0, 0);
+        this.organizationModel.scale.set(5, 5, 5);
+        collidableGroup.add(this.organizationModel);
+
+        // Setup collider for physics
+        this.collider = this.resources.items.collider.scene;
+        this.collider.position.set(0, 0, 0);
+        this.collider.rotation.set(0, 0, 0);
+        this.collider.scale.set(5, 5, 5);
+
+        // Make collider invisible
+        this.collider.traverse((child) => {
+            if (child.isMesh) {
+                child.visible = false;
+            }
+        });
+        collidableGroup.add(this.collider);
+
+        // Add the group to the scene
+        this.scene.add(collidableGroup);
+
+        // Build the octree
+        this.octree.fromGraphNode(collidableGroup);
+
+        console.log("Organization scene loaded with full collision enabled.");
+    }
+
+    createPortals() {
+        // Portal ke Westgate atau scene lain (sesuaikan posisi dengan lokasi pintu)
+        this.westgatePortal = new Portal(
+            new THREE.Vector3(49, 2, 30), // Posisi portal (sesuaikan dengan pintu OSIS)
+            "westgate", // Target scene
+            new THREE.Vector3(0, 10, 0), // Posisi spawn di scene baru
+            "Westgate" // Nama ruangan
+        );
+    }
+
+    createNPC() {
+        console.log("[OrgScene1] Creating Senior NPC...");
+
+        // Load NPC model (named "male" in assets.js for og_scene1)
+        const npcModel = this.resources.items.male;
+        if (!npcModel) {
+            console.error("[OrgScene1] NPC model not found!");
+            console.log("[OrgScene1] Available resources:", Object.keys(this.resources.items));
+            return;
+        }
+
+        this.npcSenior = npcModel.scene.clone();
+        this.npcSenior.position.set(10, 0, 15); // Position di dalam ruangan
+        this.npcSenior.rotation.y = Math.PI; // Menghadap player
+        this.npcSenior.scale.set(0.5, 0.5, 0.5); // ✅ DIPERBAIKI: Ukuran sama dengan player avatar
+        this.scene.add(this.npcSenior);
+
+        // Initialize UIManager
+        this.uiManager = new UIManager();
+
+        // Setup keyboard listener for interaction
+        this.keydownHandler = (e) => {
+            if (e.key === 'e' || e.key === 'E') {
+                if (this.isPlayerNear && !this.conversationStarted) {
+                    this.startConversation();
+                }
+            }
+        };
+        document.addEventListener('keydown', this.keydownHandler);
+
+        console.log("[OrgScene1] Senior NPC created at position:", this.npcSenior.position);
+    }
+
+    checkPlayerProximity() {
+        if (!this.experience.world.player || !this.experience.world.player.avatar || !this.npcSenior || !this.uiManager) {
+            return;
+        }
+
+        const playerPos = this.experience.world.player.avatar.avatar.position;
+        const npcPos = this.npcSenior.position;
+        const distance = playerPos.distanceTo(npcPos);
+
+        // ✅ DIPERBAIKI: Jarak interaksi disesuaikan untuk scale 1x (dari 45 ke 5)
+        if (distance < 5 && !this.conversationStarted) {
+            if (!this.isPlayerNear) {
+                this.isPlayerNear = true;
+
+                // Show interaction prompt using UIManager
+                // ✅ DIPERBAIKI: Posisi di atas kepala NPC disesuaikan untuk scale 1x (dari 22 ke 2.5)
+                this.uiManager.createInteractionPrompt(
+                    this.npcSenior,
+                    "Tekan [E] untuk bicara dengan Senior Bendahara",
+                    new THREE.Vector3(0, 2.5, 0) // Above NPC head
+                );
+
+                console.log("[OrgScene1] Player near NPC, showing interaction prompt");
+            }
+        } else {
+            if (this.isPlayerNear && !this.conversationStarted) {
+                this.isPlayerNear = false;
+
+                // Remove interaction prompt
+                this.uiManager.removeInteractionPrompt();
+
+                console.log("[OrgScene1] Player left NPC proximity");
+            }
+        }
+    }
+
+    startConversation() {
+        console.log("[OrgScene1] Starting conversation with Senior...");
+        this.conversationStarted = true;
+
+        // Remove interaction prompt
+        this.uiManager.removeInteractionPrompt();
+
+        // Show speech bubble with Senior's dialogue
+        // ✅ DIPERBAIKI: Posisi speech bubble disesuaikan untuk scale 1x (dari 27 ke 3)
+        this.uiManager.createSpeechBubble(
+            'senior',
+            this.npcSenior,
+            `<strong>Senior Bendahara:</strong><br>
+            "Dengar, dana acara kita mepet. Saya butuh kamu serahkan sebagian uang kas yang kamu pegang untuk 'dana taktis'.<br><br>
+            Nanti laporannya gampang, kita manipulasi saja agar semuanya terlihat pas."`,
+            new THREE.Vector3(0, 3, 0) // Above NPC head
+        );
+
+        // Show choice panel after a short delay
+        setTimeout(() => {
+            this.showChoices();
+        }, 1000);
+    }
+
+    showChoices() {
+        // Position choice panel in front of player (in world space)
+        const playerPos = this.experience.world.player.avatar.avatar.position;
+        const playerDir = new THREE.Vector3();
+        this.experience.camera.instance.getWorldDirection(playerDir);
+
+        // Place panel 3 units in front of player
+        const choicePanelPos = playerPos.clone().add(playerDir.multiplyScalar(3));
+        choicePanelPos.y = playerPos.y + 1; // Raise it a bit
+
+        const choices = [
+            {
+                id: 'A',
+                text: 'Menolak menyerahkan uang',
+                description: 'Jujur meski dapat tugas berat (Skor: +0)',
+                type: 'honest'
+            },
+            {
+                id: 'B',
+                text: 'Menyerahkan uang & memanipulasi anggaran',
+                description: 'Ikut serta korupsi (Skor: +25)',
+                type: 'corrupt'
+            }
+        ];
+
+        this.uiManager.createChoicePanel(
+            choicePanelPos,
+            choices,
+            (choiceId) => this.handleChoice(choiceId),
+            new THREE.Vector3(0, 0, 0)
+        );
+
+        console.log("[OrgScene1] Choice panel displayed");
+    }
+
+    handleChoice(choiceId) {
+        console.log(`[OrgScene1] Player chose: ${choiceId}`);
+
+        // Determine score and next scene based on choice
+        let scoreIncrease = 0;
+        let nextScene = '';
+
+        if (choiceId === 'A') {
+            scoreIncrease = 0;
+            nextScene = 'og_scene2a';
+        } else if (choiceId === 'B') {
+            scoreIncrease = 25;
+            nextScene = 'og_scene2b';
+        }
+
+        // Update corruption score
+        const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
+        localStorage.setItem('corruption-score', totalScore.toString());
+        console.log(`[OrgScene1] Total corruption score: ${totalScore}`);
+
+        // Remove UI elements
+        this.uiManager.removeSpeechBubble('senior');
+        this.uiManager.removeChoicePanel();
+
+        // Directly load next scene without feedback
+        this.loadScene(nextScene);
+    }
+
+    loadScene(sceneName) {
+        const fadeDiv = document.createElement('div');
+        fadeDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.5s;
+        `;
+        document.body.appendChild(fadeDiv);
+
+        setTimeout(() => fadeDiv.style.opacity = '1', 10);
+
+        setTimeout(() => {
+            if (this.experience.world && this.experience.world.switchSceneWithPosition) {
+                this.experience.world.switchSceneWithPosition(
+                    sceneName,
+                    new THREE.Vector3(0, 10, 0)
+                );
+            }
+        }, 500);
+    }
+
+    update() {
+        // Update portal animation
+        if (this.westgatePortal) {
+            this.westgatePortal.update();
+        }
+
+        // Check player proximity to NPC
+        this.checkPlayerProximity();
+
+        // Update spatial UI positions (CRITICAL!)
+        if (this.uiManager) {
+            this.uiManager.updatePositions();
+        }
+    }
+
+    dispose() {
+        console.log("[Organization] Disposing Organization scene...");
+
+        // Remove keyboard event listener
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
+
+        // Dispose UIManager (this will clean up all spatial UI elements)
+        if (this.uiManager) {
+            this.uiManager.dispose();
+            this.uiManager = null;
+        }
+
+        // Hapus NPC
+        if (this.npcSenior) {
+            this.scene.remove(this.npcSenior);
+            this.npcSenior = null;
+        }
+
+        // Hapus portal
+        if (this.westgatePortal) {
+            this.westgatePortal.dispose();
+            this.westgatePortal = null;
+        }
+
+        // Hapus model dari scene
+        if (this.organizationModel && this.organizationModel.parent) {
+            this.scene.remove(this.organizationModel.parent);
+        }
+
+        console.log("[Organization] Organization scene disposed");
+    }
+}

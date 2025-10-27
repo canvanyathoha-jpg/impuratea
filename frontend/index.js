@@ -36,45 +36,37 @@ chatSocket.on("connect", () => {
     // console.log("Connected to server with ID" + chatSocket.id);
 });
 
+// Event listeners for chat - keep these
 domElements.messageSubmitButton.addEventListener("click", handleMessageSubmit);
-domElements.nameInputButton.addEventListener("click", handleNameSubmit);
 domElements.chatContainer.addEventListener("click", handleChatClick);
-domElements.avatarLeftImg.addEventListener(
-    "click",
-    handleCharacterSelectionLeft
-);
-domElements.avatarRightImg.addEventListener(
-    "click",
-    handleCharacterSelectionRight
-);
 document.addEventListener("keydown", handleMessageSubmit);
+
+// Note: nameInputButton and avatar listeners are now handled by Preloader.js
+// Removing duplicate event listeners to prevent conflicts
 
 function handleChatClick() {
     if (domElements.inputWrapper.classList.contains("hidden"))
         domElements.inputWrapper.classList.remove("hidden");
 }
 
+// These functions are no longer needed
+// Name and avatar selections are now handled by Preloader.js
+// The Preloader class has its own handlers that emit to socket
 function handleNameSubmit() {
+    // Function kept for backward compatibility but no longer used
     userName = domElements.nameInput.value;
     chatSocket.emit("setName", userName);
     updateSocket.emit("setName", userName);
 }
 
 function handleCharacterSelectionLeft() {
+    // Function kept for backward compatibility but no longer used
     updateSocket.emit("setAvatar", "male");
-
-    domElements.avatarLeftImg.removeEventListener(
-        "click",
-        handleCharacterSelectionLeft
-    );
 }
-function handleCharacterSelectionRight() {
-    updateSocket.emit("setAvatar", "female");
 
-    domElements.avatarRightImg.removeEventListener(
-        "click",
-        handleCharacterSelectionRight
-    );
+function handleCharacterSelectionRight() {
+    // Function kept for backward compatibility but no longer used
+    updateSocket.emit("setAvatar", "female");
 }
 
 function handleMessageSubmit(event) {

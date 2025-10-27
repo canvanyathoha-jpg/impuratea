@@ -24,6 +24,8 @@ export default class Player {
             controlOverlay: ".control-overlay",
             messageInput: "#chat-message-input",
             switchViewButton: ".switch-camera-view",
+            chatBox: "#chatBox",
+            toggleChatboxBtn: "#toggleChatboxBtn",
         });
 
         this.initPlayer();
@@ -147,8 +149,8 @@ export default class Player {
         this.socket.on("setID", (setID, name) => {
             // Auto-load avatar from localStorage if not on westgate scene
             if (this.resources.currentScene !== "westgate") {
-                const savedAvatar = localStorage.getItem("psu-vr-avatar");
-                const savedUsername = localStorage.getItem("psu-vr-username");
+                const savedAvatar = localStorage.getItem("impuratea-avatar");
+                const savedUsername = localStorage.getItem("impuratea-username");
 
                 if (savedAvatar && savedUsername) {
                     // Emit avatar choice automatically
@@ -266,31 +268,33 @@ export default class Player {
     onKeyDown = (e) => {
         if (document.activeElement === this.domElements.messageInput) return;
 
-        if (e.code === "KeyW" || e.code === "ArrowUp") {
+        // Only respond to WASD keys for movement
+        if (e.code === "KeyW") {
             this.actions.forward = true;
         }
-        if (e.code === "KeyS" || e.code === "ArrowDown") {
+        if (e.code === "KeyS") {
             this.actions.backward = true;
         }
-        if (e.code === "KeyA" || e.code === "ArrowLeft") {
+        if (e.code === "KeyA") {
             this.actions.left = true;
         }
-        if (e.code === "KeyD" || e.code === "ArrowRight") {
+        if (e.code === "KeyD") {
             this.actions.right = true;
         }
-        if (!this.actions.run && !this.actions.jump) {
+        
+        // Set walking animation only for WASD movement
+        if ((e.code === "KeyW" || e.code === "KeyS" || e.code === "KeyA" || e.code === "KeyD") && 
+            !this.actions.run && !this.actions.jump) {
             this.player.animation = "walking";
         }
 
-        if (e.code === "KeyO") {
-            this.player.animation = "dancing";
-        }
-
+        // Keep Shift for running (only with WASD)
         if (e.code === "ShiftLeft") {
             this.actions.run = true;
             this.player.animation = "running";
         }
 
+        // Keep Space for jumping
         if (e.code === "Space" && !this.actions.jump && this.player.onFloor) {
             this.actions.jump = true;
             this.player.animation = "jumping";
@@ -299,23 +303,31 @@ export default class Player {
     };
 
     onKeyUp = (e) => {
-        if (e.code === "KeyW" || e.code === "ArrowUp") {
+        // Only respond to WASD keys for movement
+        if (e.code === "KeyW") {
             this.actions.forward = false;
         }
-        if (e.code === "KeyS" || e.code === "ArrowDown") {
+        if (e.code === "KeyS") {
             this.actions.backward = false;
         }
-        if (e.code === "KeyA" || e.code === "ArrowLeft") {
+        if (e.code === "KeyA") {
             this.actions.left = false;
         }
-        if (e.code === "KeyD" || e.code === "ArrowRight") {
+        if (e.code === "KeyD") {
             this.actions.right = false;
         }
 
+        // Handle Shift release
         if (e.code === "ShiftLeft") {
             this.actions.run = false;
         }
 
+        // Handle Space release
+        if (e.code === "Space") {
+            this.actions.jump = false;
+        }
+
+        // Set animation based on current actions
         if (this.player.onFloor) {
             if (this.actions.run) {
                 this.player.animation = "running";
@@ -329,10 +341,6 @@ export default class Player {
             } else {
                 this.player.animation = "idle";
             }
-        }
-
-        if (e.code === "Space") {
-            this.actions.jump = false;
         }
     };
 
@@ -380,6 +388,17 @@ export default class Player {
     addEventListeners() {
         document.addEventListener("keydown", this.onKeyDown);
         document.addEventListener("keyup", this.onKeyUp);
+
+        // Toggle chatbox visibility
+        if (this.domElements.toggleChatboxBtn && this.domElements.chatBox) {
+            this.domElements.toggleChatboxBtn.addEventListener("click", this.toggleChatbox);
+        }
+    }
+
+    toggleChatbox = () => {
+        if (this.domElements.chatBox) {
+            this.domElements.chatBox.classList.toggle("hidden");
+        }
     }
 
     resize() {}

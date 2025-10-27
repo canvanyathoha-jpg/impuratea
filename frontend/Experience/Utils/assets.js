@@ -251,7 +251,7 @@ export default [
                 {
                     name: "science-room",
                     type: "glbModel",
-                    path: "/models/science room.glb?v=" + Date.now(),
+                    path: "/models/science room.glb",
                 },
                 {
                     name: "male",
@@ -292,7 +292,7 @@ export default [
                 {
                     name: "science-room",
                     type: "glbModel",
-                    path: "/models/science room.glb?v=" + Date.now(),
+                    path: "/models/science room.glb",
                 },
                 {
                     name: "male",

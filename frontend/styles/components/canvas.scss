@@ -2,19 +2,23 @@
     position: absolute;
     height: 100vh;
     width: 100vw;
-    z-index: -1;
+    z-index: 1;  // Changed from -1 to 1 so canvas is interactive
     top: 0;
     left: 0;
     overflow: hidden;
-    touch-action: none;
+    touch-action: auto;  // Changed from none to auto to allow camera controls
 }
 
 .experience-canvas {
     height: 100%;
     width: 100%;
-    touch-action: none;
+    touch-action: auto;  // Changed from none to auto to allow camera controls
     overflow: hidden;
     cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
 }
 
 canvas {
