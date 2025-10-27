@@ -1,48 +1,38 @@
 import Experience from "../../Experience.js";
 import * as THREE from "three";
-import Portal from "../Portal.js";
+import DialogManager from "../../Utils/DialogManager.js";
 
 export default class AcademicScene4A {
     constructor() {
-        console.log("[AcademicScene4A] Constructor called");
         this.experience = new Experience();
         this.scene = this.experience.scene;
         this.resources = this.experience.resources;
         this.octree = this.experience.world.octree;
 
-        console.log("[AcademicScene4A] Calling setWorld()");
+        this.dialogManager = new DialogManager();
+
         this.setWorld();
-        console.log("[AcademicScene4A] Calling createPortals()");
-        this.createPortals();
-        console.log("[AcademicScene4A] Constructor completed");
+        
+        setTimeout(() => {
+            this.startStory();
+        }, 1000);
     }
 
     setWorld() {
-        console.log("[AcademicScene4A] setWorld() called");
         const collidableGroup = new THREE.Group();
 
-        console.log("[AcademicScene4A] Loading class model");
-        console.log("[AcademicScene4A] Available resources:", Object.keys(this.resources.items));
-
-        if (!this.resources.items["class"]) {
-            console.error("[AcademicScene4A] ❌ class model not found in resources!");
-            return;
-        }
-
-        this.classModel = this.resources.items["class"].scene;
-        console.log("[AcademicScene4A] Model loaded:", this.classModel);
+        // Back to classroom
+        this.classModel = this.resources.items.class.scene;
         this.classModel.position.set(0, 0, 0);
         this.classModel.rotation.set(0, 0, 0);
         this.classModel.scale.set(10, 10, 10);
         collidableGroup.add(this.classModel);
 
-        // Setup collider for physics
         this.collider = this.resources.items.collider.scene;
         this.collider.position.set(0, 0, 0);
         this.collider.rotation.set(0, 0, 0);
         this.collider.scale.set(10, 10, 10);
 
-        // Make collider invisible
         this.collider.traverse((child) => {
             if (child.isMesh) {
                 child.visible = false;
@@ -50,51 +40,142 @@ export default class AcademicScene4A {
         });
         collidableGroup.add(this.collider);
 
-        console.log("[AcademicScene4A] Adding to scene");
         this.scene.add(collidableGroup);
-
-        // Build the octree
         this.octree.fromGraphNode(collidableGroup);
 
-        // Set collision objects for camera
         if (this.experience.camera && this.experience.camera.controls) {
             this.experience.camera.controls.collisionObjects = this.collider;
-            console.log("[AcademicScene4A] Camera collision objects set");
         }
 
-        console.log("[AcademicScene4A] Academic Scene 4A (Class) loaded with full collision enabled.");
+        console.log("Academic Scene 4A (Presentation) loaded");
     }
 
-    createPortals() {
-        // Portal ke Westgate
-        this.westgatePortal = new Portal(
-            new THREE.Vector3(49, 2, 30), // Posisi portal (sesuaikan dengan pintu)
-            "westgate",
-            new THREE.Vector3(0, 10, 0), // Spawn di westgate
-            "Westgate"
-        );
+    startStory() {
+        this.dialogManager.showDialog({
+            text: "Lanjutan dari ujian praktik biologi adalah presentasi individu. Setiap siswa harus mempresentasikan hasil praktiknya di depan kelas.",
+            onChoice: () => {
+                this.showDoubt();
+            }
+        });
     }
 
-    update() {
-        if (this.westgatePortal) {
-            this.westgatePortal.update();
+    showDoubt() {
+        this.dialogManager.showDialog({
+            speaker: "Kamu (batin)",
+            text: "Aku ragu dengan hasil praktik ku... Nilainya pasti tidak bagus. Apa aku harus minta bantuan kakak kelas lagi ya? Dia punya materi lengkap dari tahun lalu...",
+            onChoice: () => {
+                this.showRemembrance();
+            }
+        });
+    }
+
+    showRemembrance() {
+        this.dialogManager.showDialog({
+            text: "Kamu teringat kakak kelas yang pernah kamu hubungi untuk bocoran. Dia sempat bilang masih punya materi presentasi lengkap. Kamu menghubunginya...",
+            onChoice: () => {
+                this.showSeniorResponse();
+            }
+        });
+    }
+
+    showSeniorResponse() {
+        this.dialogManager.showDialog({
+            speaker: "Kakak Kelas (via chat)",
+            text: "Oh iya, aku masih punya materi presentasinya. Lengkap sama slide PowerPoint-nya. Tapi... ini gak gratis ya. Transfer 50rb dulu, baru aku kasih materinya.",
+            onChoice: () => {
+                this.showMainChoice();
+            }
+        });
+    }
+
+    showMainChoice() {
+        this.dialogManager.showDialog({
+            text: "Ini keputusan terakhir dalam pelajaran semester ini. Pilihanmu akan menentukan akhir cerita...",
+            choices: [
+                {
+                    text: "Menolak dan mengerjakan semampunya. Presentasi gagal dan nilainya jelek.",
+                    score: 0,
+                    ending: true
+                },
+                {
+                    text: "Membeli materi seharga 50rb. Presentasi berjalan lancar dengan nilai bagus.",
+                    score: 25,
+                    ending: true
+                }
+            ],
+            sublimentMessage: "Kejujuran mungkin membuatmu tampak gagal, tapi kebohongan yang dibeli akan selalu terbongkar pada waktunya.",
+            onChoice: (choice) => {
+                this.handleChoice(choice);
+            }
+        });
+    }
+
+    handleChoice(choice) {
+        if (choice.score === 0) {
+            this.showRefusePath();
+        } else {
+            this.showBuyPath();
         }
     }
+
+    showRefusePath() {
+        this.dialogManager.showDialog({
+            speaker: "Kamu",
+            text: "Tidak, terima kasih. Aku akan kerjakan sendiri.",
+            onChoice: () => {
+                this.showRefuseResult();
+            }
+        });
+    }
+
+    showRefuseResult() {
+        this.dialogManager.showDialog({
+            text: "Kamu mempresentasikan hasil praktikmu dengan kemampuan terbatas. Beberapa pertanyaan dari guru tidak bisa kamu jawab dengan baik. Nilaimu: 65. Tidak sempurna, tapi ini hasil kerja kerasmu sendiri.",
+            onChoice: () => {
+                this.showEnding();
+            }
+        });
+    }
+
+    showBuyPath() {
+        this.dialogManager.showDialog({
+            speaker: "Kamu",
+            text: "Oke, aku transfer sekarang.",
+            onChoice: () => {
+                this.showBuyResult();
+            }
+        });
+    }
+
+    showBuyResult() {
+        this.dialogManager.showDialog({
+            text: "Kamu menerima materi lengkap dari kakak kelas. Kamu mempelajarinya semalam dan presentasi berjalan sangat lancar. Guru terkesan. Nilaimu: 90. Tapi uang jajanmu habis, dan perasaan bersalah semakin menumpuk.",
+            onChoice: () => {
+                this.showEnding();
+            }
+        });
+    }
+
+    showEnding() {
+        console.log("[AcademicScene4A] Showing ending...");
+        
+        // Hide dialog and show ending screen
+        this.dialogManager.hideAll();
+        
+        setTimeout(() => {
+            this.dialogManager.showEnding();
+        }, 1000);
+    }
+
+    update() {}
 
     dispose() {
-        console.log("[AcademicScene4A] Disposing Academic Scene 4A (Class)...");
-
-        // Hapus portal
-        if (this.westgatePortal) {
-            this.westgatePortal.dispose();
-            this.westgatePortal = null;
+        console.log("[AcademicScene4A] Disposing...");
+        if (this.dialogManager) {
+            this.dialogManager.hideAll();
         }
-
-        // Hapus model dari scene
         if (this.classModel && this.classModel.parent) {
             this.scene.remove(this.classModel.parent);
         }
-
-        console.log("[AcademicScene4A] Academic Scene 4A (Class) disposed");
     }
 }

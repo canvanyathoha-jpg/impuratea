@@ -87,7 +87,7 @@ export default [
                 {
                     name: "class",
                     type: "glbModel",
-                    path: "/models/Kelas-C.glb",
+                    path: "/models/Kelas-C.glb?v=" + Date.now(),
                 },
                 {
                     name: "male",
