@@ -12,7 +12,7 @@ export default class SceneManager {
 
     setupEventListeners() {
         this.btnAkademik.addEventListener('click', () => {
-            this.switchToScene('class');
+            this.switchToScene('a_scene1');
         });
 
         this.btnOrganisasi.addEventListener('click', () => {
