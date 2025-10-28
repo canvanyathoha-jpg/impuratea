@@ -38,28 +38,30 @@ export default class Organization {
     }
 
     initWithOpening() {
-        console.log("[OrgScene1] Initializing with opening story...");
+        console.log("[OrgScene1] Loading scene in background first...");
         
-        // Initialize scene first to ensure it loads
-        console.log("[OrgScene1] Initializing scene first...");
+        // Load scene models in background first (they'll be hidden by overlay)
         this.setWorld();
         this.createPortals();
         this.createNPC();
         
-        // Wait a bit for scene to render, then show opening story
+        // Wait a moment for scene to load, then show opening story overlay
         setTimeout(() => {
-            console.log("[OrgScene1] Scene loaded, showing opening story...");
+            console.log("[OrgScene1] Scene loaded, now showing opening story overlay...");
+            
             try {
                 this.openingStory = new OpeningStory(SCENE_DATA.og_scene1);
+                
+                // Show opening story overlay (blocks screen with z-index 10000)
                 this.openingStory.show().then(() => {
-                    console.log("[OrgScene1] Opening story completed - scene is now fully visible");
+                    console.log("[OrgScene1] Opening story dismissed - scene is now fully visible");
                 }).catch((error) => {
                     console.error("[OrgScene1] Error in opening story:", error);
                 });
             } catch (error) {
                 console.error("[OrgScene1] Error creating opening story:", error);
             }
-        }, 1000); // Wait 1 second for scene to render
+        }, 500); // Short delay to let scene start loading
     }
 
     // Old method - replaced by initWithOpening()
@@ -70,14 +72,14 @@ export default class Organization {
         const overlay = document.createElement('div');
         overlay.id = 'opening-story-overlay';
         overlay.innerHTML = `
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,40,0.95)); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: 'Arial', sans-serif;">
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,40,0.95)); z-index: 10000000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: 'Arial', sans-serif;">
                 <div style="max-width: 800px; text-align: center; padding: 40px; opacity: 0; transform: translateY(50px); transition: all 1s ease;">
                     <h1 style="font-size: 48px; margin-bottom: 30px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 30px rgba(255,107,107,0.5);">
-                        Scene 1: Organisasi Mahasiswa
+                        Scene 1: Organisasi Siswa
                     </h1>
                     <div style="font-size: 24px; line-height: 1.8; margin-bottom: 40px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
                         <p style="margin-bottom: 20px;">
-                            Kamu adalah seorang mahasiswa yang baru saja bergabung dengan organisasi mahasiswa di kampus. 
+                            Kamu adalah seorang siswa yang baru saja bergabung dengan organisasi siswa di sekolah. 
                             Sebagai bendahara junior, kamu bertanggung jawab mengelola dana organisasi.
                         </p>
                         <p style="margin-bottom: 20px;">
@@ -304,11 +306,11 @@ export default class Organization {
         console.log("[OrgScene1] Creating simple speech bubble...");
         this.createSimpleSpeechBubble();
 
-        // Show choice panel after a short delay
+        // Show choice panel after a delay (5-6 detik setelah layar hitam diklik)
         setTimeout(() => {
-            console.log("[OrgScene1] Showing choices...");
+            console.log("[OrgScene1] Showing choices after 6 seconds...");
             this.showChoices();
-        }, 3000); // Increased delay to 3 seconds
+        }, 6000); // Delay 6 detik untuk memberi waktu player melihat speech bubble dulu
     }
 
     createSimpleSpeechBubble() {
@@ -491,7 +493,7 @@ export default class Organization {
             top: 20%;
             left: 25%;
             transform: translate(-50%, -50%);
-            z-index: 9999;
+            z-index: 10000000;
             opacity: 0;
             transition: opacity 0.5s ease;
             pointer-events: none;
@@ -590,7 +592,7 @@ export default class Organization {
         this.alternativeButton = document.createElement('div');
         this.alternativeButton.id = 'alternative-speech-button';
         this.alternativeButton.innerHTML = `
-            <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+            <div style="position: fixed; top: 20px; right: 20px; z-index: 10000001;">
                 <div style="margin-bottom: 10px; text-align: center;">
                     <div style="background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
                         🔄 Alternatif
@@ -644,7 +646,7 @@ export default class Organization {
         const tooltip = document.createElement('div');
         tooltip.id = 'speech-bubble-tooltip';
         tooltip.innerHTML = `
-            <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;">
+            <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; z-index: 10000002; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;">
                 <div style="text-align: center;">
                     <div style="font-weight: bold; margin-bottom: 5px;">💬 Klik pada bubble chat untuk membaca</div>
                     <div style="font-size: 12px; opacity: 0.8;">Gunakan kursor untuk berinteraksi</div>
@@ -682,7 +684,7 @@ export default class Organization {
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
         screenBubble.innerHTML = `
-            <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 1000; cursor: pointer;">
+            <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
                 <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
                     Senior Bendahara:
                 </div>
@@ -750,7 +752,7 @@ export default class Organization {
             bottom: 20%;
             left: 50%;
             transform: translate(-50%, 0);
-            z-index: 9999;
+            z-index: 10000000;
             opacity: 0;
             transition: opacity 0.5s ease;
             pointer-events: all;
@@ -809,21 +811,27 @@ export default class Organization {
     handleChoice(choiceId) {
         console.log(`[OrgScene1] Player chose: ${choiceId}`);
 
-        // Determine score based on choice (all choices lead to og_scene2a)
+        // Determine score and next scene based on choice
         let scoreIncrease = 0;
-        let nextScene = 'og_scene2a'; // All choices lead to og_scene2a
+        let nextScene = '';
 
         if (choiceId === 'A') {
+            // Pilihan A: Tidak memberikan uang → Scene 2A
             scoreIncrease = 0;
+            nextScene = 'og_scene2a';
+            console.log(`[OrgScene1] Choice A → Load og_scene2a (consequence of refusing)`);
         } else if (choiceId === 'B') {
+            // Pilihan B: Memberikan uang → Scene 2B
             scoreIncrease = 25;
+            nextScene = 'og_scene2b';
+            console.log(`[OrgScene1] Choice B → Load og_scene2b (consequence of giving money)`);
         }
 
         // Update corruption score (hidden from player but still tracked for ending)
         const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
         localStorage.setItem('corruption-score', totalScore.toString());
-        console.log(`[OrgScene1] Total corruption score: ${totalScore} (hidden from player but tracked for ending)`);
-        console.log(`[OrgScene1] All choices lead to og_scene2a`);
+        console.log(`[OrgScene1] Total corruption score: ${totalScore}`);
+        console.log(`[OrgScene1] Loading next scene: ${nextScene}`);
 
         // Remove UI elements
         this.uiManager.removeSpeechBubble('senior');
@@ -845,7 +853,7 @@ export default class Organization {
             width: 100%;
             height: 100%;
             background: black;
-            z-index: 9999;
+            z-index: 10000000;
             opacity: 0;
             transition: opacity 0.5s;
         `;
