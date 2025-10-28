@@ -41,6 +41,7 @@ export default class World extends EventEmitter {
             a_scene1: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 1
             a_scene2a: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 2a
             a_scene2b: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 2b
+            a_scene3a: new THREE.Vector3(0, 10, 0), // Spawn inside the science room scene 3a
             a_scene3b: new THREE.Vector3(0, 10, 0), // Spawn inside the science room scene 3b
             a_scene4a: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4a
             a_scene4b: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4b
@@ -139,6 +140,7 @@ export default class World extends EventEmitter {
                     this.currentScene = new OrganizationScene4B();
                     break;
                 case "science-room":
+                case "a_scene3a":
                     console.log(`[World] Instantiating Academic Scene 3A (Science Room)`);
                     this.currentScene = new AcademicScene3A();
                     console.log(`[World] Academic Scene 3A instantiated successfully`);

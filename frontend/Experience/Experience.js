@@ -4,6 +4,7 @@ import Sizes from "./Utils/Sizes.js";
 import Time from "./Utils/Time.js";
 import Resources from "./Utils/Resources.js";
 import SceneManager from "./Utils/SceneManager.js";
+import ScoreManager from "./Utils/ScoreManager.js";
 import assets from "./Utils/assets.js";
 
 import Camera from "./Camera.js";
@@ -26,6 +27,7 @@ export default class Experience {
         this.socket = socket;
         this.sizes = new Sizes();
         this.time = new Time();
+        this.scoreManager = new ScoreManager();
 
         this.setScene();
         this.setCamera();
