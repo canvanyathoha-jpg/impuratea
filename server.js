@@ -134,4 +134,10 @@ updateNameSpace.on("connection", (socket) => {
     }, 20);
 });
 
+if (process.env.NODE_ENV !== "production") {
+    server.listen(port, () => {
+        console.log(`✅ Server running locally at http://localhost:${port}`);
+    });
+}
+
 export default server;
