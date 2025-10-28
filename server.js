@@ -134,6 +134,4 @@ updateNameSpace.on("connection", (socket) => {
     }, 20);
 });
 
-server.listen(port, () => {
-    console.log(`🚀 Aku Jokowi at: http://localhost:${port}`);
-});
+export default server;
