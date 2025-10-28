@@ -135,5 +135,5 @@ updateNameSpace.on("connection", (socket) => {
 });
 
 server.listen(port, () => {
-    console.log(`🚀 Aku Cabul at: http://localhost:${port}`);
+    console.log(`🚀 Aku Jokowi at: http://localhost:${port}`);
 });
