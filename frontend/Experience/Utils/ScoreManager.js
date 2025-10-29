@@ -6,9 +6,9 @@
 
 export default class ScoreManager {
     constructor() {
-        this.score = this.loadScore();
         this.maxScore = 100;
         this.minScore = 10;
+        this.score = this.loadScore();
         
         console.log(`[ScoreManager] Initialized with score: ${this.score}%`);
     }

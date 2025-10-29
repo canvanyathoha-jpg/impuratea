@@ -3,16 +3,14 @@
  * Manages story dialogs, choices, and scene progression
  */
 
-import ScoreManager from './ScoreManager.js';
-
 export default class DialogManager {
     constructor(experience = null) {
-        this.scoreManager = new ScoreManager();
+        this.experience = experience;
+        this.scoreManager = this.experience.scoreManager;
         this.currentDialog = null;
         this.dialogQueue = [];
         this.isShowing = false;
         this.onChoiceCallback = null;
-        this.experience = experience;
 
         console.log('[DialogManager] Initialized');
     }
@@ -170,21 +168,28 @@ export default class DialogManager {
 
         let html = '';
 
-        // Speaker name (if provided)
-        if (config.speaker) {
+        // Determine if this dialog text should be visually rendered by this UI.
+        // It should render for narrative text (no speaker) or inner monologue.
+        // It should NOT render for NPCs, as they use a 3D speech bubble.
+        const shouldRenderText = !config.speaker || config.speaker === "Kamu (batin)";
+
+        if (shouldRenderText) {
+            // Speaker name (if provided)
+            if (config.speaker) {
+                html += `
+                    <div style="font-size: 14px; color: #00ffff; margin-bottom: 10px; font-weight: bold;">
+                        ${config.speaker}
+                    </div>
+                `;
+            }
+
+            // Dialog text
             html += `
-                <div style="font-size: 14px; color: #00ffff; margin-bottom: 10px; font-weight: bold;">
-                    ${config.speaker}
+                <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
+                    ${config.text}
                 </div>
             `;
         }
-
-        // Dialog text
-        html += `
-            <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
-                ${config.text}
-            </div>
-        `;
 
         // Choices (if provided)
         if (config.choices && config.choices.length > 0) {
@@ -390,7 +395,7 @@ export default class DialogManager {
                 from {
                     transform: translateX(-50%) translateY(100px);
                     opacity: 0;
-                }
+                } 
                 to {
                     transform: translateX(-50%) translateY(0);
                     opacity: 1;
