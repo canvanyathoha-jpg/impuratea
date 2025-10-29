@@ -169,23 +169,37 @@ export default class DialogManager {
         let html = '';
 
         // Determine if this dialog text should be visually rendered by this UI.
-        // It should render for narrative text (no speaker) or inner monologue.
+        // It should render for:
+        // - Narrative text (no speaker) 
+        // - Inner monologue (Kamu batin)
+        // - Teacher dialogs (Guru) - these should display in story-dialog
         // It should NOT render for NPCs, as they use a 3D speech bubble.
-        const shouldRenderText = !config.speaker || config.speaker === "Kamu (batin)";
+        const shouldRenderText = !config.speaker 
+            || config.speaker === "Kamu (batin)" 
+            || config.speaker?.includes("Guru");
 
         if (shouldRenderText) {
             // Speaker name (if provided)
             if (config.speaker) {
+                // Different styling for teacher vs inner monologue
+                const isTeacher = config.speaker.includes("Guru");
+                const speakerColor = isTeacher ? '#ffd700' : '#00ffff'; // Gold for teachers, cyan for inner monologue
+                const speakerEmoji = isTeacher ? '👨‍🏫' : '💭';
+                
                 html += `
-                    <div style="font-size: 14px; color: #00ffff; margin-bottom: 10px; font-weight: bold;">
-                        ${config.speaker}
+                    <div style="font-size: 14px; color: ${speakerColor}; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <span>${speakerEmoji}</span>
+                        <span>${config.speaker}</span>
                     </div>
                 `;
             }
 
-            // Dialog text
+            // Dialog text with enhanced styling for teacher dialogs
+            const isTeacher = config.speaker?.includes("Guru");
+            const textColor = isTeacher ? '#f0f0f0' : '#ffffff';
+            
             html += `
-                <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
+                <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px; color: ${textColor}; ${isTeacher ? 'border-left: 3px solid #ffd700; padding-left: 15px;' : ''}">
                     ${config.text}
                 </div>
             `;

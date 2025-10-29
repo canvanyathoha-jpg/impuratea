@@ -23,9 +23,10 @@ export default class AcademicScene4B {
         this.setWorld();
         this.createNPC();
         
-        setTimeout(() => {
-            this.startStory();
-        }, 1000);
+        // Sistem manual - dialog hanya dimulai saat player mengklik NPC atau tombol
+        // TIDAK ADA timeout otomatis, player bebas menjelajah sepuasnya
+        this.storyStarted = false;
+        this.setupManualInteraction();
     }
 
     setWorld() {
@@ -85,7 +86,95 @@ export default class AcademicScene4B {
         console.log("[AcademicScene4B] Senior NPC created.");
     }
 
+    // Setup sistem interaksi manual: player harus klik NPC atau tombol untuk mulai dialog
+    setupManualInteraction() {
+        // Buat tombol manual yang selalu tersedia
+        this.createManualDialogButton();
+        
+        // Tambahkan area interaksi di sekitar NPC yang bisa diklik
+        this.createNPCInteractionZone();
+        
+        // Update raycast untuk deteksi klik pada NPC
+        console.log("[AcademicScene4B] Manual interaction system ready. Player can click NPC or button to start dialog.");
+    }
+    
+    // Membuat tombol manual yang selalu terlihat untuk mulai dialog
+    createManualDialogButton() {
+        this.manualDialogButton = document.createElement('div');
+        this.manualDialogButton.id = 'manual-dialog-button';
+        
+        const buttonStyle = `
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000;
+            padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 30px; cursor: pointer;
+            font-size: 14px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease; font-family: 'Segoe UI', Arial, sans-serif;
+            display: ${this.storyStarted ? 'none' : 'block'};
+        `;
+        
+        this.manualDialogButton.innerHTML = `
+            <button style="${buttonStyle}">💬 Mulai Percakapan</button>
+        `;
+        document.body.appendChild(this.manualDialogButton);
+        
+        const button = this.manualDialogButton.querySelector('button');
+        button.addEventListener('click', () => {
+            if (!this.storyStarted) {
+                this.startStory();
+            }
+        });
+        
+        button.addEventListener('mouseenter', () => {
+            button.style.transform = 'translateX(-50%) translateY(-2px) scale(1.05)';
+            button.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.transform = 'translateX(-50%) translateY(0) scale(1)';
+            button.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+        });
+    }
+    
+    // Membuat zona interaksi 3D di sekitar NPC yang bisa diklik
+    createNPCInteractionZone() {
+        if (!this.npcSenior) return;
+        
+        // Buat sphere invisible yang lebih besar di sekitar NPC untuk area klik
+        const interactionGeometry = new THREE.SphereGeometry(8, 16, 16);
+        const interactionMaterial = new THREE.MeshBasicMaterial({ 
+            visible: false, 
+            transparent: true, 
+            opacity: 0,
+            side: THREE.DoubleSide
+        });
+        
+        this.npcInteractionZone = new THREE.Mesh(interactionGeometry, interactionMaterial);
+        this.npcInteractionZone.position.copy(this.npcSenior.position);
+        this.npcInteractionZone.position.y += 5; // Naikkan sedikit dari ground
+        this.npcInteractionZone.userData.isNPC = true;
+        
+        // Tambahkan ke scene
+        this.scene.add(this.npcInteractionZone);
+        
+        console.log("[AcademicScene4B] NPC interaction zone created at:", this.npcInteractionZone.position);
+    }
+
     startStory() {
+        // Pastikan hanya dimulai sekali
+        if (this.storyStarted) return;
+        this.storyStarted = true;
+        
+        // Sembunyikan tombol manual
+        if (this.manualDialogButton) {
+            this.manualDialogButton.style.display = 'none';
+        }
+        
+        // Hapus interaction zone (tidak perlu lagi setelah dialog dimulai)
+        if (this.npcInteractionZone) {
+            this.scene.remove(this.npcInteractionZone);
+            this.npcInteractionZone = null;
+        }
+        
+        console.log("[AcademicScene4B] Starting story dialog manually...");
         this.dialogManager.showDialog({ text: "Lanjutan dari ujian praktik biologi adalah presentasi individu. Kamu yang menjadi alasan nilai praktik kelompokmu jelek merasa sangat bersalah dan malu.", onChoice: () => this.showGuilt() });
     }
 
@@ -170,14 +259,25 @@ export default class AcademicScene4B {
         this.speechBubbleGroup = new THREE.Group();
 
         const bubblePlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(8, 4),
-            new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.FrontSide, depthWrite: false })
+            new THREE.PlaneGeometry(8.5, 4.5),
+            new THREE.MeshBasicMaterial({ 
+                color: 0xe3f2fd, 
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.95
+            })
         );
         this.speechBubbleMaterial = bubblePlane.material;
 
         const border = new THREE.Mesh(
-            new THREE.PlaneGeometry(8.2, 4.2),
-            new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.FrontSide, depthWrite: false })
+            new THREE.PlaneGeometry(8.8, 4.8),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x1976d2, 
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true
+            })
         );
 
         this.speechBubbleGroup.add(border);
@@ -199,25 +299,36 @@ export default class AcademicScene4B {
         canvas.height = 512;
         const context = canvas.getContext('2d');
 
-        context.fillStyle = 'white';
+        const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(0.5, '#f0f4ff');
+        gradient.addColorStop(1, '#e8f0fe');
+        context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
-        context.font = 'bold 40px Arial';
-        context.fillStyle = 'black';
+
+        context.font = 'bold 42px "Segoe UI", Arial, sans-serif';
+        context.fillStyle = '#1565c0';
         context.textAlign = 'center';
-
+        context.shadowColor = 'rgba(0, 0, 0, 0.1)';
+        context.shadowBlur = 4;
+        context.shadowOffsetX = 2;
+        context.shadowOffsetY = 2;
         context.fillText(speaker + ':', canvas.width / 2, 80);
-
-        context.font = '30px Arial';
-        const lines = this.getLines(context, text, canvas.width - 40);
+        
+        context.shadowColor = 'transparent';
+        
+        context.font = '32px "Segoe UI", Arial, sans-serif';
+        context.fillStyle = '#212121';
+        const lines = this.getLines(context, text, canvas.width - 60);
         lines.forEach((line, index) => {
-            context.fillText(line, canvas.width / 2, 150 + (index * 40));
+            context.fillText(line, canvas.width / 2, 160 + (index * 42));
         });
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
 
         const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
-        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.8, 3.9), textMaterial);
+        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2), textMaterial);
         textPlane.position.z = 0.01;
 
         this.speechBubbleGroup.add(textPlane);
@@ -241,23 +352,63 @@ export default class AcademicScene4B {
         return lines;
     }
 
+    // Override onMouseMove untuk update cursor dan hover effect
     onMouseMove(event) {
-        if (!this.speechBubbleGroup) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        if (this.storyStarted && this.speechBubbleGroup) {
+            // Jika dialog sudah dimulai, cek hover pada speech bubble
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            return;
+        }
+        
+        // Jika dialog belum dimulai, cek hover pada NPC
+        if (!this.storyStarted && (this.npcSenior || this.npcInteractionZone)) {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            const objectsToCheck = [];
+            if (this.npcSenior) objectsToCheck.push(this.npcSenior);
+            if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
+            
+            const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
+            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+        }
+    }
+
+    // Override onMouseClick untuk menangani klik pada NPC
+    onMouseClick(event) {
+        if (this.storyStarted) {
+            // Jika dialog sudah dimulai, cek klik pada speech bubble (kode lama)
+            if (this.speechBubbleGroup) {
+                this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+                const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+                if (intersects.length > 0) {
+                    const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
+                    this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
+                }
+            }
+            return;
+        }
+        
+        // Jika dialog belum dimulai, cek klik pada NPC atau interaction zone
         const rect = this.canvas.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
-    }
-
-    onMouseClick(event) {
-        if (!this.speechBubbleGroup) return;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+        
+        // Cek intersect dengan NPC atau interaction zone
+        const objectsToCheck = [];
+        if (this.npcSenior) objectsToCheck.push(this.npcSenior);
+        if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
+        
+        const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
+        
         if (intersects.length > 0) {
-            const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
-            this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
+            console.log("[AcademicScene4B] NPC clicked! Starting dialog...");
+            this.startStory();
         }
     }
 
@@ -265,21 +416,92 @@ export default class AcademicScene4B {
         this.cleanupAlternativeButton();
         this.alternativeButton = document.createElement('div');
         this.alternativeButton.id = 'alternative-speech-button';
-        this.alternativeButton.innerHTML = `<button style="position: fixed; bottom: 20px; right: 20px; z-index: 10001; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Baca Percakapan</button>`;
+        
+        const buttonStyle = `
+            position: fixed; bottom: 20px; right: 20px; z-index: 10001; padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;
+            border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        this.alternativeButton.innerHTML = `<button style="${buttonStyle}">💬 Baca Percakapan</button>`;
         document.body.appendChild(this.alternativeButton);
-        this.alternativeButton.querySelector('button').addEventListener('click', () => {
+        
+        const button = this.alternativeButton.querySelector('button');
+        button.addEventListener('click', () => {
             this.showScreenSpeechBubble(speaker, text);
+        });
+        
+        button.addEventListener('mouseenter', () => {
+            button.style.transform = 'translateY(-2px)';
+            button.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.transform = 'translateY(0)';
+            button.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
         });
     }
 
     showScreenSpeechBubble(speaker, text) {
         this.cleanupScreenSpeechBubble();
+        
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 10001; animation: fadeIn 0.3s ease;
+        `;
+        
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
-        screenBubble.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid black; padding: 20px; border-radius: 10px; z-index: 10002; max-width: 80%;`;
-        screenBubble.innerHTML = `<h3>${speaker}</h3><p>${text}</p><small>Klik untuk menutup</small>`;
+        screenBubble.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%); border: 3px solid #1976d2;
+            padding: 30px 40px; border-radius: 20px; z-index: 10002; max-width: 600px; width: 90%;
+            cursor: pointer; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: slideUp 0.4s ease;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        screenBubble.innerHTML = `
+            <div style="margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #1565c0; font-size: 22px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    👤 ${speaker}
+                </h3>
+            </div>
+            <p style="margin: 15px 0; color: #212121; font-size: 16px; line-height: 1.6;">
+                ${text}
+            </p>
+            <small style="color: #757575; font-size: 12px; font-style: italic;">
+                💡 Klik untuk melanjutkan
+            </small>
+        `;
+        
+        const closeBubble = () => {
+            screenBubble.style.animation = 'slideDown 0.3s ease';
+            backdrop.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                screenBubble.remove();
+                backdrop.remove();
+            }, 300);
+        };
+        
+        screenBubble.addEventListener('click', closeBubble);
+        backdrop.addEventListener('click', closeBubble);
+        
+        document.body.appendChild(backdrop);
         document.body.appendChild(screenBubble);
-        screenBubble.addEventListener('click', () => this.cleanupScreenSpeechBubble());
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes slideUp { from { transform: translate(-50%, -45%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+            @keyframes slideDown { from { transform: translate(-50%, -50%); opacity: 1; } to { transform: translate(-50%, -45%); opacity: 0; } }
+        `;
+        if (!document.getElementById('speechBubbleAnimations')) {
+            style.id = 'speechBubbleAnimations';
+            document.head.appendChild(style);
+        }
     }
 
     cleanupSpeechBubble() {
@@ -331,6 +553,19 @@ export default class AcademicScene4B {
     dispose() {
         console.log("[AcademicScene4B] Disposing...");
         this.cleanupSpeechBubble();
+        
+        // Hapus tombol manual
+        if (this.manualDialogButton) {
+            this.manualDialogButton.remove();
+            this.manualDialogButton = null;
+        }
+        
+        // Hapus interaction zone
+        if (this.npcInteractionZone) {
+            this.scene.remove(this.npcInteractionZone);
+            this.npcInteractionZone = null;
+        }
+        
         this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
         this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
 

@@ -69,9 +69,18 @@ export default class AcademicScene2A {
         }
 
         this.npcDeskmate = SkeletonUtils.clone(femaleModel.scene);
-        this.npcDeskmate.position.set(-10, 0.5, 23); // Different position from scene 1
-        this.npcDeskmate.rotation.y = -Math.PI / 2;
-        this.npcDeskmate.scale.set(10, 10, 10);
+        this.npcDeskmate.position.set(-47, 1.5, -34);
+        
+        // Rotate NPC to face towards the player (origin/center of room)
+        // NPC is at (-47, 1.5, -34), player spawns at (0, 10, 0)
+        // Calculate direction vector from NPC to player
+        const dx = 0 - this.npcDeskmate.position.x;  // 47
+        const dz = 0 - this.npcDeskmate.position.z;  // 34
+        // Use atan2 to get the angle to face the player
+        // Try swapping dx and dz to correct avatar orientation
+        this.npcDeskmate.rotation.y = Math.atan2(dz, dx);
+        
+        this.npcDeskmate.scale.set(9, 9, 9);
         this.scene.add(this.npcDeskmate);
 
         this.npcAnimations = femaleModel.animations.map((clip) => clip.clone());
@@ -168,16 +177,40 @@ export default class AcademicScene2A {
         this.speechBubbleGroup = new THREE.Group();
         this.speechBubbleGroup.userData = { speaker, text, callback };
 
-        const bubblePlane = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.FrontSide, depthWrite: false }));
+        const bubblePlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(8.5, 4.5),
+            new THREE.MeshBasicMaterial({ 
+                color: 0xe3f2fd, 
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.95
+            })
+        );
         this.speechBubbleMaterial = bubblePlane.material;
-        const border = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2), new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.FrontSide, depthWrite: false }));
+        
+        const border = new THREE.Mesh(
+            new THREE.PlaneGeometry(8.8, 4.8),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x1976d2, 
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true
+            })
+        );
         this.speechBubbleGroup.add(border, bubblePlane);
         
         this.createSpeechTextTexture(speaker, text);
 
         const npcPosition = this.npcDeskmate.position.clone();
-        this.speechBubbleGroup.position.set(npcPosition.x, npcPosition.y + 15, npcPosition.z);
-        this.speechBubbleGroup.rotation.y = Math.PI;
+        // Position speech bubble to the left side of NPC, slightly above eye level
+        // Offset left by 6 units to avoid overlapping with NPC
+        this.speechBubbleGroup.position.set(npcPosition.x - 6, npcPosition.y + 15, npcPosition.z);
+        
+        // Rotate bubble to face the player
+        // Use lookAt method to make bubble always face towards player position (0, 0, 0)
+        const playerPos = new THREE.Vector3(0, 10, 0);
+        this.speechBubbleGroup.lookAt(playerPos);
 
         this.scene.add(this.speechBubbleGroup);
         this.createAlternativeButton(speaker, text, callback);
@@ -185,17 +218,39 @@ export default class AcademicScene2A {
 
     createSpeechTextTexture(speaker, text) {
         const canvas = document.createElement('canvas');
-        canvas.width = 1024; canvas.height = 512;
+        canvas.width = 1024;
+        canvas.height = 512;
         const context = canvas.getContext('2d');
-        context.fillStyle = 'white'; context.fillRect(0, 0, canvas.width, canvas.height);
-        context.font = 'bold 40px Arial'; context.fillStyle = 'black'; context.textAlign = 'center';
+
+        const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(0.5, '#f0f4ff');
+        gradient.addColorStop(1, '#e8f0fe');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        context.font = 'bold 42px "Segoe UI", Arial, sans-serif';
+        context.fillStyle = '#1565c0';
+        context.textAlign = 'center';
+        context.shadowColor = 'rgba(0, 0, 0, 0.1)';
+        context.shadowBlur = 4;
+        context.shadowOffsetX = 2;
+        context.shadowOffsetY = 2;
         context.fillText(speaker + ':', canvas.width / 2, 80);
-        context.font = '30px Arial';
-        const lines = this.getLines(context, text, canvas.width - 40);
-        lines.forEach((line, index) => context.fillText(line, canvas.width / 2, 150 + (index * 40)));
+        
+        context.shadowColor = 'transparent';
+        
+        context.font = '32px "Segoe UI", Arial, sans-serif';
+        context.fillStyle = '#212121';
+        const lines = this.getLines(context, text, canvas.width - 60);
+        lines.forEach((line, index) => {
+            context.fillText(line, canvas.width / 2, 160 + (index * 42));
+        });
+
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
-        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.8, 3.9), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
+        const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2), textMaterial);
         textPlane.position.z = 0.01;
         this.speechBubbleGroup.add(textPlane);
     }
@@ -234,25 +289,94 @@ export default class AcademicScene2A {
         this.cleanupAlternativeButton();
         this.alternativeButton = document.createElement('div');
         this.alternativeButton.id = 'alternative-speech-button';
-        this.alternativeButton.innerHTML = `<button style="position: fixed; bottom: 20px; right: 20px; z-index: 10001; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Baca Percakapan</button>`;
+        
+        const buttonStyle = `
+            position: fixed; bottom: 20px; right: 20px; z-index: 10001; padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;
+            border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        this.alternativeButton.innerHTML = `<button style="${buttonStyle}">💬 Baca Percakapan</button>`;
         document.body.appendChild(this.alternativeButton);
-        this.alternativeButton.querySelector('button').addEventListener('click', () => {
+        
+        const button = this.alternativeButton.querySelector('button');
+        button.addEventListener('click', () => {
             this.showScreenSpeechBubble(speaker, text, callback);
+        });
+        
+        button.addEventListener('mouseenter', () => {
+            button.style.transform = 'translateY(-2px)';
+            button.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.transform = 'translateY(0)';
+            button.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
         });
     }
 
     showScreenSpeechBubble(speaker, text, callback) {
         this.cleanupScreenSpeechBubble();
+        
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 10001; animation: fadeIn 0.3s ease;
+        `;
+        
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
-        screenBubble.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid black; padding: 20px; border-radius: 10px; z-index: 10002; max-width: 80%; cursor: pointer;`;
-        screenBubble.innerHTML = `<h3>${speaker}</h3><p>${text}</p><small>Klik untuk menutup</small>`;
-        screenBubble.addEventListener('click', () => {
-            screenBubble.remove();
-            this.cleanupSpeechBubble();
-            if (callback) callback();
-        });
+        screenBubble.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%); border: 3px solid #1976d2;
+            padding: 30px 40px; border-radius: 20px; z-index: 10002; max-width: 600px; width: 90%;
+            cursor: pointer; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: slideUp 0.4s ease;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        screenBubble.innerHTML = `
+            <div style="margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #1565c0; font-size: 22px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    👤 ${speaker}
+                </h3>
+            </div>
+            <p style="margin: 15px 0; color: #212121; font-size: 16px; line-height: 1.6;">
+                ${text}
+            </p>
+            <small style="color: #757575; font-size: 12px; font-style: italic;">
+                💡 Klik untuk melanjutkan
+            </small>
+        `;
+        
+        const closeBubble = () => {
+            screenBubble.style.animation = 'slideDown 0.3s ease';
+            backdrop.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                screenBubble.remove();
+                backdrop.remove();
+                this.cleanupSpeechBubble();
+                if (callback) callback();
+            }, 300);
+        };
+        
+        screenBubble.addEventListener('click', closeBubble);
+        backdrop.addEventListener('click', closeBubble);
+        
+        document.body.appendChild(backdrop);
         document.body.appendChild(screenBubble);
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes slideUp { from { transform: translate(-50%, -45%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+            @keyframes slideDown { from { transform: translate(-50%, -50%); opacity: 1; } to { transform: translate(-50%, -45%); opacity: 0; } }
+        `;
+        if (!document.getElementById('speechBubbleAnimations')) {
+            style.id = 'speechBubbleAnimations';
+            document.head.appendChild(style);
+        }
     }
 
     cleanupSpeechBubble() {
