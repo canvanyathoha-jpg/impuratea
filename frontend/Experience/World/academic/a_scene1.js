@@ -32,6 +32,11 @@ export default class AcademicScene1 {
         this.createPortals();
         this.createNPC();
         
+        // Start ambient classroom sound
+        if (this.experience.soundManager) {
+            this.experience.soundManager.playAmbient('ambientClassroom', 0.2);
+        }
+        
         setTimeout(() => {
             this.startStory();
         }, 1000);
@@ -88,26 +93,92 @@ export default class AcademicScene1 {
         this.npcDeskmate.rotation.y = Math.atan2(0 - this.npcDeskmate.position.x, 0 - this.npcDeskmate.position.z) + Math.PI / 2;
         this.npcDeskmate.scale.set(9, 9, 9);
         this.scene.add(this.npcDeskmate);
+        
+        // Initialize story started flag
+        this.storyStarted = false;
+        this.hoverSoundPlayed = false; // Flag to prevent hover sound spam
 
         this.npcAnimations = femaleModel.animations.map((clip) => clip.clone());
         this.npcMixer = new THREE.AnimationMixer(this.npcDeskmate);
         this.npcActions = {};
 
-        const idleAnimation = this.npcAnimations.find(clip => clip.name === 'idle') || this.npcAnimations[1];
-        this.npcActions.idle = this.npcMixer.clipAction(idleAnimation);
+        // Setup all animations
+        this.npcActions.idle = this.npcMixer.clipAction(this.npcAnimations.find(clip => clip.name === 'idle') || this.npcAnimations[1]);
+        this.npcActions.waving = this.npcMixer.clipAction(this.npcAnimations.find(clip => clip.name === 'waving') || this.npcAnimations[5]);
 
+        // Start with idle
         this.npcActions.idle.play();
+        this.currentNPCAnimation = 'idle';
+        
+        // Create highlight effect for NPC
+        this.createNPCHighlight();
+        
         console.log("[AcademicScene1] Deskmate NPC created.");
+    }
+
+    /**
+     * Create highlight effect around NPC
+     */
+    createNPCHighlight() {
+        // Create a ring/glow effect around NPC
+        const highlightGeometry = new THREE.RingGeometry(5, 7, 32);
+        const highlightMaterial = new THREE.MeshBasicMaterial({
+            color: 0x2196f3,
+            transparent: true,
+            opacity: 0,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        
+        this.npcHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+        this.npcHighlight.rotation.x = -Math.PI / 2; // Lay flat on ground
+        this.npcHighlight.position.copy(this.npcDeskmate.position);
+        this.npcHighlight.position.y = 0.1; // Slightly above ground
+        this.npcHighlight.visible = false;
+        this.scene.add(this.npcHighlight);
+        
+        this.isNPCHovered = false;
+    }
+
+    /**
+     * Play waving animation when dialog starts
+     */
+    playWavingAnimation() {
+        if (!this.npcActions.waving) return;
+        
+        // Fade from idle to waving
+        this.npcActions.waving.reset();
+        this.npcActions.waving.setLoop(THREE.LoopOnce);
+        this.npcActions.waving.play();
+        this.npcActions.waving.crossFadeFrom(this.npcActions.idle, 0.3);
+        
+        // Return to idle after animation
+        this.npcActions.waving.clampWhenFinished = true;
+        this.npcActions.waving.addEventListener('finished', () => {
+            this.npcActions.idle.reset().play();
+            this.npcActions.idle.crossFadeFrom(this.npcActions.waving, 0.3);
+            this.currentNPCAnimation = 'idle';
+        });
+        
+        this.currentNPCAnimation = 'waving';
     }
 
     startStory() {
         console.log("[AcademicScene1] Starting story sequence...");
+        this.storyStarted = true;
+        this.hideNPCHighlight(); // Hide highlight when story starts
+        
         this.dialogManager.showDialog({
             text: "Kamu memasuki ruangan kelas yang sedang disibukkan dengan persiapan ujian harian fisika hari ini. Suasana tegang, semua orang membuka-buka catatan mereka dengan cemas.",
             onChoice: () => {
                 this.showScene1Part2();
             }
         });
+    }
+    
+    startStoryNow() {
+        // Alias for startStory for consistency with manual mode scenes
+        this.startStory();
     }
 
     showScene1Part2() {
@@ -203,30 +274,46 @@ export default class AcademicScene1 {
         this.speechBubbleGroup = new THREE.Group();
         this.speechBubbleGroup.userData = { speaker, text, callback }; // Store data for click events
 
-        // Create gradient bubble with modern styling
+        // Create enhanced bubble with better visual design
+        // Main bubble plane dengan background yang lebih terang dan kontras lebih baik
         const bubblePlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(8.5, 4.5),
+            new THREE.PlaneGeometry(9, 5),
             new THREE.MeshBasicMaterial({ 
-                color: 0xe3f2fd, 
+                color: 0xffffff, // Background putih lebih terang
                 side: THREE.FrontSide, 
                 depthWrite: false,
                 transparent: true,
-                opacity: 0.95
+                opacity: 0 // Start invisible for fade-in
             })
         );
         this.speechBubbleMaterial = bubblePlane.material;
 
-        // Enhanced border with gradient effect
-        const border = new THREE.Mesh(
-            new THREE.PlaneGeometry(8.8, 4.8),
+        // Outer glow effect untuk depth
+        const outerGlow = new THREE.Mesh(
+            new THREE.PlaneGeometry(9.4, 5.4),
             new THREE.MeshBasicMaterial({ 
-                color: 0x1976d2, 
+                color: 0x2196f3, // Biru cerah untuk glow
                 side: THREE.FrontSide, 
                 depthWrite: false,
-                transparent: true
+                transparent: true,
+                opacity: 0 // Start invisible for fade-in
+            })
+        );
+        
+        // Enhanced border yang lebih tebal dan jelas
+        const border = new THREE.Mesh(
+            new THREE.PlaneGeometry(9.2, 5.2),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x1976d2, // Biru solid untuk border
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0 // Start invisible for fade-in
             })
         );
 
+        // Tambahkan semua elemen dalam urutan yang benar (dari belakang ke depan)
+        this.speechBubbleGroup.add(outerGlow);
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
@@ -245,49 +332,172 @@ export default class AcademicScene1 {
 
         this.scene.add(this.speechBubbleGroup);
         this.createAlternativeButton(speaker, text, callback);
+        
+        // Play dialog open sound
+        if (this.experience.soundManager) {
+            this.experience.soundManager.play('dialogOpen');
+        }
+        
+        // Fade in animation
+        this.fadeInSpeechBubble();
+    }
+    
+    /**
+     * Fade in speech bubble smoothly
+     */
+    fadeInSpeechBubble() {
+        if (!this.speechBubbleGroup) return;
+        
+        const duration = 300; // 300ms
+        const startTime = Date.now();
+        
+        const fade = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function (ease-out)
+            const eased = 1 - Math.pow(1 - progress, 3);
+            
+            // Update opacity of all materials
+            const opacity = eased * 0.98;
+            const glowOpacity = eased * 0.3;
+            const borderOpacity = eased * 0.95;
+            
+            this.speechBubbleGroup.children.forEach((child, index) => {
+                if (child.material) {
+                    if (index === 0) {
+                        child.material.opacity = glowOpacity; // Outer glow
+                    } else if (index === 1) {
+                        child.material.opacity = borderOpacity; // Border
+                    } else {
+                        child.material.opacity = opacity; // Main bubble
+                    }
+                }
+            });
+            
+            if (progress < 1) {
+                requestAnimationFrame(fade);
+            }
+        };
+        
+        fade();
+    }
+    
+    /**
+     * Fade out speech bubble smoothly
+     */
+    fadeOutSpeechBubble() {
+        if (!this.speechBubbleGroup) return;
+        
+        const duration = 200; // 200ms
+        const startTime = Date.now();
+        const startOpacity = this.speechBubbleGroup.children[2]?.material?.opacity || 0.98;
+        const startGlowOpacity = this.speechBubbleGroup.children[0]?.material?.opacity || 0.3;
+        const startBorderOpacity = this.speechBubbleGroup.children[1]?.material?.opacity || 0.95;
+        
+        const fade = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function (ease-in)
+            const eased = Math.pow(progress, 2);
+            
+            // Update opacity of all materials
+            const opacity = startOpacity * (1 - eased);
+            const glowOpacity = startGlowOpacity * (1 - eased);
+            const borderOpacity = startBorderOpacity * (1 - eased);
+            
+            this.speechBubbleGroup.children.forEach((child, index) => {
+                if (child.material) {
+                    if (index === 0) {
+                        child.material.opacity = glowOpacity;
+                    } else if (index === 1) {
+                        child.material.opacity = borderOpacity;
+                    } else {
+                        child.material.opacity = opacity;
+                    }
+                }
+            });
+            
+            if (progress >= 1) {
+                // Remove from scene after fade out
+                this.scene.remove(this.speechBubbleGroup);
+                this.speechBubbleGroup = null;
+            } else {
+                requestAnimationFrame(fade);
+            }
+        };
+        
+        fade();
     }
 
     createSpeechTextTexture(speaker, text) {
         const canvas = document.createElement('canvas');
-        canvas.width = 1024;
-        canvas.height = 512;
+        // Increase canvas resolution untuk kualitas text yang lebih baik
+        canvas.width = 2048;
+        canvas.height = 1024;
         const context = canvas.getContext('2d');
 
-        // Create beautiful gradient background
+        // Enable text rendering yang lebih baik
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+
+        // Create beautiful gradient background yang lebih terang dan kontras lebih baik
         const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#ffffff');
-        gradient.addColorStop(0.5, '#f0f4ff');
-        gradient.addColorStop(1, '#e8f0fe');
+        gradient.addColorStop(0, '#ffffff'); // Putih murni di atas
+        gradient.addColorStop(0.3, '#fafbff'); // Putih sedikit kebiruan
+        gradient.addColorStop(0.7, '#f5f7ff'); // Biru sangat terang
+        gradient.addColorStop(1, '#eff3ff'); // Biru terang di bawah
         context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw speaker name with enhanced styling
-        context.font = 'bold 42px "Segoe UI", Arial, sans-serif';
-        context.fillStyle = '#1565c0';
+        // Draw speaker name with enhanced, clearer styling - diperbesar lagi
+        context.font = 'bold 80px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#0d47a1'; // Biru lebih gelap untuk kontras lebih baik
         context.textAlign = 'center';
-        context.shadowColor = 'rgba(0, 0, 0, 0.1)';
-        context.shadowBlur = 4;
-        context.shadowOffsetX = 2;
+        context.textBaseline = 'top';
+        // Enhanced shadow untuk depth
+        context.shadowColor = 'rgba(25, 118, 210, 0.4)';
+        context.shadowBlur = 8;
+        context.shadowOffsetX = 0;
         context.shadowOffsetY = 2;
-        context.fillText(speaker + ':', canvas.width / 2, 80);
+        context.fillText(speaker + ':', canvas.width / 2, 140);
         
-        // Reset shadow for text
-        context.shadowColor = 'transparent';
+        // Reset shadow untuk text body
+        context.shadowColor = 'rgba(0, 0, 0, 0.15)';
+        context.shadowBlur = 3;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 1;
         
-        // Draw text with better typography
-        context.font = '32px "Segoe UI", Arial, sans-serif';
-        context.fillStyle = '#212121';
-        const lines = this.getLines(context, text, canvas.width - 60);
+        // Draw text dengan font lebih besar dan kontras lebih baik - diperbesar lagi
+        context.font = 'bold 60px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#1a1a1a'; // Hitam lebih gelap untuk readability lebih baik
+        context.textAlign = 'center';
+        
+        const lines = this.getLines(context, text, canvas.width - 160); // Margin lebih besar untuk font besar
+        const lineHeight = 85; // Line spacing lebih besar untuk readability
+        const startY = 250; // Start position lebih bawah untuk speaker name
+        
         lines.forEach((line, index) => {
-            context.fillText(line, canvas.width / 2, 160 + (index * 42));
+            context.fillText(line, canvas.width / 2, startY + (index * lineHeight));
         });
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
 
-        const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
-        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2), textMaterial);
-        textPlane.position.z = 0.01;
+        // Gunakan texture filtering yang lebih baik
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const textMaterial = new THREE.MeshBasicMaterial({ 
+            map: texture, 
+            transparent: true, 
+            depthWrite: false,
+            alphaTest: 0.01 // Anti-aliasing yang lebih baik
+        });
+        // Sesuaikan ukuran plane dengan bubble yang lebih besar
+        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 4.6), textMaterial);
+        textPlane.position.z = 0.02; // Sedikit lebih ke depan
 
         this.speechBubbleGroup.add(textPlane);
     }
@@ -296,11 +506,14 @@ export default class AcademicScene1 {
         const words = text.split(' ');
         const lines = [];
         let currentLine = words[0];
+        
         for (let i = 1; i < words.length; i++) {
             const word = words[i];
-            const width = ctx.measureText(currentLine + ' ' + word).width;
+            const testLine = currentLine + ' ' + word;
+            const width = ctx.measureText(testLine).width;
+            
             if (width < maxWidth) {
-                currentLine += ' ' + word;
+                currentLine = testLine;
             } else {
                 lines.push(currentLine);
                 currentLine = word;
@@ -311,22 +524,127 @@ export default class AcademicScene1 {
     }
 
     onMouseMove(event) {
-        if (!this.speechBubbleGroup) return;
         const rect = this.canvas.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        
+        // Check NPC hover (only if story hasn't started yet or manual mode)
+        if (this.npcDeskmate && !this.storyStarted) {
+            const npcIntersects = this.raycaster.intersectObject(this.npcDeskmate, true);
+            if (npcIntersects.length > 0 && !this.isNPCHovered) {
+                // Hover started
+                this.isNPCHovered = true;
+                this.canvas.style.cursor = 'pointer';
+                this.showNPCHighlight();
+                // Play hover sound only once when entering hover state
+                if (this.experience.soundManager && !this.hoverSoundPlayed) {
+                    this.experience.soundManager.play('hover', 0.3); // Lower volume for hover
+                    this.hoverSoundPlayed = true;
+                }
+            } else if (npcIntersects.length === 0 && this.isNPCHovered) {
+                // Hover ended
+                this.isNPCHovered = false;
+                this.hoverSoundPlayed = false; // Reset flag when hover ends
+                this.canvas.style.cursor = 'default';
+                this.hideNPCHighlight();
+            }
+        }
+        
+        // Check speech bubble hover
+        if (this.speechBubbleGroup) {
         const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            if (intersects.length > 0) {
+                this.canvas.style.cursor = 'pointer';
+            } else if (!this.isNPCHovered) {
+                this.canvas.style.cursor = 'default';
+            }
+        }
+    }
+    
+    showNPCHighlight() {
+        if (!this.npcHighlight) return;
+        this.npcHighlight.visible = true;
+        
+        // Animate highlight appearance
+        if (this.highlightAnimation) {
+            cancelAnimationFrame(this.highlightAnimation);
+        }
+        
+        let opacity = 0;
+        const animate = () => {
+            opacity += 0.05;
+            if (opacity >= 0.6) {
+                opacity = 0.6;
+                this.npcHighlight.material.opacity = opacity;
+                return;
+            }
+            this.npcHighlight.material.opacity = opacity;
+            this.highlightAnimation = requestAnimationFrame(animate);
+        };
+        animate();
+    }
+    
+    hideNPCHighlight() {
+        if (!this.npcHighlight) return;
+        
+        // Animate highlight disappearance
+        if (this.highlightAnimation) {
+            cancelAnimationFrame(this.highlightAnimation);
+        }
+        
+        let opacity = this.npcHighlight.material.opacity;
+        const animate = () => {
+            opacity -= 0.05;
+            if (opacity <= 0) {
+                opacity = 0;
+                this.npcHighlight.material.opacity = opacity;
+                this.npcHighlight.visible = false;
+                return;
+            }
+            this.npcHighlight.material.opacity = opacity;
+            this.highlightAnimation = requestAnimationFrame(animate);
+        };
+        animate();
     }
 
     onMouseClick(event) {
-        if (!this.speechBubbleGroup) return;
         this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        
+        // Check NPC click (only if story hasn't started yet)
+        if (this.npcDeskmate && !this.storyStarted) {
+            const npcIntersects = this.raycaster.intersectObject(this.npcDeskmate, true);
+            if (npcIntersects.length > 0) {
+                console.log('[AcademicScene1] NPC clicked');
+                // Play click sound
+                if (this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
+                
+                // Play waving animation
+                this.playWavingAnimation();
+                
+                // Start story
+                setTimeout(() => {
+                    this.startStoryNow();
+                }, 300); // Small delay for animation
+                return;
+            }
+        }
+        
+        // Check speech bubble click
+        if (this.speechBubbleGroup) {
         const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
         if (intersects.length > 0) {
+                console.log('[AcademicScene1] Speech bubble clicked');
+                // Play click sound
+                if (this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
+                
             const dialogData = this.speechBubbleGroup.userData;
             this.showScreenSpeechBubble(dialogData.speaker, dialogData.text, dialogData.callback);
+            }
         }
     }
 
@@ -358,6 +676,10 @@ export default class AcademicScene1 {
         
         const button = this.alternativeButton.querySelector('button');
         button.addEventListener('click', () => {
+            // Play click sound for button
+            if (this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.showScreenSpeechBubble(speaker, text, callback);
         });
         
@@ -469,8 +791,12 @@ export default class AcademicScene1 {
 
     cleanupSpeechBubble() {
         if (this.speechBubbleGroup) {
-            this.scene.remove(this.speechBubbleGroup);
-            this.speechBubbleGroup = null;
+            // Play dialog close sound
+            if (this.experience.soundManager) {
+                this.experience.soundManager.play('dialogClose');
+            }
+            // Fade out instead of immediate removal
+            this.fadeOutSpeechBubble();
         }
         this.cleanupAlternativeButton();
         this.cleanupScreenSpeechBubble();
@@ -516,6 +842,21 @@ export default class AcademicScene1 {
     dispose() {
         console.log("[AcademicScene1] Disposing Academic Scene 1...");
         this.cleanupSpeechBubble();
+        
+        // Stop ambient sound
+        if (this.experience.soundManager) {
+            this.experience.soundManager.stopAmbient('ambientClassroom');
+        }
+        
+        // Cleanup highlight
+        if (this.npcHighlight) {
+            this.scene.remove(this.npcHighlight);
+            this.npcHighlight = null;
+        }
+        if (this.highlightAnimation) {
+            cancelAnimationFrame(this.highlightAnimation);
+        }
+        
         this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
         this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
 

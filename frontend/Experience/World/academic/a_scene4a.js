@@ -119,6 +119,10 @@ export default class AcademicScene4A {
         
         const button = this.manualDialogButton.querySelector('button');
         button.addEventListener('click', () => {
+            // Play click sound for button
+            if (this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             if (!this.storyStarted) {
                 this.startStory();
             }
@@ -251,28 +255,45 @@ export default class AcademicScene4A {
         this.cleanupSpeechBubble();
         this.speechBubbleGroup = new THREE.Group();
 
+        // Create enhanced bubble with better visual design
         const bubblePlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(8.5, 4.5),
+            new THREE.PlaneGeometry(9, 5),
             new THREE.MeshBasicMaterial({ 
-                color: 0xe3f2fd, 
+                color: 0xffffff, // Background putih lebih terang
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.98 // Hampir tidak transparan untuk kontras lebih baik
+            })
+        );
+        this.speechBubbleMaterial = bubblePlane.material;
+
+        // Outer glow effect untuk depth
+        const outerGlow = new THREE.Mesh(
+            new THREE.PlaneGeometry(9.4, 5.4),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x2196f3, // Biru cerah untuk glow
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.3 // Soft glow effect
+            })
+        );
+        
+        // Enhanced border yang lebih tebal dan jelas
+        const border = new THREE.Mesh(
+            new THREE.PlaneGeometry(9.2, 5.2),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x1976d2, // Biru solid untuk border
                 side: THREE.FrontSide, 
                 depthWrite: false,
                 transparent: true,
                 opacity: 0.95
             })
         );
-        this.speechBubbleMaterial = bubblePlane.material;
 
-        const border = new THREE.Mesh(
-            new THREE.PlaneGeometry(8.8, 4.8),
-            new THREE.MeshBasicMaterial({ 
-                color: 0x1976d2, 
-                side: THREE.FrontSide, 
-                depthWrite: false,
-                transparent: true
-            })
-        );
-
+        // Tambahkan semua elemen dalam urutan yang benar (dari belakang ke depan)
+        this.speechBubbleGroup.add(outerGlow);
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
@@ -301,41 +322,71 @@ export default class AcademicScene4A {
 
     createSpeechTextTexture(speaker, text) {
         const canvas = document.createElement('canvas');
-        canvas.width = 1024;
-        canvas.height = 512;
+        // Increase canvas resolution untuk kualitas text yang lebih baik
+        canvas.width = 2048;
+        canvas.height = 1024;
         const context = canvas.getContext('2d');
 
+        // Enable text rendering yang lebih baik
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+
+        // Create beautiful gradient background yang lebih terang dan kontras lebih baik
         const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#ffffff');
-        gradient.addColorStop(0.5, '#f0f4ff');
-        gradient.addColorStop(1, '#e8f0fe');
+        gradient.addColorStop(0, '#ffffff'); // Putih murni di atas
+        gradient.addColorStop(0.3, '#fafbff'); // Putih sedikit kebiruan
+        gradient.addColorStop(0.7, '#f5f7ff'); // Biru sangat terang
+        gradient.addColorStop(1, '#eff3ff'); // Biru terang di bawah
         context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        context.font = 'bold 42px "Segoe UI", Arial, sans-serif';
-        context.fillStyle = '#1565c0';
+        // Draw speaker name with enhanced, clearer styling - diperbesar lagi
+        context.font = 'bold 80px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#0d47a1'; // Biru lebih gelap untuk kontras lebih baik
         context.textAlign = 'center';
-        context.shadowColor = 'rgba(0, 0, 0, 0.1)';
-        context.shadowBlur = 4;
-        context.shadowOffsetX = 2;
+        context.textBaseline = 'top';
+        // Enhanced shadow untuk depth
+        context.shadowColor = 'rgba(25, 118, 210, 0.4)';
+        context.shadowBlur = 8;
+        context.shadowOffsetX = 0;
         context.shadowOffsetY = 2;
-        context.fillText(speaker + ':', canvas.width / 2, 80);
+        context.fillText(speaker + ':', canvas.width / 2, 140);
         
-        context.shadowColor = 'transparent';
+        // Reset shadow untuk text body
+        context.shadowColor = 'rgba(0, 0, 0, 0.15)';
+        context.shadowBlur = 3;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 1;
         
-        context.font = '32px "Segoe UI", Arial, sans-serif';
-        context.fillStyle = '#212121';
-        const lines = this.getLines(context, text, canvas.width - 60);
+        // Draw text dengan font lebih besar dan kontras lebih baik - diperbesar lagi
+        context.font = 'bold 60px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#1a1a1a'; // Hitam lebih gelap untuk readability lebih baik
+        context.textAlign = 'center';
+        
+        const lines = this.getLines(context, text, canvas.width - 160); // Margin lebih besar untuk font besar
+        const lineHeight = 85; // Line spacing lebih besar untuk readability
+        const startY = 250; // Start position lebih bawah untuk speaker name
+        
         lines.forEach((line, index) => {
-            context.fillText(line, canvas.width / 2, 160 + (index * 42));
+            context.fillText(line, canvas.width / 2, startY + (index * lineHeight));
         });
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
 
-        const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
-        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2), textMaterial);
-        textPlane.position.z = 0.01;
+        // Gunakan texture filtering yang lebih baik
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const textMaterial = new THREE.MeshBasicMaterial({ 
+            map: texture, 
+            transparent: true, 
+            depthWrite: false,
+            alphaTest: 0.01 // Anti-aliasing yang lebih baik
+        });
+        // Sesuaikan ukuran plane dengan bubble yang lebih besar
+        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 4.6), textMaterial);
+        textPlane.position.z = 0.02; // Sedikit lebih ke depan
 
         this.speechBubbleGroup.add(textPlane);
     }
@@ -366,12 +417,12 @@ export default class AcademicScene4A {
         
         if (this.storyStarted && this.speechBubbleGroup) {
             // Jika dialog sudah dimulai, cek hover pada speech bubble
-            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+        this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
             return;
-        }
-        
+    }
+
         // Jika dialog belum dimulai, cek hover pada NPC
         if (!this.storyStarted && (this.npcSenior || this.npcInteractionZone)) {
             this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
@@ -389,11 +440,11 @@ export default class AcademicScene4A {
         if (this.storyStarted) {
             // Jika dialog sudah dimulai, cek klik pada speech bubble (kode lama)
             if (this.speechBubbleGroup) {
-                this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-                const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-                if (intersects.length > 0) {
-                    const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
-                    this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
+        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+        if (intersects.length > 0) {
+            const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
+            this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
                 }
             }
             return;
@@ -436,6 +487,10 @@ export default class AcademicScene4A {
         
         const button = this.alternativeButton.querySelector('button');
         button.addEventListener('click', () => {
+            // Play click sound for button
+            if (this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.showScreenSpeechBubble(speaker, text);
         });
         
