@@ -70,7 +70,7 @@ export default class AcademicScene4B {
         }
 
         this.npcSenior = SkeletonUtils.clone(maleModel.scene);
-        this.npcSenior.position.set(-15, 0.5, 20);
+        this.npcSenior.position.set(-15, 1.5, 6); // Positioned at the side, sama dengan scene 4a
         this.npcSenior.rotation.y = Math.PI / 2;
         this.npcSenior.scale.set(10, 10, 10);
         this.scene.add(this.npcSenior);
@@ -286,11 +286,24 @@ export default class AcademicScene4B {
         this.createSpeechTextTexture(speaker, text);
 
         const npcPosition = this.npcSenior.position.clone();
-        this.speechBubbleGroup.position.set(npcPosition.x, npcPosition.y + 15, npcPosition.z);
-        this.speechBubbleGroup.rotation.y = Math.PI; 
+        // NPC berada di posisi (-15, 1.5, 6) dengan rotasi y = Math.PI / 2 (menghadap kanan)
+        // Posisikan speech bubble di samping kanan NPC, sejajar dengan tinggi kepala
+        // Offset ke kanan (X positif karena NPC di X = -15), sedikit lebih tinggi dari NPC, sedikit ke depan
+        this.speechBubbleGroup.position.set(
+            npcPosition.x + 8,      // 8 unit di kanan NPC (di samping kanan)
+            npcPosition.y + 10,     // 10 unit di atas NPC (setinggi kepala, bukan terlalu tinggi)
+            npcPosition.z + 1       // Sedikit ke depan untuk visibility
+        );
+        
+        // Rotasi speech bubble agar menghadap ke kamera (bukan rotasi tetap)
+        // Akan diupdate setiap frame di update() agar selalu menghadap ke kamera
+        this.speechBubbleGroup.rotation.y = Math.PI; // Initial rotation
 
         this.scene.add(this.speechBubbleGroup);
         this.createAlternativeButton(speaker, text);
+        
+        // Flag untuk update rotasi agar selalu menghadap kamera
+        this.needsSpeechBubbleUpdate = true;
     }
 
     createSpeechTextTexture(speaker, text) {
@@ -509,6 +522,7 @@ export default class AcademicScene4B {
             this.scene.remove(this.speechBubbleGroup);
             this.speechBubbleGroup = null;
         }
+        this.needsSpeechBubbleUpdate = false; // Reset flag saat cleanup
         this.cleanupAlternativeButton();
         this.cleanupScreenSpeechBubble();
     }
@@ -525,6 +539,25 @@ export default class AcademicScene4B {
         if (existingBubble) {
             existingBubble.remove();
         }
+    }
+
+    // Update rotasi speech bubble agar selalu menghadap ke kamera
+    updateSpeechBubbleRotation() {
+        if (!this.speechBubbleGroup || !this.experience.camera) return;
+        
+        // Dapatkan posisi kamera
+        const cameraPosition = this.experience.camera.instance.position.clone();
+        
+        // Posisi speech bubble
+        const bubblePosition = this.speechBubbleGroup.position.clone();
+        
+        // Hitung arah dari speech bubble ke kamera
+        const direction = new THREE.Vector3();
+        direction.subVectors(cameraPosition, bubblePosition).normalize();
+        
+        // Hitung rotasi Y agar speech bubble menghadap ke kamera
+        const angle = Math.atan2(direction.x, direction.z);
+        this.speechBubbleGroup.rotation.y = angle;
     }
 
     // --- End Speech Bubble Logic ---
@@ -545,8 +578,14 @@ export default class AcademicScene4B {
     }
 
     update() {
+        // Update NPC animations
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
+        }
+        
+        // Update rotasi speech bubble agar selalu menghadap ke kamera
+        if (this.needsSpeechBubbleUpdate && this.speechBubbleGroup) {
+            this.updateSpeechBubbleRotation();
         }
     }
 
