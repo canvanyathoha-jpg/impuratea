@@ -33,78 +33,295 @@ export default class OrganizationScene3A {
     initWithOpening() {
         console.log("[OrgScene3A] Loading scene in background first...");
         
-        // Load scene models in background first (they'll be hidden by overlay)
-        this.setWorld();
-        this.createPortals();
-        this.createNPC();
+        // Show loading indicator
+        this.showLoadingIndicator();
         
-        // Wait a moment for scene to load, then show opening story overlay
-        setTimeout(() => {
-            console.log("[OrgScene3A] Scene loaded, now showing opening story overlay...");
+        // Load scene models asynchronously (non-blocking)
+        this.loadSceneAsync().then(() => {
+            console.log("[OrgScene3A] Scene loaded successfully!");
             
-            try {
-                this.openingStory = new OpeningStory(SCENE_DATA.og_scene3a);
+            // Hide loading indicator
+            this.hideLoadingIndicator();
+            
+            // Show opening story overlay
+            setTimeout(() => {
+                console.log("[OrgScene3A] Scene loaded, now showing opening story overlay...");
                 
-                // Show opening story overlay (blocks screen with z-index 10000000)
-                this.openingStory.show().then(() => {
-                    console.log("[OrgScene3A] Opening story dismissed - scene is now fully visible");
+                try {
+                    this.openingStory = new OpeningStory(SCENE_DATA.og_scene3a);
                     
-                    // Auto-start conversation after opening story (no proximity needed)
+                    // Show opening story overlay (blocks screen with z-index 10000000)
+                    this.openingStory.show().then(() => {
+                        console.log("[OrgScene3A] Opening story dismissed - scene is now fully visible");
+                        
+                        // Auto-start conversation after opening story (no proximity needed)
+                        setTimeout(() => {
+                            console.log("[OrgScene3A] Auto-starting conversation...");
+                            this.startConversation();
+                        }, 2000);
+                    }).catch((error) => {
+                        console.error("[OrgScene3A] Error in opening story:", error);
+                    });
+                } catch (error) {
+                    console.error("[OrgScene3A] Error creating opening story:", error);
+                }
+            }, 300);
+        }).catch((error) => {
+            console.error("[OrgScene3A] Error loading scene:", error);
+            this.hideLoadingIndicator();
+        });
+    }
+
+    showLoadingIndicator() {
+        // Remove existing loader if any
+        const existingLoader = document.getElementById('scene-loading-indicator');
+        if (existingLoader) {
+            existingLoader.remove();
+        }
+
+        this.loadingIndicator = document.createElement('div');
+        this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                border: 3px solid rgba(255, 215, 0, 0.8);
+                border-radius: 20px;
+                padding: 40px;
+                text-align: center;
+                z-index: 10000001;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            ">
+                <div style="
+                    color: #FFD700;
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Memuat Scene...
+                </div>
+                <div style="
+                    width: 300px;
+                    height: 8px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin: 0 auto;
+                ">
+                    <div id="loading-progress-bar" style="
+                        width: 0%;
+                        height: 100%;
+                        background: linear-gradient(90deg, #1E407C, #8B0000, #FFD700);
+                        border-radius: 10px;
+                        transition: width 0.3s ease;
+                        animation: pulse 1.5s ease-in-out infinite;
+                    "></div>
+                </div>
+                <div style="
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 14px;
+                    margin-top: 15px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Mohon tunggu sebentar...
+                </div>
+            </div>
+        `;
+        
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(this.loadingIndicator);
+    }
+
+    hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.opacity = '0';
+            this.loadingIndicator.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (this.loadingIndicator && document.body.contains(this.loadingIndicator)) {
+                    this.loadingIndicator.remove();
+                }
+                this.loadingIndicator = null;
+            }, 500);
+        }
+    }
+
+    updateLoadingProgress(progress) {
+        const progressBar = document.getElementById('loading-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+    }
+
+    async loadSceneAsync() {
+        return new Promise((resolve, reject) => {
+            try {
+                // Step 1: Load basic scene structure (non-blocking)
+                this.updateLoadingProgress(20);
+                this.setWorldAsync(() => {
+                    this.updateLoadingProgress(60);
+                    
+                    // Step 2: Create portals (lightweight)
+        this.createPortals();
+                    this.updateLoadingProgress(70);
+                    
+                    // Step 3: Create NPC (lightweight)
+                    this.createNPC();
+                    this.updateLoadingProgress(90);
+                    
+                    // Step 4: Ensure player is spawned correctly
+                    this.ensurePlayerSpawned();
+                    
+                    // Step 5: Finalize
+                    this.updateLoadingProgress(100);
+                    
+                    // Resolve setelah sedikit delay untuk smooth transition
                     setTimeout(() => {
-                        console.log("[OrgScene3A] Auto-starting conversation...");
-                        this.startConversation();
-                    }, 2000);
-                }).catch((error) => {
-                    console.error("[OrgScene3A] Error in opening story:", error);
+                        resolve();
+                    }, 300);
                 });
             } catch (error) {
-                console.error("[OrgScene3A] Error creating opening story:", error);
+                reject(error);
             }
-        }, 500); // Short delay to let scene start loading
+        });
+    }
+
+    ensurePlayerSpawned() {
+        console.log("[OrgScene3A] Ensuring player is spawned...");
+        
+        // Use requestAnimationFrame untuk non-blocking
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                if (this.experience.world && this.experience.world.player) {
+                    // Get spawn point for this scene
+                    const spawnPoint = this.experience.world.spawnPoints?.og_scene3a || new THREE.Vector3(-5, 10, 20);
+                    console.log("[OrgScene3A] Setting player spawn point to:", spawnPoint);
+                    
+                    // Set spawn point (single call, let Player.js handle it)
+                    this.experience.world.player.setSpawnPoint(spawnPoint);
+                    
+                    // Ensure avatar is visible and in scene (lightweight check)
+                    if (this.experience.world.player.avatar?.avatar) {
+                        this.experience.world.player.avatar.avatar.visible = true;
+                        
+                        // Only add to scene if not already there
+                        if (!this.experience.world.player.avatar.avatar.parent) {
+                            this.scene.add(this.experience.world.player.avatar.avatar);
+                            console.log("[OrgScene3A] Player avatar added to scene");
+                        }
+                    }
+                } else {
+                    console.warn("[OrgScene3A] Player not found in world!");
+                }
+            }, 300); // Reduced delay
+        });
     }
 
     setWorld() {
-        console.log("[OrgScene3A] setWorld() called");
+        // Synchronous version (backward compatibility)
+        this.setWorldAsync(() => {});
+    }
+
+    setWorldAsync(callback) {
+        console.log("[OrgScene3A] setWorldAsync() called");
         
         // Create a group for all collidable objects
-        const collidableGroup = new THREE.Group();
+        this.collidableGroup = new THREE.Group();
 
         // Load the caffe model - scene 3A at cafe
         console.log("[OrgScene3A] Loading caffe model...");
-        this.caffeModel = this.resources.items.caffe.scene;
+        
+        // Clone model if already loaded to avoid re-parsing
+        // Use requestAnimationFrame to avoid blocking during clone
+        requestAnimationFrame(() => {
+            if (this.resources.items.caffe && this.resources.items.caffe.scene) {
+                // Use clone to avoid mutating the original
+                // Clone is done in animation frame to avoid blocking
+                this.caffeModel = this.resources.items.caffe.scene.clone(true);
         this.caffeModel.position.set(0, 0, 0);
         this.caffeModel.rotation.set(0, 0, 0);
-        this.caffeModel.scale.set(12, 12, 12);
-        collidableGroup.add(this.caffeModel);
-
-        // Setup collider for physics - match the caffe model scale
-        console.log("[OrgScene3A] Loading collider...");
-        this.collider = this.resources.items.collider.scene;
-        this.collider.position.set(0, 0, 0);
-        this.collider.rotation.set(0, 0, 0);
-        this.collider.scale.set(12, 12, 12);
-
-        // Make collider invisible
-        this.collider.traverse((child) => {
-            if (child.isMesh) {
-                child.visible = false;
+                this.caffeModel.scale.set(12, 12, 12);
+                this.collidableGroup.add(this.caffeModel);
+                
+                // Continue with collider setup
+                this.setupCollider(callback);
+            } else {
+                console.error("[OrgScene3A] Caffe model not found!");
+                if (callback) callback();
             }
         });
-        collidableGroup.add(this.collider);
+    }
+    
+    setupCollider(callback) {
+        // Setup collider for physics - match the caffe model scale
+        console.log("[OrgScene3A] Loading collider...");
+        
+        // Use requestAnimationFrame for non-blocking clone
+        requestAnimationFrame(() => {
+            if (this.resources.items.collider && this.resources.items.collider.scene) {
+                // Clone collider as well
+                this.collider = this.resources.items.collider.scene.clone(true);
+                this.collider.position.set(0, 0, 0);
+                this.collider.rotation.set(0, 0, 0);
+                this.collider.scale.set(12, 12, 12);
 
-        // Add the group to the scene
-        this.scene.add(collidableGroup);
+                // Make collider invisible (lightweight operation)
+                this.collider.traverse((child) => {
+                    if (child.isMesh) {
+                        child.visible = false;
+                    }
+                });
+                this.collidableGroup.add(this.collider);
+            } else {
+                console.error("[OrgScene3A] Collider not found!");
+            }
 
-        // Build the octree
-        this.octree.fromGraphNode(collidableGroup);
+            // Add the group to the scene
+            this.scene.add(this.collidableGroup);
 
-        // Set collision objects for camera
-        if (this.experience.camera && this.experience.camera.controls) {
-            this.experience.camera.controls.collisionObjects = this.collider;
-            console.log("[OrgScene3A] Camera collision objects set");
-        }
+            // Build octree asynchronously to avoid blocking main thread
+            // This is the heavy operation - do it in chunks using setTimeout
+            console.log("[OrgScene3A] Building octree asynchronously...");
+            
+            // Defer octree building to next event loop tick
+            setTimeout(() => {
+                // Further defer to allow rendering
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        try {
+                            this.octree.fromGraphNode(this.collidableGroup);
+                            console.log("[OrgScene3A] Octree built successfully");
 
-        console.log("Organization Scene 3A (Cafe) loaded with full collision enabled.");
+                            // Set collision objects for camera
+                            if (this.experience.camera && this.experience.camera.controls) {
+                                this.experience.camera.controls.collisionObjects = this.collider;
+                                console.log("[OrgScene3A] Camera collision objects set");
+                            }
+                            
+                            console.log("Organization Scene 3A (Cafe) loaded with full collision enabled.");
+                            
+                            // Call callback when done
+                            if (callback) callback();
+                        } catch (error) {
+                            console.error("[OrgScene3A] Error building octree:", error);
+                            if (callback) callback();
+                        }
+                    }, 100); // Small delay
+                });
+            }, 100); // Initial delay
+        });
     }
 
     createPortals() {
@@ -128,7 +345,7 @@ export default class OrganizationScene3A {
 
         // Create Vendor NPC (representative)
         this.npcVendor = SkeletonUtils.clone(maleModel.scene);
-        this.npcVendor.position.set(8, -2, 10); // Position in cafe
+        this.npcVendor.position.set(18, -2, 10); // Position in cafe - moved right
         this.npcVendor.rotation.y = Math.PI;
         this.npcVendor.scale.set(9, 9, 9);
         this.scene.add(this.npcVendor);
@@ -242,7 +459,7 @@ export default class OrganizationScene3A {
         
         this.createSpeechTextTexture();
         
-        this.speechBubbleGroup.position.set(4, 16, 10);
+        this.speechBubbleGroup.position.set(14, 16, 10); // Adjusted to match NPC position (moved right)
         this.speechBubbleGroup.rotation.y = Math.PI;
         
         this.scene.add(this.speechBubbleGroup);
@@ -492,12 +709,20 @@ export default class OrganizationScene3A {
     handleChoice(choiceId) {
         console.log(`[OrgScene3A] Player chose: ${choiceId}`);
 
+        // Determine score and next scene based on choice
         let scoreIncrease = 0;
+        let nextScene = null;
 
         if (choiceId === 'A') {
+            // Pilihan A: Menolak → Scene 4A
             scoreIncrease = 0;
+            nextScene = 'og_scene4a';
+            console.log(`[OrgScene3A] Choice A → Load og_scene4a (menolak vendor)`);
         } else if (choiceId === 'B') {
+            // Pilihan B: Menerima → Scene 4B
             scoreIncrease = 25;
+            nextScene = 'og_scene4b';
+            console.log(`[OrgScene3A] Choice B → Load og_scene4b (menerima vendor)`);
         }
 
         // Update corruption score
@@ -513,6 +738,13 @@ export default class OrganizationScene3A {
 
         // Show supplement message
         this.showSupplementMessage();
+
+        // Load next scene after message is shown
+        if (nextScene) {
+            setTimeout(() => {
+                this.loadScene(nextScene);
+            }, 5500); // Wait for message to show
+        }
     }
 
     showSupplementMessage() {
@@ -555,6 +787,40 @@ export default class OrganizationScene3A {
         }, 5000);
     }
 
+    loadScene(sceneName) {
+        console.log(`[OrgScene3A] Loading scene: ${sceneName}`);
+        
+        // Create fade transition
+        const fadeDiv = document.createElement('div');
+        fadeDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 10000000;
+            opacity: 0;
+            transition: opacity 0.5s;
+        `;
+        document.body.appendChild(fadeDiv);
+
+        // Fade in
+        setTimeout(() => fadeDiv.style.opacity = '1', 10);
+
+        // Load new scene after fade
+        setTimeout(() => {
+            console.log(`[OrgScene3A] Switching to scene: ${sceneName}`);
+            
+            // Directly navigate to new scene URL
+            const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
+            console.log(`[OrgScene3A] Navigating to: ${newUrl}`);
+            
+            // Use window.location.href for reliable navigation
+            window.location.href = newUrl;
+        }, 500);
+    }
+
     update() {
         if (this.westgatePortal) {
             this.westgatePortal.update();
@@ -562,6 +828,18 @@ export default class OrganizationScene3A {
 
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
+        }
+
+        // Only check player visibility occasionally (not every frame) to reduce overhead
+        // Check every 60 frames (~1 second at 60fps) instead of every frame
+        if (!this._visibilityCheckFrame) this._visibilityCheckFrame = 0;
+        this._visibilityCheckFrame++;
+        
+        if (this._visibilityCheckFrame >= 60) {
+            this._visibilityCheckFrame = 0;
+            if (this.experience.world?.player?.avatar?.avatar) {
+                this.experience.world.player.avatar.avatar.visible = true;
+            }
         }
 
         this.checkPlayerProximity();
@@ -621,6 +899,11 @@ export default class OrganizationScene3A {
 
         if (this.caffeModel && this.caffeModel.parent) {
             this.scene.remove(this.caffeModel.parent);
+        }
+
+        // Clean up loading indicator
+        if (this.loadingIndicator) {
+            this.hideLoadingIndicator();
         }
 
         console.log("[OrganizationScene3A] Disposed");

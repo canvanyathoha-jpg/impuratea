@@ -162,6 +162,26 @@ export const SCENE_DATA = {
         quote: "Saya bisa jadi vendor, tapi pakai sistem khusus: tandatangan tanpa laporan resmi."
     },
     
+    og_scene4a: {
+        title: "", // Judul tidak ditampilkan
+        story: [
+            "Setelah kejadian vendor tersebut, kamu tidak bekerja sama.",
+            "Pembina OSIS marah karena kamu tidak bisa menemukan vendor.",
+            "Pembina meminta laporan keuangan untuk melihat keberlangsungan acara ke depannya.",
+        ],
+        quote: "Saya perlu laporan keuangan untuk memastikan acara bisa berjalan."
+    },
+    
+    og_scene4b: {
+        title: "", // Judul tidak ditampilkan
+        story: [
+            "Setelah kejadian vendor tersebut, kamu mau bekerja sama dan mendapat dana pribadi.",
+            "Persiapan event berjalan, vendor membantu printkan spanduk dan menyiapkan perlengkapan.",
+            "Ada beberapa perlengkapan yang tidak sesuai. Pembina meminta laporan keuangan sementara.",
+        ],
+        quote: "Saya perlu laporan keuangan sementara untuk melihat kondisi dana."
+    },
+    
     og_scene3: {
         title: "Scene 3: Kantin Kampus",
         story: [

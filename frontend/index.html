@@ -227,34 +227,59 @@
             </div>
 
             <!-- Name Enter Screen -->
-            <div class="welcome-title">Welcome to IMPURATEA</div>
-            <div class="name-form">
-                <input
-                    type="text"
-                    placeholder="What should we call you?"
-                    id="name-input"
-                    required
-                />
+            <div class="welcome-title">Selamat Datang di IMPURATEA</div>
+            <div class="name-form-container">
+                <label for="name-input" class="name-input-label">Masukkan Nama Kamu</label>
+                <div class="name-form">
+                    <input
+                        type="text"
+                        placeholder="Tuliskan nama kamu di sini..."
+                        id="name-input"
+                        required
+                        maxlength="20"
+                    />
+                </div>
+                <button id="name-input-button" class="name-submit-btn">
+                    <span>Lanjutkan</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
             </div>
-            <button id="name-input-button">Continue</button>
 
-            <!-- Ready Player Me Interaction -->
-            <div class="character-select-title">Choose your avatar</div>
-            <div class="avatar-img-wrapper">
-                <img
-                    src="/images/asian_male_head.png"
-                    alt=""
-                    class="avatar-img avatar-left"
-                />
-                <img
-                    src="/images/asian_female_head.png"
-                    alt=""
-                    class="avatar-img avatar-right"
-                />
-            </div>
-            <div class="customize-character-btn">
-                Controls: WASD to move | SHIFT to run | SPACE to jump | ENTER to
-                chat | Click/Drag to pan | Middle Mouse to zoom | o to dance
+            <!-- Character Selection Screen -->
+            <div class="character-select-container">
+                <div class="character-select-title">Pilih Karaktermu</div>
+                <p class="character-select-subtitle">Klik pada karakter yang ingin kamu gunakan</p>
+                
+                <div class="avatar-img-wrapper">
+                    <div class="avatar-option">
+                        <img
+                            src="/images/asian_male_head.png"
+                            alt="Karakter Laki-laki"
+                            class="avatar-img avatar-left"
+                        />
+                        <span class="avatar-label">Laki-laki</span>
+                    </div>
+                    <div class="avatar-option">
+                        <img
+                            src="/images/asian_female_head.png"
+                            alt="Karakter Perempuan"
+                            class="avatar-img avatar-right"
+                        />
+                        <span class="avatar-label">Perempuan</span>
+                    </div>
+                </div>
+                
+                <div class="controls-info">
+                    <div class="controls-info-title">💡 Kontrol Permainan</div>
+                    <div class="controls-info-content">
+                        <div class="control-item"><strong>W/A/S/D</strong> - Berjalan</div>
+                        <div class="control-item"><strong>SHIFT</strong> - Berlari</div>
+                        <div class="control-item"><strong>SPACE</strong> - Melompat</div>
+                        <div class="control-item"><strong>Mouse</strong> - Lihat sekeliling</div>
+                    </div>
+                </div>
             </div>
             <!-- <iframe
             id="frame"

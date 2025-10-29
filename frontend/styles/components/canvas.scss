@@ -7,6 +7,22 @@
     left: 0;
     overflow: hidden;
     touch-action: auto;  // Changed from none to auto to allow camera controls
+    
+    // When preloader is active, disable pointer events to allow clicks on landing page
+    .preloader.active ~ &,
+    .preloader.active ~ * & {
+        pointer-events: none !important; // Disable canvas interaction when preloader is active
+    }
+}
+
+// Explicitly disable canvas when preloader is active
+body:has(.preloader.active) .experience-wrapper {
+    pointer-events: none !important;
+    z-index: 0 !important;
+}
+
+body:has(.preloader.active) .experience-canvas {
+    pointer-events: none !important;
 }
 
 .experience-canvas {

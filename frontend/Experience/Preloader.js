@@ -36,13 +36,18 @@ export default class Preloader {
             landingContainer: ".landing-container",
             startButton: "#start-experience-button",
             welcomeTitle: ".welcome-title",
+            nameFormContainer: ".name-form-container",
             nameForm: ".name-form",
             nameInput: "#name-input",
             nameInputButton: "#name-input-button",
+            characterSelectContainer: ".character-select-container",
             characterSelectTitle: ".character-select-title",
+            characterSelectSubtitle: ".character-select-subtitle",
             avatarWrapper: ".avatar-img-wrapper",
             avatarLeftImg: ".avatar-left",
             avatarRightImg: ".avatar-right",
+            avatarOptions: ".avatar-option", // Array of avatar option containers
+            controlsInfo: ".controls-info",
             customizeButton: ".customize-character-btn",
             description: ".description",
         });
@@ -54,6 +59,19 @@ export default class Preloader {
 
         // Show preloader by adding 'active' class
         this.domElements.preloader.classList.add('active');
+        
+        // Disable canvas interaction when preloader is active
+        const experienceWrapper = document.querySelector('.experience-wrapper');
+        const experienceCanvas = document.querySelector('.experience-canvas');
+        if (experienceWrapper) {
+            experienceWrapper.style.pointerEvents = 'none';
+            experienceWrapper.style.zIndex = '0';
+            console.log('[Preloader] Canvas wrapper disabled for button clicks');
+        }
+        if (experienceCanvas) {
+            experienceCanvas.style.pointerEvents = 'none';
+            console.log('[Preloader] Canvas disabled for button clicks');
+        }
 
         // **** This is for updating a percentage ****
         this.resources.on("loading", (loaded, queue) => {
@@ -141,6 +159,24 @@ export default class Preloader {
 
     async landingToNameInput() {
         return new Promise((resolve) => {
+            console.log('[Preloader] Starting transition to name input...');
+            console.log('[Preloader] Welcome title exists:', !!this.domElements.welcomeTitle);
+            console.log('[Preloader] Name form container exists:', !!this.domElements.nameFormContainer);
+            
+            // Ensure elements are visible and accessible
+            if (this.domElements.welcomeTitle) {
+                this.domElements.welcomeTitle.style.pointerEvents = 'auto';
+                this.domElements.welcomeTitle.style.zIndex = '1000';
+            }
+            if (this.domElements.nameFormContainer) {
+                this.domElements.nameFormContainer.style.pointerEvents = 'auto';
+                this.domElements.nameFormContainer.style.zIndex = '1000';
+                // Ensure name input button is visible
+                if (this.domElements.nameInputButton) {
+                    this.domElements.nameInputButton.style.pointerEvents = 'auto';
+                }
+            }
+            
             this.timeline2 = new gsap.timeline();
             this.timeline2
                 .to(this.domElements.landingContainer, {
@@ -148,6 +184,7 @@ export default class Preloader {
                     duration: 1.2,
                     ease: "power4.out",
                     onComplete: () => {
+                        console.log('[Preloader] Landing container removed');
                         this.domElements.landingContainer.remove();
                     },
                 })
@@ -156,29 +193,39 @@ export default class Preloader {
                     {
                         opacity: 1,
                         duration: 1.2,
-                        top: "37%",
+                        top: "25%",
                         ease: "power4.out",
+                        onStart: () => {
+                            console.log('[Preloader] Welcome title fade in started');
+                            // Ensure it's visible
+                            if (this.domElements.welcomeTitle) {
+                                this.domElements.welcomeTitle.style.display = 'block';
+                                this.domElements.welcomeTitle.style.visibility = 'visible';
+                            }
+                        },
                     },
                     "-=0.5"
                 )
                 .to(
-                    this.domElements.nameForm,
+                    this.domElements.nameFormContainer,
                     {
                         opacity: 1,
                         duration: 1.2,
-                        top: "50%",
                         ease: "power4.out",
-                    },
-                    "-=1"
-                )
-                .to(
-                    this.domElements.nameInputButton,
-                    {
-                        opacity: 1,
-                        duration: 1.2,
-                        bottom: "39%",
-                        ease: "power4.out",
+                        onStart: () => {
+                            console.log('[Preloader] Name form container fade in started');
+                            // Ensure it's visible
+                            if (this.domElements.nameFormContainer) {
+                                this.domElements.nameFormContainer.style.display = 'flex';
+                                this.domElements.nameFormContainer.style.visibility = 'visible';
+                            }
+                            // Show name input button
+                            if (this.domElements.nameInputButton) {
+                                this.domElements.nameInputButton.style.opacity = '1';
+                            }
+                        },
                         onComplete: () => {
+                            console.log('[Preloader] Name input screen fully visible');
                             resolve();
                         },
                     },
@@ -198,7 +245,31 @@ export default class Preloader {
 
     onCharacterSelect = (event) => {
         // Determine which avatar was selected
-        const avatarSkin = event.target.classList.contains('avatar-left') ? 'male' : 'female';
+        // Check if clicked element or its parent is avatar-left or avatar-right
+        let target = event.target;
+        let avatarSkin = null;
+
+        // Check target and its parents for avatar classes
+        while (target && target !== document.body) {
+            if (target.classList && target.classList.contains('avatar-left')) {
+                avatarSkin = 'male';
+                break;
+            } else if (target.classList && target.classList.contains('avatar-right')) {
+                avatarSkin = 'female';
+                break;
+            }
+            target = target.parentElement;
+        }
+
+        // Fallback: if no match found, try direct class check
+        if (!avatarSkin) {
+            avatarSkin = event.target.classList.contains('avatar-left') ? 'male' : 'female';
+        }
+
+        if (!avatarSkin) {
+            console.warn('[Preloader] Could not determine avatar selection');
+            return;
+        }
 
         // Save avatar selection to localStorage
         localStorage.setItem('impuratea-avatar', avatarSkin);
@@ -225,65 +296,33 @@ export default class Preloader {
                 .to(this.domElements.welcomeTitle, {
                     opacity: 0,
                     duration: 1.2,
-                    top: "34%",
                     ease: "power4.out",
                 })
                 .to(
-                    this.domElements.nameForm,
+                    this.domElements.nameFormContainer,
                     {
                         opacity: 0,
                         duration: 1.2,
-                        top: "44%",
-                        ease: "power4.out",
-                    },
-                    "-=1.05"
-                )
-                .to(
-                    this.domElements.nameInputButton,
-                    {
-                        opacity: 0,
-                        duration: 1.2,
-                        bottom: "47%",
                         ease: "power4.out",
                         onComplete: () => {
                             this.domElements.welcomeTitle.remove();
-                            this.domElements.nameForm.remove();
-                            this.domElements.nameInputButton.remove();
-                            this.domElements.avatarLeftImg.style.pointerEvents =
-                                "auto";
-                            this.domElements.avatarRightImg.style.pointerEvents =
-                                "auto";
+                            this.domElements.nameFormContainer.remove();
+                            // Enable pointer events untuk avatar selection
+                            this.domElements.avatarLeftImg.style.pointerEvents = "auto";
+                            this.domElements.avatarRightImg.style.pointerEvents = "auto";
                         },
                     },
                     "-=1.05"
                 )
                 .to(
-                    this.domElements.characterSelectTitle,
+                    this.domElements.characterSelectContainer,
                     {
                         opacity: 1,
                         duration: 1.2,
-                        top: "20%",
                         ease: "power4.out",
-                    },
-                    "-=1.05"
-                )
-                .to(
-                    this.domElements.avatarWrapper,
-                    {
-                        opacity: 1,
-                        duration: 1.2,
-                        bottom: "47%",
-                        ease: "power4.out",
-                    },
-                    "-=1.05"
-                )
-                .to(
-                    this.domElements.customizeButton,
-                    {
-                        opacity: 1,
-                        duration: 1.2,
-                        bottom: "25%",
-                        ease: "power4.out",
+                        onComplete: () => {
+                            resolve();
+                        },
                     },
                     "-=1.05"
                 );
@@ -317,16 +356,55 @@ export default class Preloader {
             console.error('[Preloader] Start button not found!');
         } else {
             console.log('[Preloader] Start button found, adding event listener');
+            
+            // Ensure button can receive clicks - use very high z-index
+            this.domElements.startButton.style.pointerEvents = 'auto';
+            this.domElements.startButton.style.cursor = 'pointer';
+            this.domElements.startButton.style.zIndex = '99999999999999';
+            this.domElements.startButton.style.position = 'relative';
+            this.domElements.startButton.style.userSelect = 'none';
+            this.domElements.startButton.style.WebkitUserSelect = 'none';
+            
+            // Make button more clickable by ensuring no overlays
+            const buttonRect = this.domElements.startButton.getBoundingClientRect();
+            console.log('[Preloader] Button position:', buttonRect);
+            console.log('[Preloader] Button computed style:', window.getComputedStyle(this.domElements.startButton));
+            
+            // Add event listener with explicit binding
+            this.domElements.startButton.addEventListener(
+                "click",
+                this.onStartButtonClick.bind(this),
+                { passive: false } // Ensure event can be handled
+            );
+            
+            // Also add mousedown for better compatibility
+            this.domElements.startButton.addEventListener(
+                "mousedown",
+                (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.onStartButtonClick();
+                },
+                { passive: false }
+            );
+            
+            // Touch events for mobile
+            this.domElements.startButton.addEventListener(
+                "touchend",
+                (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.onStartButtonClick();
+                },
+                { passive: false }
+            );
         }
-        
-        this.domElements.startButton.addEventListener(
-            "click",
-            this.onStartButtonClick
-        );
-        this.domElements.nameInputButton.addEventListener(
-            "click",
-            this.onNameInput
-        );
+        if (this.domElements.nameInputButton) {
+            this.domElements.nameInputButton.addEventListener(
+                "click",
+                this.onNameInput.bind(this)
+            );
+        }
         this.domElements.avatarLeftImg.addEventListener(
             "click",
             this.onCharacterSelect
@@ -335,6 +413,20 @@ export default class Preloader {
             "click",
             this.onCharacterSelect
         );
+        
+        // Add event listeners to avatar option containers (if they exist)
+        if (this.domElements.avatarOptions) {
+            // avatarOptions might be a NodeList or single element
+            const options = this.domElements.avatarOptions.length 
+                ? Array.from(this.domElements.avatarOptions) 
+                : [this.domElements.avatarOptions];
+            
+            options.forEach(option => {
+                if (option) {
+                    option.addEventListener("click", this.onCharacterSelect);
+                }
+            });
+        }
     }
 
     update() {
@@ -361,3 +453,4 @@ export default class Preloader {
         }
     }
 }
+
