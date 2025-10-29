@@ -50,6 +50,12 @@ export default class Westgate {
         // Build the octree
         this.octree.fromGraphNode(collidableGroup);
 
+        // Set collision objects for camera - CRITICAL for proper movement!
+        if (this.experience.camera && this.experience.camera.controls) {
+            this.experience.camera.controls.collisionObjects = this.collider;
+            console.log("[Westgate] Camera collision objects set");
+        }
+
         console.log("Westgate scene loaded with full collision enabled.");
     }
 

@@ -8,7 +8,7 @@
     z-index: 9999999999999;
     width: 100vw;
     height: 100vh;
-    touch-action: none;
+    touch-action: auto; // Changed from none to allow button clicks
     overflow: hidden;
     position: relative;
 
@@ -576,11 +576,13 @@
     overflow-y: auto;
     overflow-x: hidden;
     position: absolute;
+    pointer-events: auto !important; // Ensure container can receive clicks
     top: 0;
     left: 0;
     opacity: 0;
     padding: 60px 0;
     background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    z-index: 99999999999998; // Just below button but above everything else
 
     // Custom scrollbar
     &::-webkit-scrollbar {
@@ -981,6 +983,9 @@
     padding: 100px 40px 80px;
     background: linear-gradient(135deg, #8B0000 0%, #1E407C 100%);
     margin: 80px 0 0;
+    pointer-events: auto !important; // Ensure section can receive clicks
+    position: relative;
+    z-index: 99999999999998 !important; // Very high z-index, just below button
 
     @include media("<=phone") {
         padding: 60px 20px 50px;
@@ -1012,10 +1017,10 @@
 }
 
 .start-btn {
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
     gap: 15px;
-    padding: 18px 50px;
+    padding: 20px 60px !important; // Larger padding for easier clicking
     font-size: 20px;
     font-weight: 600;
     text-transform: uppercase;
@@ -1024,11 +1029,27 @@
     background: white;
     border: none;
     border-radius: 50px;
-    cursor: pointer;
+    cursor: pointer !important;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
+    position: relative !important;
+    overflow: visible; // Changed from hidden to allow click area expansion
+    pointer-events: auto !important; // Ensure button can receive clicks
+    z-index: 99999999999999 !important; // Very high z-index to be above everything
+    min-width: 250px; // Minimum width for easier clicking
+    min-height: 60px; // Minimum height for easier clicking
+    
+    // Add extra clickable area with pseudo-element
+    &::after {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        z-index: -1; // Behind button but still clickable
+        pointer-events: auto;
+    }
 
     &::before {
         content: '';

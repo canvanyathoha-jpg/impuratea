@@ -4,6 +4,7 @@ import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import Portal from "../Portal.js";
 import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
+import Ending from "../../Utils/Ending.js";
 
 export default class OrganizationScene2A {
     constructor() {
@@ -561,6 +562,9 @@ export default class OrganizationScene2A {
         localStorage.setItem('corruption-score', totalScore.toString());
         console.log(`[OrgScene2A] Total corruption score: ${totalScore}`);
 
+        // Store nextScene untuk digunakan di showSupplementMessage
+        this.nextScene = nextScene;
+
         // Show supplement message
         this.showSupplementMessage();
 
@@ -569,7 +573,7 @@ export default class OrganizationScene2A {
             this.uiManager.removeChoicePanel();
         }
 
-        // Load next scene if any
+        // Load next scene if any, atau tampilkan ending jika end game
         if (nextScene) {
             setTimeout(() => {
                 this.loadScene(nextScene);
@@ -640,8 +644,24 @@ export default class OrganizationScene2A {
                 if (document.body.contains(message)) {
                     document.body.removeChild(message);
                 }
+                
+                // Tampilkan ending jika tidak ada next scene (end game)
+                if (!this.nextScene) {
+                    console.log("[OrgScene2A] Showing ending...");
+                    this.showEnding();
+                }
             }, 500);
         }, 5000);
+    }
+
+    showEnding() {
+        // Import dan tampilkan ending
+        const ending = new Ending();
+        ending.show().then(() => {
+            console.log("[OrgScene2A] Ending displayed");
+        }).catch((error) => {
+            console.error("[OrgScene2A] Error showing ending:", error);
+        });
     }
 
     update() {
