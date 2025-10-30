@@ -334,6 +334,16 @@ export default class Preloader {
             // Immediately disable pointer events so camera can move
             this.domElements.preloader.style.pointerEvents = 'none';
             this.domElements.preloader.style.touchAction = 'auto';
+            // Re-enable canvas interaction before removing preloader
+            const experienceWrapper = document.querySelector('.experience-wrapper');
+            const experienceCanvas = document.querySelector('.experience-canvas');
+            if (experienceWrapper) {
+                experienceWrapper.style.pointerEvents = 'auto';
+                experienceWrapper.style.zIndex = '1';
+            }
+            if (experienceCanvas) {
+                experienceCanvas.style.pointerEvents = 'auto';
+            }
 
             this.timeline4 = new gsap.timeline();
             this.timeline4.to(this.domElements.preloader, {

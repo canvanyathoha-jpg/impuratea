@@ -9,6 +9,8 @@
  * Ending buruk (76-100%): Kejatuhan integritas
  */
 
+import Experience from "../Experience.js";
+
 export default class Ending {
     constructor() {
         this.overlay = null;
@@ -20,14 +22,35 @@ export default class Ending {
      * Skor maksimal = 95 (dari semua pilihan terburuk di semua scene)
      */
     calculatePercentage() {
-        const totalScore = parseInt(localStorage.getItem('corruption-score') || '0');
+        // Prefer ScoreManager (persentase 0-100)
+        let percentageFromManager = null;
+        const exp = Experience.instance;
+        if (exp && exp.scoreManager && typeof exp.scoreManager.getScore === 'function') {
+            percentageFromManager = exp.scoreManager.getScore();
+        }
+
+        // Legacy/local fallbacks
+        const legacyRaw = parseInt(localStorage.getItem('corruption-score') || '0'); // 0..95
+        const managerStored = parseInt(localStorage.getItem('academic_corruption_score') || '0'); // 0..100
+
         const maxScore = 95; // Skor maksimal yang mungkin didapat
-        // Normalisasi ke persentase (skor maksimal = 95)
+
+        if (typeof percentageFromManager === 'number' && !Number.isNaN(percentageFromManager)) {
+            const pct = Math.max(0, Math.min(100, percentageFromManager));
+            const rawApprox = Math.round((pct / 100) * maxScore);
+            return { score: rawApprox, percentage: pct };
+        }
+
+        if (!Number.isNaN(managerStored) && managerStored > 0) {
+            const pct = Math.max(0, Math.min(100, managerStored));
+            const rawApprox = Math.round((pct / 100) * maxScore);
+            return { score: rawApprox, percentage: pct };
+        }
+
+        // Fallback to legacy raw (0..95)
+        const totalScore = Math.max(0, Math.min(maxScore, legacyRaw));
         const percentage = Math.min(100, Math.round((totalScore / maxScore) * 100));
-        return {
-            score: totalScore,
-            percentage: percentage
-        };
+        return { score: totalScore, percentage };
     }
 
     /**
@@ -126,6 +149,8 @@ export default class Ending {
             this.overlay = document.createElement('div');
             this.overlay.id = 'ending-overlay';
             this.overlay.innerHTML = `
+                <div class="ending-bg"></div>
+                <div class="ending-bubbles"></div>
                 <div class="ending-container">
                     <div class="ending-header">
                         <div class="ending-title" style="color: ${endingData.color}">
@@ -134,22 +159,22 @@ export default class Ending {
                         <div class="ending-subtitle">
                             ${endingData.subtitle}
                         </div>
-                        
-                        <!-- Skor Display - Menampilkan skor dengan jelas -->
-                        <div class="ending-score-display">
-                            <div class="ending-score-label">Skor Korupsi</div>
-                            <div class="ending-score-value" style="color: ${endingData.color}">
-                                ${score} / 95
-                            </div>
-                            <div class="ending-score-percentage" style="color: ${endingData.color}">
-                                ${percentage.toFixed(1)}%
-                            </div>
-                            <div class="ending-score-range">
-                                Rentang: ${endingData.percentage}
+                        <div class="ending-score">
+                            <svg class="ending-score-ring" width="180" height="180" viewBox="0 0 180 180" aria-hidden="true">
+                                <circle class="ending-score-ring-bg" cx="90" cy="90" r="70" />
+                                <circle class="ending-score-ring-fg" cx="90" cy="90" r="70" style="stroke: ${endingData.color}; stroke-dashoffset: ${440 - Math.round(440 * (Math.max(0, Math.min(100, percentage)) / 100))};" />
+                                <g class="ending-score-ring-text">
+                                    <text x="90" y="88" text-anchor="middle" class="ending-score-percent">${percentage.toFixed(0)}%</text>
+                                    <text x="90" y="110" text-anchor="middle" class="ending-score-label">Skor</text>
+                                </g>
+                            </svg>
+                            <div class="ending-score-meta">
+                                <div class="ending-score-value" style="color: ${endingData.color}">${score} / 95</div>
+                                <div class="ending-score-range">Rentang: ${endingData.percentage}</div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="ending-story">
                         ${endingData.story.map(paragraph => 
                             paragraph ? `<p>${paragraph}</p>` : '<br>'
@@ -164,8 +189,11 @@ export default class Ending {
                     </div>
 
                     <div class="ending-actions">
-                        <button class="ending-restart-btn" onclick="window.location.reload()">
+                        <button id="ending-restart" class="ending-btn primary">
                             Main Lagi
+                        </button>
+                        <button id="ending-menu" class="ending-btn ghost">
+                            Kembali ke Menu
                         </button>
                     </div>
                 </div>
@@ -178,7 +206,9 @@ export default class Ending {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.95);
+                background: radial-gradient(1200px 800px at 20% 10%, rgba(30,64,124,0.35), transparent 60%),
+                            radial-gradient(1200px 800px at 80% 90%, rgba(118,75,162,0.35), transparent 60%),
+                            rgba(0,0,0,0.85);
                 z-index: 10000002;
                 display: flex;
                 align-items: center;
@@ -192,16 +222,54 @@ export default class Ending {
             // Style untuk container (akan ditambahkan ke CSS atau inline)
             const style = document.createElement('style');
             style.textContent = `
+                :root { --ending-accent: ${endingData.color}; }
+
+                .ending-bg::before,
+                .ending-bg::after {
+                    content: '';
+                    position: fixed;
+                    inset: 0;
+                    pointer-events: none;
+                }
+
+                .ending-bg::before {
+                    background: radial-gradient(800px 500px at 10% 20%, rgba(255,255,255,0.06), transparent 60%),
+                                radial-gradient(900px 600px at 90% 80%, rgba(255,255,255,0.04), transparent 60%);
+                    z-index: -1;
+                }
+
+                .ending-bg::after {
+                    background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+                    mask-image: radial-gradient(70% 50% at 50% 50%, #000 60%, transparent 90%);
+                    z-index: -1;
+                }
+
+                .ending-bubbles {
+                    position: fixed; inset: 0; pointer-events: none; z-index: -1;
+                    background:
+                        radial-gradient(6px 6px at 20% 30%, rgba(255,255,255,0.08), transparent 50%),
+                        radial-gradient(8px 8px at 70% 40%, rgba(255,255,255,0.06), transparent 50%),
+                        radial-gradient(5px 5px at 40% 80%, rgba(255,255,255,0.05), transparent 50%);
+                    animation: floatBg 18s linear infinite;
+                }
+
+                @keyframes floatBg {
+                    0% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                    100% { transform: translateY(0); }
+                }
+
                 .ending-container {
-                    background: ${endingData.gradient};
-                    border: 4px solid rgba(255, 255, 255, 0.3);
-                    border-radius: 30px;
-                    padding: 50px;
-                    max-width: 800px;
+                    background: linear-gradient(155deg, rgba(20, 20, 28, 0.75), rgba(20, 20, 28, 0.55));
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 24px;
+                    backdrop-filter: blur(14px) saturate(120%);
+                    padding: 44px;
+                    max-width: 920px;
                     width: 100%;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
                     text-align: center;
-                    animation: slideUp 0.8s ease;
+                    animation: slideUp 0.7s ease;
                 }
 
                 @keyframes slideUp {
@@ -215,79 +283,52 @@ export default class Ending {
                     }
                 }
 
-                .ending-header {
-                    margin-bottom: 40px;
-                }
+                .ending-header { margin-bottom: 28px; }
 
                 .ending-title {
-                    font-size: 48px;
-                    font-weight: bold;
-                    margin-bottom: 10px;
-                    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    font-size: 44px;
+                    font-weight: 800;
+                    margin-bottom: 6px;
+                    letter-spacing: 0.3px;
+                    text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
                 }
 
                 .ending-subtitle {
-                    font-size: 28px;
+                    font-size: 20px;
                     font-weight: 600;
-                    color: rgba(255, 255, 255, 0.95);
-                    margin-bottom: 15px;
-                    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-                }
-
-                .ending-score-display {
-                    background: rgba(255, 255, 255, 0.15);
-                    border: 3px solid rgba(255, 255, 255, 0.3);
-                    border-radius: 20px;
-                    padding: 25px;
-                    margin: 30px auto 0;
-                    max-width: 500px;
-                    backdrop-filter: blur(10px);
-                }
-
-                .ending-score-label {
-                    font-size: 16px;
                     color: rgba(255, 255, 255, 0.8);
-                    margin-bottom: 10px;
-                    font-weight: 600;
-                    letter-spacing: 1px;
-                    text-transform: uppercase;
+                    margin-bottom: 18px;
+                    letter-spacing: 0.4px;
                 }
+                .ending-score { display: flex; gap: 24px; align-items: center; justify-content: center; margin: 22px auto 8px; }
+                .ending-score-meta { text-align: left; }
+                .ending-score-value { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+                .ending-score-range { font-size: 14px; color: rgba(255,255,255,0.75); }
 
-                .ending-score-value {
-                    font-size: 42px;
-                    font-weight: bold;
-                    margin-bottom: 8px;
-                    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                .ending-score-ring { filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35)); }
+                .ending-score-ring-bg {
+                    fill: none; stroke: rgba(255,255,255,0.12); stroke-width: 14; transform: rotate(-90deg); transform-origin: 90px 90px;
                 }
-
-                .ending-score-percentage {
-                    font-size: 32px;
-                    font-weight: bold;
-                    margin-bottom: 8px;
-                    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+                .ending-score-ring-fg {
+                    fill: none; stroke-width: 14; stroke-linecap: round; stroke-dasharray: 440; transform: rotate(-90deg); transform-origin: 90px 90px; transition: stroke-dashoffset 900ms ease, stroke 300ms ease;
                 }
-
-                .ending-score-range {
-                    font-size: 14px;
-                    color: rgba(255, 255, 255, 0.9);
-                    margin-top: 8px;
-                    font-weight: 500;
-                }
+                .ending-score-percent { font-size: 28px; font-weight: 800; fill: #fff; opacity: 0.95; }
+                .ending-score-label { font-size: 12px; fill: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1.2px; }
 
                 .ending-story {
-                    background: rgba(255, 255, 255, 0.95);
-                    border-radius: 20px;
-                    padding: 35px;
-                    margin-bottom: 30px;
+                    background: rgba(255, 255, 255, 0.96);
+                    border-radius: 18px;
+                    padding: 28px 30px;
+                    margin-bottom: 22px;
                     text-align: left;
-                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+                    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
                 }
 
                 .ending-story p {
-                    font-size: 19px;
-                    line-height: 1.8;
-                    color: #333;
-                    margin-bottom: 15px;
+                    font-size: 18px;
+                    line-height: 1.75;
+                    color: #1b1b1f;
+                    margin-bottom: 14px;
                 }
 
                 .ending-story p:last-child {
@@ -295,91 +336,69 @@ export default class Ending {
                 }
 
                 .ending-message {
-                    background: rgba(255, 255, 255, 0.2);
-                    border: 3px solid;
-                    border-radius: 20px;
-                    padding: 30px;
-                    margin-bottom: 30px;
-                    backdrop-filter: blur(10px);
+                    background: rgba(255, 255, 255, 0.14);
+                    border: 1px solid rgba(255,255,255,0.3);
+                    border-left: 5px solid var(--ending-accent);
+                    border-radius: 14px;
+                    padding: 22px;
+                    margin-bottom: 18px;
+                    backdrop-filter: blur(8px);
                 }
 
                 .ending-message-icon {
-                    font-size: 32px;
-                    margin-bottom: 15px;
+                    font-size: 28px;
+                    margin-bottom: 10px;
                 }
 
                 .ending-message-text {
-                    font-size: 20px;
+                    font-size: 18px;
                     font-style: italic;
                     color: rgba(255, 255, 255, 0.95);
                     line-height: 1.6;
                     font-weight: 500;
-                    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
                 }
 
-                .ending-actions {
-                    margin-top: 30px;
-                }
+                .ending-actions { margin-top: 18px; display: flex; gap: 12px; justify-content: center; }
 
-                .ending-restart-btn {
-                    background: rgba(255, 255, 255, 0.95);
-                    color: #333;
-                    border: none;
-                    border-radius: 50px;
-                    padding: 18px 50px;
-                    font-size: 20px;
-                    font-weight: 600;
+                .ending-btn {
+                    border-radius: 12px;
+                    padding: 14px 22px;
+                    font-size: 16px;
+                    font-weight: 700;
                     cursor: pointer;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+                    transition: transform .15s ease, box-shadow .25s ease, background .25s ease, color .25s ease, border-color .25s ease;
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
                 }
-
-                .ending-restart-btn:hover {
-                    background: white;
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-                }
-
-                .ending-restart-btn:active {
-                    transform: translateY(0);
-                }
+                .ending-btn.primary { background: var(--ending-accent); color: white; border: 0; }
+                .ending-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(0,0,0,0.32); }
+                .ending-btn.ghost { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.35); }
+                .ending-btn.ghost:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
 
                 @media (max-width: 768px) {
                     .ending-container {
-                        padding: 30px 20px;
+                        padding: 26px 18px;
                     }
 
                     .ending-title {
-                        font-size: 36px;
-                    }
-
-                    .ending-subtitle {
-                        font-size: 22px;
-                    }
-
-                    .ending-score-display {
-                        padding: 20px;
-                        margin: 20px auto 0;
-                    }
-
-                    .ending-score-value {
-                        font-size: 36px;
-                    }
-
-                    .ending-score-percentage {
                         font-size: 28px;
                     }
 
+                    .ending-subtitle {
+                        font-size: 16px;
+                    }
+                    .ending-score { gap: 14px; }
+                    .ending-score-value { font-size: 20px; }
+
                     .ending-story {
-                        padding: 25px;
+                        padding: 18px;
                     }
 
                     .ending-story p {
-                        font-size: 16px;
+                        font-size: 15px;
                     }
 
                     .ending-message-text {
-                        font-size: 18px;
+                        font-size: 16px;
                     }
                 }
             `;
@@ -391,6 +410,14 @@ export default class Ending {
             setTimeout(() => {
                 this.overlay.style.opacity = '1';
             }, 100);
+
+            // Button actions
+            const restartBtn = this.overlay.querySelector('#ending-restart');
+            const menuBtn = this.overlay.querySelector('#ending-menu');
+            if (restartBtn) restartBtn.addEventListener('click', () => window.location.reload());
+            if (menuBtn) menuBtn.addEventListener('click', () => {
+                window.location.href = window.location.pathname + '?scene=westgate';
+            });
 
             // Resolve setelah ditampilkan
             setTimeout(() => {

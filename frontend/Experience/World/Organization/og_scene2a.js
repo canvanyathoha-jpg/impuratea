@@ -549,16 +549,17 @@ export default class OrganizationScene2A {
             nextScene = 'og_scene3a';
             console.log(`[OrgScene2A] Choice A → Load og_scene3a`);
         } else if (choiceId === 'B') {
-            // Pilihan B: Memberikan uang → End game (menutupi masalah)
+            // Pilihan B: Memberikan uang → Lanjut ke Scene 3B (tidak langsung ending)
             scoreIncrease = 25;
-            nextScene = null;
-            console.log(`[OrgScene2A] Choice B → End game`);
+            nextScene = 'og_scene3b';
+            console.log(`[OrgScene2A] Choice B → Load og_scene3b`);
         }
 
-        // Update corruption score
-        const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
-        localStorage.setItem('corruption-score', totalScore.toString());
-        console.log(`[OrgScene2A] Total corruption score: ${totalScore}`);
+        // Update corruption score via ScoreManager (global)
+        if (this.experience && this.experience.scoreManager) {
+            this.experience.scoreManager.addScore(scoreIncrease);
+            console.log(`[OrgScene2A] ScoreManager total score: ${this.experience.scoreManager.getScore()}%`);
+        }
 
         // Store nextScene untuk digunakan di showSupplementMessage
         this.nextScene = nextScene;
@@ -644,10 +645,7 @@ export default class OrganizationScene2A {
                 }
                 
                 // Tampilkan ending jika tidak ada next scene (end game)
-                if (!this.nextScene) {
-                    console.log("[OrgScene2A] Showing ending...");
-                    this.showEnding();
-                }
+                // Ending tidak ditampilkan di scene 2A; lanjut ke scene berikutnya
             }, 500);
         }, 5000);
     }

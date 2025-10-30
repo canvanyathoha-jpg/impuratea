@@ -723,10 +723,11 @@ export default class OrganizationScene3A {
             console.log(`[OrgScene3A] Choice B → Load og_scene4b (menerima vendor)`);
         }
 
-        // Update corruption score
-        const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
-        localStorage.setItem('corruption-score', totalScore.toString());
-        console.log(`[OrgScene3A] Total corruption score: ${totalScore}`);
+        // Update corruption score via ScoreManager
+        if (this.experience && this.experience.scoreManager) {
+            this.experience.scoreManager.addScore(scoreIncrease);
+            console.log(`[OrgScene3A] ScoreManager total score: ${this.experience.scoreManager.getScore()}%`);
+        }
 
         // Remove UI elements
         if (this.choicePanel) {

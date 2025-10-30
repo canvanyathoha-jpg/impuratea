@@ -150,6 +150,10 @@ export default class NPC {
 
     showChat(message) {
         if (!this.chatBubble) return;
+        if (typeof message !== 'string') {
+            console.warn('[NPC] showChat received non-string message:', message);
+            return;
+        }
 
         // Update canvas with new message
         const canvas = this.chatBubble.material.map.image;

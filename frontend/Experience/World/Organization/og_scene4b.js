@@ -520,10 +520,11 @@ export default class OrganizationScene4B {
             scoreIncrease = 25;
         }
 
-        // Update corruption score
-        const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
-        localStorage.setItem('corruption-score', totalScore.toString());
-        console.log(`[OrgScene4B] Total corruption score: ${totalScore}`);
+        // Update corruption score via ScoreManager and show at ending
+        if (this.experience && this.experience.scoreManager) {
+            this.experience.scoreManager.addScore(scoreIncrease);
+            console.log(`[OrgScene4B] ScoreManager total score: ${this.experience.scoreManager.getScore()}%`);
+        }
 
         // Remove UI elements
         if (this.choicePanel) {
@@ -574,6 +575,9 @@ export default class OrganizationScene4B {
                 
                 // Tampilkan ending setelah supplement message ditutup
                 console.log("[OrgScene4B] Showing ending...");
+                if (this.experience && this.experience.scoreManager) {
+                    this.experience.scoreManager.enableScoreUI();
+                }
                 this.showEnding();
             }, 500);
         }, 5000);

@@ -827,10 +827,11 @@ export default class Organization {
             console.log(`[OrgScene1] Choice B → Load og_scene2b (consequence of giving money)`);
         }
 
-        // Update corruption score (hidden from player but still tracked for ending)
-        const totalScore = parseInt(localStorage.getItem('corruption-score') || '0') + scoreIncrease;
-        localStorage.setItem('corruption-score', totalScore.toString());
-        console.log(`[OrgScene1] Total corruption score: ${totalScore}`);
+        // Update corruption score via ScoreManager (hidden during gameplay)
+        if (this.experience && this.experience.scoreManager) {
+            this.experience.scoreManager.addScore(scoreIncrease);
+            console.log(`[OrgScene1] ScoreManager total score: ${this.experience.scoreManager.getScore()}%`);
+        }
         console.log(`[OrgScene1] Loading next scene: ${nextScene}`);
 
         // Remove UI elements
