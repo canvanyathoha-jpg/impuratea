@@ -425,15 +425,13 @@ export default class OrganizationScene2B {
                     <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">Jujur dan dihukum Pembina</div>
-                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Mengakui kesalahan dan dihukum (+10%)</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Jujur dan dihukum Pembina</div>
                         </div>
                     </button>
                     <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">Berbohong dan tidak dicurigai Pembina</div>
-                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Selamat dengan kebohongan (+20%)</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Berbohong dan tidak dicurigai Pembina</div>
                         </div>
                     </button>
                 </div>

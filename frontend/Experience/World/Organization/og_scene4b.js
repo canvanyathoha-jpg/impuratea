@@ -129,8 +129,8 @@ export default class OrganizationScene4B {
 
         // Create Pembina OSIS NPC
         this.npcPembina = SkeletonUtils.clone(maleModel.scene);
-        this.npcPembina.position.set(8, -2, 15); // Position in RuangGuru
-        this.npcPembina.rotation.y = Math.PI;
+        this.npcPembina.position.set(8, -2, 25); // Position in RuangGuru - moved forward
+        this.npcPembina.rotation.y = Math.PI + Math.PI / 2; // Rotate 90 degrees clockwise
         this.npcPembina.scale.set(9, 9, 9);
         this.scene.add(this.npcPembina);
 
@@ -242,8 +242,8 @@ export default class OrganizationScene4B {
         
         this.createSpeechTextTexture();
         
-        this.speechBubbleGroup.position.set(4, 16, 15);
-        this.speechBubbleGroup.rotation.y = Math.PI;
+        this.speechBubbleGroup.position.set(4, 16, 25); // Moved forward to match NPC position
+        this.speechBubbleGroup.rotation.y = Math.PI + Math.PI / 2; // Rotate 90 degrees to match NPC
         
         this.scene.add(this.speechBubbleGroup);
         this.createAlternativeButton();
@@ -304,85 +304,68 @@ export default class OrganizationScene4B {
     }
 
     createAlternativeButton() {
-        // Remove existing button if any
-        const existingBtn = document.getElementById('speech-bubble-alt-button');
-        if (existingBtn) {
-            existingBtn.remove();
-        }
-
-        this.alternativeButton = document.createElement('button');
-        this.alternativeButton.id = 'speech-bubble-alt-button';
-        this.alternativeButton.textContent = 'Klik untuk melihat dialog di layar';
-        this.alternativeButton.style.cssText = `
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #1E407C 0%, #8B0000 50%, #FFD700 100%);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 10000001;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
+        this.alternativeButton = document.createElement('div');
+        this.alternativeButton.id = 'alternative-speech-button';
+        this.alternativeButton.innerHTML = `
+            <div style="position: fixed; top: 20px; right: 20px; z-index: 10000001;">
+                <div style="margin-bottom: 10px; text-align: center;">
+                    <div style="background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                        🔄 Alternatif
+                    </div>
+                </div>
+                <button id="read-speech-btn" style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 15px 25px;
+                    border-radius: 25px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-family: 'Arial', sans-serif;
+                " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                    <span style="font-size: 20px;">💬</span>
+                    <span>Baca Percakapan</span>
+                </button>
+            </div>
         `;
+
+        document.body.appendChild(this.alternativeButton);
         
-        this.alternativeButton.addEventListener('mouseenter', () => {
-            this.alternativeButton.style.transform = 'translateX(-50%) scale(1.05)';
-            this.alternativeButton.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.4)';
-        });
-        
-        this.alternativeButton.addEventListener('mouseleave', () => {
-            this.alternativeButton.style.transform = 'translateX(-50%) scale(1)';
-            this.alternativeButton.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
-        });
-        
-        this.alternativeButton.addEventListener('click', () => {
+        const button = this.alternativeButton.querySelector('#read-speech-btn');
+        button.addEventListener('click', () => {
+            console.log("[OrgScene4B] Alternative button clicked!");
             this.showScreenSpeechBubble();
         });
-        
-        document.body.appendChild(this.alternativeButton);
     }
 
     showScreenSpeechBubble() {
-        // Remove existing bubble if any
-        const existingBubble = document.getElementById('screen-speech-bubble');
-        if (existingBubble) {
-            existingBubble.remove();
-        }
-
-        this.screenBubble = document.createElement('div');
-        this.screenBubble.id = 'screen-speech-bubble';
-        this.screenBubble.innerHTML = `
-            <div style="background: linear-gradient(135deg, rgba(30, 64, 124, 0.95), rgba(139, 0, 0, 0.95)); border: 3px solid rgba(255,255,255,0.5); border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
-                <div style="font-size: 24px; font-weight: bold; color: #FFD700; margin-bottom: 15px; text-align: center;">
-                    Pembina OSIS
+        const screenBubble = document.createElement('div');
+        screenBubble.id = 'screen-speech-bubble';
+        screenBubble.innerHTML = `
+            <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
+                <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
+                    Pembina OSIS:
                 </div>
-                <div style="font-size: 18px; color: #fff; line-height: 1.6; text-align: center;">
-                    "Ada beberapa perlengkapan yang tidak sesuai. Saya perlu laporan keuangan sementara untuk melihat kondisi dana."
+                <div style="font-size: 18px; color: #000; line-height: 1.6; text-align: center;">
+                    Ada beberapa perlengkapan yang tidak sesuai. Saya perlu laporan keuangan sementara untuk melihat kondisi dana.
+                </div>
+                <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                    Klik untuk menutup
                 </div>
             </div>
         `;
 
-        this.screenBubble.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10000001;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
-
-        document.body.appendChild(this.screenBubble);
-
-        setTimeout(() => {
-            this.screenBubble.style.opacity = '1';
-        }, 100);
+        document.body.appendChild(screenBubble);
+        
+        screenBubble.addEventListener('click', () => {
+            document.body.removeChild(screenBubble);
+        });
     }
 
     onMouseMove(event) {
@@ -449,58 +432,31 @@ export default class OrganizationScene4B {
         panel.id = 'choice-panel';
         panel.style.cssText = `
             position: fixed;
-            bottom: 50px;
+            bottom: 20%;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            border: 3px solid rgba(255, 215, 0, 0.8);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 800px;
-            width: 90%;
+            transform: translate(-50%, 0);
             z-index: 10000000;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             opacity: 0;
             transition: opacity 0.5s ease;
+            pointer-events: all;
         `;
 
         panel.innerHTML = `
-            <div style="color: #FFD700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: center;">
-                Pilihan Kamu
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <button id="choice-A" data-choice="A" style="
-                    padding: 20px;
-                    background: linear-gradient(135deg, rgba(30, 64, 124, 0.8), rgba(139, 0, 0, 0.8));
-                    border: 2px solid rgba(255, 215, 0, 0.6);
-                    border-radius: 15px;
-                    color: white;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    text-align: center;
-                ">
-                    <div style="font-size: 20px; margin-bottom: 10px; color: #FFD700;">A</div>
-                    <div>Memberikan laporan secara transparan dan ketahuan</div>
-                    <div style="margin-top: 10px; font-size: 14px; color: #4ecdc4;">+10%</div>
-                </button>
-                <button id="choice-B" data-choice="B" style="
-                    padding: 20px;
-                    background: linear-gradient(135deg, rgba(30, 64, 124, 0.8), rgba(139, 0, 0, 0.8));
-                    border: 2px solid rgba(255, 215, 0, 0.6);
-                    border-radius: 15px;
-                    color: white;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    text-align: center;
-                ">
-                    <div style="font-size: 20px; margin-bottom: 10px; color: #FFD700;">B</div>
-                    <div>Manipulasi laporan dana dan persiapan kembali dilanjutkan</div>
-                    <div style="margin-top: 10px; font-size: 14px; color: #4ecdc4;">+25%</div>
-                </button>
+            <div style="background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.95)); border: 3px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 25px; min-width: 450px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
+                        <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Memberikan laporan secara transparan dan ketahuan</div>
+                        </div>
+                    </button>
+                    <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
+                        <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Manipulasi laporan dana dan persiapan kembali dilanjutkan</div>
+                        </div>
+                    </button>
+                </div>
             </div>
         `;
 
@@ -512,26 +468,40 @@ export default class OrganizationScene4B {
         }, 100);
 
         // Add event listeners
-        panel.querySelector('#choice-A').addEventListener('click', () => {
+        document.getElementById('choice-A').addEventListener('click', () => {
+            console.log("[OrgScene4B] Player chose A");
             this.handleChoice('A');
         });
 
-        panel.querySelector('#choice-B').addEventListener('click', () => {
+        document.getElementById('choice-B').addEventListener('click', () => {
+            console.log("[OrgScene4B] Player chose B");
             this.handleChoice('B');
         });
 
-        // Hover effects
-        panel.querySelectorAll('button').forEach(button => {
-            button.addEventListener('mouseenter', () => {
-                button.style.transform = 'scale(1.05)';
-                button.style.borderColor = 'rgba(255, 215, 0, 1)';
-                button.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.4)';
-            });
-            button.addEventListener('mouseleave', () => {
-                button.style.transform = 'scale(1)';
-                button.style.borderColor = 'rgba(255, 215, 0, 0.6)';
-                button.style.boxShadow = 'none';
-            });
+        // Add hover effects
+        const choiceA = document.getElementById('choice-A');
+        const choiceB = document.getElementById('choice-B');
+        
+        choiceA.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(76,175,80,0.3)';
+            this.style.borderColor = 'rgba(76,175,80,0.8)';
+            this.style.transform = 'scale(1.02)';
+        });
+        choiceA.addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(76,175,80,0.15)';
+            this.style.borderColor = 'rgba(76,175,80,0.5)';
+            this.style.transform = 'scale(1)';
+        });
+
+        choiceB.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(244,67,54,0.3)';
+            this.style.borderColor = 'rgba(244,67,54,0.8)';
+            this.style.transform = 'scale(1.02)';
+        });
+        choiceB.addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(244,67,54,0.15)';
+            this.style.borderColor = 'rgba(244,67,54,0.5)';
+            this.style.transform = 'scale(1)';
         });
 
         this.choicePanel = panel;

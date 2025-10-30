@@ -297,8 +297,8 @@ export default class OrganizationScene3B {
 
         // Create Vendor NPC (representative)
         this.npcVendor = SkeletonUtils.clone(maleModel.scene);
-        this.npcVendor.position.set(8, -2, 10); // Position in cafe
-        this.npcVendor.rotation.y = Math.PI;
+        this.npcVendor.position.set(18, -2, 10); // Position in cafe - moved further right
+        this.npcVendor.rotation.y = 0; // Facing opposite direction
         this.npcVendor.scale.set(9, 9, 9);
         this.scene.add(this.npcVendor);
 
@@ -411,8 +411,8 @@ export default class OrganizationScene3B {
         
         this.createSpeechTextTexture();
         
-        this.speechBubbleGroup.position.set(4, 16, 10);
-        this.speechBubbleGroup.rotation.y = Math.PI;
+        this.speechBubbleGroup.position.set(14, 16, 10); // Adjusted to match NPC position (moved further right)
+        this.speechBubbleGroup.rotation.y = 0; // Facing opposite direction to match NPC
         
         this.scene.add(this.speechBubbleGroup);
         this.createAlternativeButton();
@@ -589,15 +589,13 @@ export default class OrganizationScene3B {
                     <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">Menolak dan di non-aktifkan Pembina</div>
-                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Tidak ikut kegiatan selanjutnya (+5%)</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Menolak dan di non-aktifkan Pembina</div>
                         </div>
                     </button>
                     <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">Menerima dan acara berjalan lancar</div>
-                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Terima dana bonus (+25%)</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Menerima dan acara berjalan lancar</div>
                         </div>
                     </button>
                 </div>
