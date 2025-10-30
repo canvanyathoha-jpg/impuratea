@@ -23,9 +23,10 @@ export default class AcademicScene3A {
         this.setWorld();
         this.createNPC();
         
-        setTimeout(() => {
-            this.startStory();
-        }, 1000);
+        // Sistem manual - dialog hanya dimulai saat player mengklik NPC atau tombol
+        // TIDAK ADA timeout otomatis, player bebas menjelajah sepuasnya
+        this.storyStarted = false;
+        this.setupManualInteraction();
     }
 
     setWorld() {
@@ -35,13 +36,72 @@ export default class AcademicScene3A {
         this.scienceModel = this.resources.items.scienceRoom.scene;
         this.scienceModel.position.set(0, 0, 0);
         this.scienceModel.rotation.set(0, 0, 0);
-        this.scienceModel.scale.set(10, 10, 10);
+        // Mengurangi scale dari 10 menjadi 3 untuk mengecilkan ruangan dan meja lebih proporsional
+        this.scienceModel.scale.set(3, 3, 3);
         collidableGroup.add(this.scienceModel);
 
+        // Add additional collision boxes for floor and walls to ensure no gaps
+        this.createCollisionBoxes(collidableGroup);
+
+        // Use science model itself for collision detection
+        // The science room model should have built-in collision geometry
+        this.collider = this.scienceModel;
+
+        // Add the group to the scene
         this.scene.add(collidableGroup);
+        
+        // Build octree from the collidable group for physics
         this.octree.fromGraphNode(collidableGroup);
 
-        console.log("Academic Scene 3A (Lab) loaded");
+        // Setup camera collision using the science model
+        if (this.experience.camera && this.experience.camera.controls) {
+            this.experience.camera.controls.collisionObjects = this.collider;
+            console.log("[AcademicScene3A] Camera collision objects set using science room model");
+        }
+
+        console.log("Academic Scene 3A (Lab) loaded with full collision enabled.");
+    }
+
+    createCollisionBoxes(group) {
+        // Create invisible collision boxes for floor and walls
+        const collisionMaterial = new THREE.MeshBasicMaterial({ 
+            visible: false, 
+            transparent: true, 
+            opacity: 0 
+        });
+
+        // Floor collision box - disesuaikan dengan scale baru (3x lebih kecil)
+        // Ukuran floor dikurangi sesuai dengan scale 3 untuk proporsi yang lebih baik
+        const floorGeometry = new THREE.BoxGeometry(60, 2, 60);
+        const floorCollider = new THREE.Mesh(floorGeometry, collisionMaterial);
+        floorCollider.position.set(0, -1, 0); // Slightly below ground level
+        group.add(floorCollider);
+
+        // Wall collision boxes (4 walls around the room) - disesuaikan dengan scale baru
+        const wallGeometry = new THREE.BoxGeometry(2, 15, 60);
+        
+        // Left wall
+        const leftWall = new THREE.Mesh(wallGeometry, collisionMaterial);
+        leftWall.position.set(-30, 7.5, 0);
+        group.add(leftWall);
+        
+        // Right wall
+        const rightWall = new THREE.Mesh(wallGeometry, collisionMaterial);
+        rightWall.position.set(30, 7.5, 0);
+        group.add(rightWall);
+        
+        // Front wall
+        const frontWallGeometry = new THREE.BoxGeometry(60, 15, 2);
+        const frontWall = new THREE.Mesh(frontWallGeometry, collisionMaterial);
+        frontWall.position.set(0, 7.5, 30);
+        group.add(frontWall);
+        
+        // Back wall
+        const backWall = new THREE.Mesh(frontWallGeometry, collisionMaterial);
+        backWall.position.set(0, 7.5, -30);
+        group.add(backWall);
+
+        console.log("[AcademicScene3A] Additional collision boxes created for floor and walls");
     }
 
     createNPC() {
@@ -54,9 +114,9 @@ export default class AcademicScene3A {
         }
 
         this.npcGroupmate = SkeletonUtils.clone(femaleModel.scene);
-        this.npcGroupmate.position.set(5, 0.5, 15); // Position in the lab
+        this.npcGroupmate.position.set(5, 0, 15); // Position in the lab - Y=0 for proper floor alignment
         this.npcGroupmate.rotation.y = Math.PI;
-        this.npcGroupmate.scale.set(10, 10, 10);
+        this.npcGroupmate.scale.set(8.7, 8.7, 8.7);
         this.scene.add(this.npcGroupmate);
 
         this.npcAnimations = femaleModel.animations.map((clip) => clip.clone());
@@ -70,7 +130,195 @@ export default class AcademicScene3A {
         console.log("[AcademicScene3A] Groupmate NPC created.");
     }
 
+    // Setup sistem interaksi manual: player harus klik NPC atau tombol untuk mulai dialog
+    setupManualInteraction() {
+        // Buat tombol manual yang selalu tersedia
+        this.createManualDialogButton();
+        
+        // Tambahkan area interaksi di sekitar NPC yang bisa diklik
+        this.createNPCInteractionZone();
+        
+        // Update raycast untuk deteksi klik pada NPC
+        console.log("[AcademicScene3A] Manual interaction system ready. Player can click NPC or button to start dialog.");
+    }
+    
+    // Membuat tombol manual yang selalu terlihat untuk mulai dialog
+    createManualDialogButton() {
+        this.manualDialogButton = document.createElement('div');
+        this.manualDialogButton.id = 'manual-dialog-button';
+        
+        const buttonStyle = `
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000;
+            padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 30px; cursor: pointer;
+            font-size: 14px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease; font-family: 'Segoe UI', Arial, sans-serif;
+            display: ${this.storyStarted ? 'none' : 'block'};
+        `;
+        
+        this.manualDialogButton.innerHTML = `
+            <button style="${buttonStyle}">💬 Mulai Percakapan</button>
+        `;
+        document.body.appendChild(this.manualDialogButton);
+        
+        const button = this.manualDialogButton.querySelector('button');
+        button.addEventListener('click', () => {
+            // Play click sound for button
+            if (this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
+            if (!this.storyStarted) {
+                this.startStory();
+            }
+        });
+        
+        button.addEventListener('mouseenter', () => {
+            button.style.transform = 'translateX(-50%) translateY(-2px) scale(1.05)';
+            button.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.transform = 'translateX(-50%) translateY(0) scale(1)';
+            button.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+        });
+    }
+    
+    // Membuat zona interaksi 3D di sekitar NPC yang bisa diklik
+    createNPCInteractionZone() {
+        if (!this.npcGroupmate) return;
+        
+        // Buat sphere invisible yang lebih besar di sekitar NPC untuk area klik
+        const interactionGeometry = new THREE.SphereGeometry(8, 16, 16);
+        const interactionMaterial = new THREE.MeshBasicMaterial({ 
+            visible: false, 
+            transparent: true, 
+            opacity: 0,
+            side: THREE.DoubleSide
+        });
+        
+        this.npcInteractionZone = new THREE.Mesh(interactionGeometry, interactionMaterial);
+        this.npcInteractionZone.position.copy(this.npcGroupmate.position);
+        this.npcInteractionZone.position.y += 5; // Naikkan sedikit dari ground
+        this.npcInteractionZone.userData.isNPC = true;
+        
+        // Tambahkan ke scene
+        this.scene.add(this.npcInteractionZone);
+        
+        // Indikator visual dihilangkan sesuai permintaan user
+        // this.createNPCIndicator();
+        
+        console.log("[AcademicScene3A] NPC interaction zone created at:", this.npcInteractionZone.position);
+    }
+    
+    // Membuat indikator visual bahwa NPC bisa diklik
+    createNPCIndicator() {
+        if (!this.npcGroupmate) return;
+        
+        // Buat text sprite atau mesh sederhana di atas NPC
+        const indicatorGeometry = new THREE.RingGeometry(3, 4, 16);
+        const indicatorMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide
+        });
+        
+        this.npcIndicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+        this.npcIndicator.position.copy(this.npcGroupmate.position);
+        this.npcIndicator.position.y += 20; // Di atas kepala NPC
+        this.npcIndicator.rotation.x = -Math.PI / 2; // Horizontal
+        this.npcIndicator.userData.isIndicator = true;
+        
+        this.scene.add(this.npcIndicator);
+        
+        // Animasi rotasi pelan
+        this.indicatorRotationSpeed = 0.005;
+        
+        console.log("[AcademicScene3A] NPC indicator created");
+    }
+    
+    // Override onMouseClick untuk menangani klik pada NPC
+    onMouseClick(event) {
+        if (this.storyStarted) {
+            // Jika dialog sudah dimulai, cek klik pada speech bubble (kode lama)
+            if (this.speechBubbleGroup) {
+                this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+                const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+                if (intersects.length > 0) {
+                    const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
+                    this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
+                }
+            }
+            return;
+        }
+        
+        // Jika dialog belum dimulai, cek klik pada NPC atau interaction zone
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        
+        // Cek intersect dengan NPC atau interaction zone
+        const objectsToCheck = [];
+        if (this.npcGroupmate) objectsToCheck.push(this.npcGroupmate);
+        if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
+        
+        const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
+        
+        if (intersects.length > 0) {
+            console.log("[AcademicScene3A] NPC clicked! Starting dialog...");
+            this.startStory();
+        }
+    }
+    
+    // Override onMouseMove untuk update cursor dan hover effect
+    onMouseMove(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        if (this.storyStarted && this.speechBubbleGroup) {
+            // Jika dialog sudah dimulai, cek hover pada speech bubble
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            return;
+        }
+        
+        // Jika dialog belum dimulai, cek hover pada NPC
+        if (!this.storyStarted && (this.npcGroupmate || this.npcInteractionZone)) {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            const objectsToCheck = [];
+            if (this.npcGroupmate) objectsToCheck.push(this.npcGroupmate);
+            if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
+            
+            const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
+            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+        }
+    }
+
     startStory() {
+        // Pastikan hanya dimulai sekali
+        if (this.storyStarted) return;
+        this.storyStarted = true;
+        
+        // Sembunyikan tombol manual
+        if (this.manualDialogButton) {
+            this.manualDialogButton.style.display = 'none';
+        }
+        
+        // Hapus indikator NPC jika ada
+        if (this.npcIndicator) {
+            this.scene.remove(this.npcIndicator);
+            this.npcIndicator = null;
+        }
+        
+        // Hapus interaction zone (tidak perlu lagi setelah dialog dimulai)
+        if (this.npcInteractionZone) {
+            this.scene.remove(this.npcInteractionZone);
+            this.npcInteractionZone = null;
+        }
+        
+        console.log("[AcademicScene3A] Starting story dialog manually...");
         this.dialogManager.showDialog({ text: "Walau tugas makalah belum sepenuhnya selesai. Selanjutnya adalah ujian praktik biologi berkelompok. Kamu masuk ke laboratorium biologi yang dipenuhi mikroskop dan alat-alat percobaan.", onChoice: () => this.showDilemma1() });
     }
 
@@ -209,17 +457,45 @@ export default class AcademicScene3A {
         this.cleanupSpeechBubble();
         this.speechBubbleGroup = new THREE.Group();
 
+        // Create enhanced bubble with better visual design
         const bubblePlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(8, 4),
-            new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.FrontSide, depthWrite: false })
+            new THREE.PlaneGeometry(9, 5),
+            new THREE.MeshBasicMaterial({ 
+                color: 0xffffff, // Background putih lebih terang
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.98 // Hampir tidak transparan untuk kontras lebih baik
+            })
         );
         this.speechBubbleMaterial = bubblePlane.material;
 
+        // Outer glow effect untuk depth
+        const outerGlow = new THREE.Mesh(
+            new THREE.PlaneGeometry(9.4, 5.4),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x2196f3, // Biru cerah untuk glow
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.3 // Soft glow effect
+            })
+        );
+        
+        // Enhanced border yang lebih tebal dan jelas
         const border = new THREE.Mesh(
-            new THREE.PlaneGeometry(8.2, 4.2),
-            new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.FrontSide, depthWrite: false })
+            new THREE.PlaneGeometry(9.2, 5.2),
+            new THREE.MeshBasicMaterial({ 
+                color: 0x1976d2, // Biru solid untuk border
+                side: THREE.FrontSide, 
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.95
+            })
         );
 
+        // Tambahkan semua elemen dalam urutan yang benar (dari belakang ke depan)
+        this.speechBubbleGroup.add(outerGlow);
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
@@ -235,30 +511,71 @@ export default class AcademicScene3A {
 
     createSpeechTextTexture(speaker, text) {
         const canvas = document.createElement('canvas');
-        canvas.width = 1024;
-        canvas.height = 512;
+        // Increase canvas resolution untuk kualitas text yang lebih baik
+        canvas.width = 2048;
+        canvas.height = 1024;
         const context = canvas.getContext('2d');
 
-        context.fillStyle = 'white';
+        // Enable text rendering yang lebih baik
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+
+        // Create beautiful gradient background yang lebih terang dan kontras lebih baik
+        const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#ffffff'); // Putih murni di atas
+        gradient.addColorStop(0.3, '#fafbff'); // Putih sedikit kebiruan
+        gradient.addColorStop(0.7, '#f5f7ff'); // Biru sangat terang
+        gradient.addColorStop(1, '#eff3ff'); // Biru terang di bawah
+        context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
-        context.font = 'bold 40px Arial';
-        context.fillStyle = 'black';
+
+        // Draw speaker name with enhanced, clearer styling - diperbesar lagi
+        context.font = 'bold 80px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#0d47a1'; // Biru lebih gelap untuk kontras lebih baik
         context.textAlign = 'center';
-
-        context.fillText(speaker + ':', canvas.width / 2, 80);
-
-        context.font = '30px Arial';
-        const lines = this.getLines(context, text, canvas.width - 40);
+        context.textBaseline = 'top';
+        // Enhanced shadow untuk depth
+        context.shadowColor = 'rgba(25, 118, 210, 0.4)';
+        context.shadowBlur = 8;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 2;
+        context.fillText(speaker + ':', canvas.width / 2, 140);
+        
+        // Reset shadow untuk text body
+        context.shadowColor = 'rgba(0, 0, 0, 0.15)';
+        context.shadowBlur = 3;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 1;
+        
+        // Draw text dengan font lebih besar dan kontras lebih baik - diperbesar lagi
+        context.font = 'bold 60px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#1a1a1a'; // Hitam lebih gelap untuk readability lebih baik
+        context.textAlign = 'center';
+        
+        const lines = this.getLines(context, text, canvas.width - 160); // Margin lebih besar untuk font besar
+        const lineHeight = 85; // Line spacing lebih besar untuk readability
+        const startY = 250; // Start position lebih bawah untuk speaker name
+        
         lines.forEach((line, index) => {
-            context.fillText(line, canvas.width / 2, 150 + (index * 40));
+            context.fillText(line, canvas.width / 2, startY + (index * lineHeight));
         });
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
 
-        const textMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
-        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.8, 3.9), textMaterial);
-        textPlane.position.z = 0.01;
+        // Gunakan texture filtering yang lebih baik
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const textMaterial = new THREE.MeshBasicMaterial({ 
+            map: texture, 
+            transparent: true, 
+            depthWrite: false,
+            alphaTest: 0.01 // Anti-aliasing yang lebih baik
+        });
+        // Sesuaikan ukuran plane dengan bubble yang lebih besar
+        const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 4.6), textMaterial);
+        textPlane.position.z = 0.02; // Sedikit lebih ke depan
 
         this.speechBubbleGroup.add(textPlane);
     }
@@ -281,45 +598,102 @@ export default class AcademicScene3A {
         return lines;
     }
 
-    onMouseMove(event) {
-        if (!this.speechBubbleGroup) return;
-        const rect = this.canvas.getBoundingClientRect();
-        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
-    }
-
-    onMouseClick(event) {
-        if (!this.speechBubbleGroup) return;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        if (intersects.length > 0) {
-            const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
-            this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
-        }
-    }
+    // onMouseMove dan onMouseClick sudah di-override di setupManualInteraction()
 
     createAlternativeButton(speaker, text) {
         this.cleanupAlternativeButton();
         this.alternativeButton = document.createElement('div');
         this.alternativeButton.id = 'alternative-speech-button';
-        this.alternativeButton.innerHTML = `<button style="position: fixed; bottom: 20px; right: 20px; z-index: 10001; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Baca Percakapan</button>`;
+        
+        const buttonStyle = `
+            position: fixed; bottom: 20px; right: 20px; z-index: 10001; padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;
+            border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        this.alternativeButton.innerHTML = `<button style="${buttonStyle}">💬 Baca Percakapan</button>`;
         document.body.appendChild(this.alternativeButton);
-        this.alternativeButton.querySelector('button').addEventListener('click', () => {
+        
+        const button = this.alternativeButton.querySelector('button');
+        button.addEventListener('click', () => {
+            // Play click sound for button
+            if (this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.showScreenSpeechBubble(speaker, text);
+        });
+        
+        button.addEventListener('mouseenter', () => {
+            button.style.transform = 'translateY(-2px)';
+            button.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.transform = 'translateY(0)';
+            button.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
         });
     }
 
     showScreenSpeechBubble(speaker, text) {
         this.cleanupScreenSpeechBubble();
+        
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 10001; animation: fadeIn 0.3s ease;
+        `;
+        
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
-        screenBubble.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid black; padding: 20px; border-radius: 10px; z-index: 10002; max-width: 80%;`;
-        screenBubble.innerHTML = `<h3>${speaker}</h3><p>${text}</p><small>Klik untuk menutup</small>`;
+        screenBubble.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%); border: 3px solid #1976d2;
+            padding: 30px 40px; border-radius: 20px; z-index: 10002; max-width: 600px; width: 90%;
+            cursor: pointer; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: slideUp 0.4s ease;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        screenBubble.innerHTML = `
+            <div style="margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #1565c0; font-size: 22px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    👤 ${speaker}
+                </h3>
+            </div>
+            <p style="margin: 15px 0; color: #212121; font-size: 16px; line-height: 1.6;">
+                ${text}
+            </p>
+            <small style="color: #757575; font-size: 12px; font-style: italic;">
+                💡 Klik untuk melanjutkan
+            </small>
+        `;
+        
+        const closeBubble = () => {
+            screenBubble.style.animation = 'slideDown 0.3s ease';
+            backdrop.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                screenBubble.remove();
+                backdrop.remove();
+            }, 300);
+        };
+        
+        screenBubble.addEventListener('click', closeBubble);
+        backdrop.addEventListener('click', closeBubble);
+        
+        document.body.appendChild(backdrop);
         document.body.appendChild(screenBubble);
-        screenBubble.addEventListener('click', () => this.cleanupScreenSpeechBubble());
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes slideUp { from { transform: translate(-50%, -45%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+            @keyframes slideDown { from { transform: translate(-50%, -50%); opacity: 1; } to { transform: translate(-50%, -45%); opacity: 0; } }
+        `;
+        if (!document.getElementById('speechBubbleAnimations')) {
+            style.id = 'speechBubbleAnimations';
+            document.head.appendChild(style);
+        }
     }
 
     cleanupSpeechBubble() {
@@ -363,14 +737,37 @@ export default class AcademicScene3A {
     }
 
     update() {
+        // Update NPC animations
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
         }
+        
+        // Update indicator rotation (animasi berputar) - dihilangkan karena indicator tidak digunakan
+        // if (this.npcIndicator && !this.storyStarted) {
+        //     this.npcIndicator.rotation.z += this.indicatorRotationSpeed;
+        // }
     }
 
     dispose() {
         console.log("[AcademicScene3A] Disposing...");
         this.cleanupSpeechBubble();
+        
+        // Hapus tombol manual
+        if (this.manualDialogButton) {
+            this.manualDialogButton.remove();
+            this.manualDialogButton = null;
+        }
+        
+        // Hapus indikator dan interaction zone
+        if (this.npcIndicator) {
+            this.scene.remove(this.npcIndicator);
+            this.npcIndicator = null;
+        }
+        if (this.npcInteractionZone) {
+            this.scene.remove(this.npcInteractionZone);
+            this.npcInteractionZone = null;
+        }
+        
         this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
         this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
 

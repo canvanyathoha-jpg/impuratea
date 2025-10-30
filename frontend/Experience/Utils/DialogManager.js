@@ -12,6 +12,15 @@ export default class DialogManager {
         this.isShowing = false;
         this.onChoiceCallback = null;
 
+        // Auto-play settings
+        this.autoPlayEnabled = false;
+        this.autoPlaySpeed = 3000; // milliseconds per dialog (default 3 seconds)
+        this.autoPlayTimer = null;
+        
+        // Dialog history
+        this.dialogHistory = [];
+        this.maxHistorySize = 50; // Maximum number of dialogs to keep in history
+
         console.log('[DialogManager] Initialized');
     }
 
@@ -37,14 +46,97 @@ export default class DialogManager {
 
         console.log('[DialogManager] Showing dialog:', config);
 
+        // Add to dialog history
+        this.addToHistory(config);
+
         // Disable camera controls
         this.disableCameraControls();
 
         // Create dialog container
         this.createDialogUI(config);
         
-        // Show score UI
-        this.scoreManager.showScoreUI();
+        // Don't show score UI during gameplay - only at ending
+        // Score is still tracked in background silently
+        
+        // Start auto-play if enabled (only for non-choice dialogs)
+        if (this.autoPlayEnabled && (!config.choices || config.choices.length === 0)) {
+            this.startAutoPlay();
+        }
+    }
+    
+    /**
+     * Add dialog to history
+     */
+    addToHistory(config) {
+        const historyEntry = {
+            speaker: config.speaker || 'Narator',
+            text: config.text,
+            timestamp: Date.now(),
+            choices: config.choices ? config.choices.map(c => c.text) : null
+        };
+        
+        this.dialogHistory.push(historyEntry);
+        
+        // Limit history size
+        if (this.dialogHistory.length > this.maxHistorySize) {
+            this.dialogHistory.shift();
+        }
+    }
+    
+    /**
+     * Get dialog history
+     */
+    getHistory() {
+        return [...this.dialogHistory];
+    }
+    
+    /**
+     * Start auto-play for current dialog
+     */
+    startAutoPlay() {
+        // Clear any existing timer
+        if (this.autoPlayTimer) {
+            clearTimeout(this.autoPlayTimer);
+        }
+        
+        // Only auto-play if there's no choice
+        if (this.currentDialog && (!this.currentDialog.choices || this.currentDialog.choices.length === 0)) {
+            this.autoPlayTimer = setTimeout(() => {
+                this.handleContinue();
+            }, this.autoPlaySpeed);
+        }
+    }
+    
+    /**
+     * Stop auto-play
+     */
+    stopAutoPlay() {
+        if (this.autoPlayTimer) {
+            clearTimeout(this.autoPlayTimer);
+            this.autoPlayTimer = null;
+        }
+    }
+    
+    /**
+     * Set auto-play enabled/disabled
+     */
+    setAutoPlay(enabled) {
+        this.autoPlayEnabled = enabled;
+        if (enabled && this.currentDialog) {
+            this.startAutoPlay();
+        } else {
+            this.stopAutoPlay();
+        }
+    }
+    
+    /**
+     * Set auto-play speed (milliseconds)
+     */
+    setAutoPlaySpeed(speedMs) {
+        this.autoPlaySpeed = Math.max(1000, Math.min(10000, speedMs)); // Clamp between 1-10 seconds
+        if (this.autoPlayEnabled && this.currentDialog) {
+            this.startAutoPlay();
+        }
     }
 
     disableCameraControls() {
@@ -169,23 +261,37 @@ export default class DialogManager {
         let html = '';
 
         // Determine if this dialog text should be visually rendered by this UI.
-        // It should render for narrative text (no speaker) or inner monologue.
+        // It should render for:
+        // - Narrative text (no speaker) 
+        // - Inner monologue (Kamu batin)
+        // - Teacher dialogs (Guru) - these should display in story-dialog
         // It should NOT render for NPCs, as they use a 3D speech bubble.
-        const shouldRenderText = !config.speaker || config.speaker === "Kamu (batin)";
+        const shouldRenderText = !config.speaker 
+            || config.speaker === "Kamu (batin)" 
+            || config.speaker?.includes("Guru");
 
         if (shouldRenderText) {
             // Speaker name (if provided)
             if (config.speaker) {
+                // Different styling for teacher vs inner monologue
+                const isTeacher = config.speaker.includes("Guru");
+                const speakerColor = isTeacher ? '#ffd700' : '#00ffff'; // Gold for teachers, cyan for inner monologue
+                const speakerEmoji = isTeacher ? '👨‍🏫' : '💭';
+                
                 html += `
-                    <div style="font-size: 14px; color: #00ffff; margin-bottom: 10px; font-weight: bold;">
-                        ${config.speaker}
+                    <div style="font-size: 14px; color: ${speakerColor}; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <span>${speakerEmoji}</span>
+                        <span>${config.speaker}</span>
                     </div>
                 `;
             }
 
-            // Dialog text
+            // Dialog text with enhanced styling for teacher dialogs
+            const isTeacher = config.speaker?.includes("Guru");
+            const textColor = isTeacher ? '#f0f0f0' : '#ffffff';
+            
             html += `
-                <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
+                <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px; color: ${textColor}; ${isTeacher ? 'border-left: 3px solid #ffd700; padding-left: 15px;' : ''}">
                     ${config.text}
                 </div>
             `;
@@ -218,7 +324,6 @@ export default class DialogManager {
                         "
                     >
                         <strong style="color: #00ffff;">[${letter}]</strong> ${choice.text}
-                        ${choice.score > 0 ? `<span style="color: #ff6b6b; font-size: 12px; margin-left: 10px;">(+${choice.score}% corruption)</span>` : ''}
                     </button>
                 `;
             });
@@ -266,6 +371,66 @@ export default class DialogManager {
                 </div>
             `;
         }
+        
+        // Add auto-play controls and history button (only if no choices or after choices)
+        if (!config.choices || config.choices.length === 0) {
+            const autoPlayIndicator = this.autoPlayEnabled 
+                ? `<div style="font-size: 12px; color: #00ffff; margin-top: 15px; text-align: center; opacity: 0.8; padding: 5px;">
+                    ⏩ Auto-play: ${(this.autoPlaySpeed / 1000).toFixed(1)}s
+                   </div>`
+                : '';
+            
+            html += autoPlayIndicator;
+        }
+        
+        html += `
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <button 
+                    id="autoplay-toggle"
+                    style="
+                        padding: 8px 16px;
+                        background: ${this.autoPlayEnabled ? '#00ff00' : '#666'};
+                        border: none;
+                        border-radius: 6px;
+                        color: white;
+                        font-size: 12px;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    "
+                >
+                    ${this.autoPlayEnabled ? '⏸️ Auto-play: ON' : '▶️ Auto-play: OFF'}
+                </button>
+                <button 
+                    id="history-button"
+                    style="
+                        padding: 8px 16px;
+                        background: #555;
+                        border: none;
+                        border-radius: 6px;
+                        color: white;
+                        font-size: 12px;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    "
+                >
+                    📜 History (${this.dialogHistory.length})
+                </button>
+                ${!config.choices || config.choices.length === 0 ? `
+                    <input 
+                        type="range" 
+                        id="autoplay-speed" 
+                        min="1" 
+                        max="10" 
+                        value="${(this.autoPlaySpeed / 1000).toFixed(1)}"
+                        style="width: 150px;"
+                        title="Auto-play Speed"
+                    />
+                    <label for="autoplay-speed" style="font-size: 11px; color: #aaa;">
+                        Speed: ${(this.autoPlaySpeed / 1000).toFixed(1)}s
+                    </label>
+                ` : ''}
+            </div>
+        `;
 
         dialogDiv.innerHTML = html;
         document.body.appendChild(dialogDiv);
@@ -283,7 +448,13 @@ export default class DialogManager {
             config.choices.forEach((choice, index) => {
                 const button = document.getElementById(`choice-${index}`);
                 if (button) {
-                    button.addEventListener('click', () => this.handleChoice(choice, index));
+                    button.addEventListener('click', () => {
+                        // Play click sound for button
+                        if (this.experience && this.experience.soundManager) {
+                            this.experience.soundManager.play('click', 0.6);
+                        }
+                        this.handleChoice(choice, index);
+                    });
                     
                     // Hover effect
                     button.addEventListener('mouseenter', (e) => {
@@ -301,7 +472,13 @@ export default class DialogManager {
         } else {
             const continueBtn = document.getElementById('continue-button');
             if (continueBtn) {
-                continueBtn.addEventListener('click', () => this.handleContinue());
+                continueBtn.addEventListener('click', () => {
+                    // Play click sound for button
+                    if (this.experience && this.experience.soundManager) {
+                        this.experience.soundManager.play('click', 0.6);
+                    }
+                    this.handleContinue();
+                });
                 continueBtn.addEventListener('mouseenter', (e) => {
                     e.target.style.transform = 'scale(1.05)';
                     e.target.style.background = '#00cccc';
@@ -332,6 +509,10 @@ export default class DialogManager {
                         console.log(`[DialogManager] Choice ${index} clicked!`);
                         e.preventDefault();
                         e.stopPropagation();
+                        // Play click sound for button
+                        if (this.experience && this.experience.soundManager) {
+                            this.experience.soundManager.play('click', 0.6);
+                        }
                         this.handleChoice(choice, index);
                     });
                     
@@ -364,6 +545,10 @@ export default class DialogManager {
                     console.log('[DialogManager] 🖱️ Continue button clicked!');
                     e.preventDefault();
                     e.stopPropagation();
+                    // Play click sound for button
+                    if (this.experience && this.experience.soundManager) {
+                        this.experience.soundManager.play('click', 0.6);
+                    }
                     this.handleContinue();
                 });
                 
@@ -382,6 +567,155 @@ export default class DialogManager {
                 console.error('[DialogManager] ❌ Continue button not found!');
             }
         }
+        
+        // Add auto-play toggle button listener
+        const autoplayToggle = document.getElementById('autoplay-toggle');
+        if (autoplayToggle) {
+            autoplayToggle.addEventListener('click', () => {
+                // Play click sound
+                if (this.experience && this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
+                this.setAutoPlay(!this.autoPlayEnabled);
+                // Update button text and style
+                autoplayToggle.textContent = this.autoPlayEnabled ? '⏸️ Auto-play: ON' : '▶️ Auto-play: OFF';
+                autoplayToggle.style.background = this.autoPlayEnabled ? '#00ff00' : '#666';
+            });
+        }
+        
+        // Add history button listener
+        const historyButton = document.getElementById('history-button');
+        if (historyButton) {
+            historyButton.addEventListener('click', () => {
+                // Play click sound
+                if (this.experience && this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
+                this.showHistory();
+            });
+        }
+        
+        // Add auto-play speed slider
+        const autoplaySpeedSlider = document.getElementById('autoplay-speed');
+        if (autoplaySpeedSlider) {
+            autoplaySpeedSlider.addEventListener('input', (e) => {
+                const speed = parseFloat(e.target.value);
+                this.setAutoPlaySpeed(speed * 1000); // Convert to milliseconds
+                // Update label
+                const label = document.querySelector('label[for="autoplay-speed"]');
+                if (label) {
+                    label.textContent = `Speed: ${speed.toFixed(1)}s`;
+                }
+                // Update indicator if exists
+                const indicator = document.querySelector('[data-autoplay-indicator]');
+                if (indicator && this.autoPlayEnabled) {
+                    indicator.textContent = `⏩ Auto-play: ${speed.toFixed(1)}s`;
+                }
+            });
+        }
+    }
+    
+    /**
+     * Show dialog history
+     */
+    showHistory() {
+        // Remove existing history UI
+        const existing = document.getElementById('dialog-history-ui');
+        if (existing) {
+            existing.remove();
+            return; // Toggle off
+        }
+        
+        const historyDiv = document.createElement('div');
+        historyDiv.id = 'dialog-history-ui';
+        historyDiv.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 700px;
+            max-height: 70vh;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            z-index: 10000;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            overflow-y: auto;
+        `;
+        
+        let historyHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #00ffff; padding-bottom: 10px;">
+                <h2 style="margin: 0; color: #00ffff;">📜 Dialog History</h2>
+                <button id="close-history" style="
+                    padding: 5px 15px;
+                    background: #666;
+                    border: none;
+                    border-radius: 5px;
+                    color: white;
+                    cursor: pointer;
+                ">✕ Close</button>
+            </div>
+        `;
+        
+        if (this.dialogHistory.length === 0) {
+            historyHtml += `<div style="text-align: center; padding: 40px; color: #888;">No dialog history yet.</div>`;
+        } else {
+            this.dialogHistory.forEach((entry, index) => {
+                const time = new Date(entry.timestamp).toLocaleTimeString();
+                historyHtml += `
+                    <div style="
+                        margin-bottom: 15px;
+                        padding: 15px;
+                        background: rgba(0, 255, 255, 0.05);
+                        border-left: 3px solid #00ffff;
+                        border-radius: 5px;
+                    ">
+                        <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">
+                            #${index + 1} - ${time}
+                        </div>
+                        <div style="font-weight: bold; color: #00ffff; margin-bottom: 8px;">
+                            ${entry.speaker}
+                        </div>
+                        <div style="font-size: 14px; line-height: 1.5;">
+                            ${entry.text}
+                        </div>
+                        ${entry.choices ? `
+                            <div style="margin-top: 10px; font-size: 12px; color: #aaa;">
+                                Choices: ${entry.choices.join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+        }
+        
+        historyDiv.innerHTML = historyHtml;
+        document.body.appendChild(historyDiv);
+        
+        // Close button
+        const closeBtn = document.getElementById('close-history');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                if (this.experience && this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
+                historyDiv.remove();
+            });
+        }
+        
+        // Close on backdrop click
+        historyDiv.addEventListener('click', (e) => {
+            if (e.target === historyDiv) {
+                if (this.experience && this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
+                historyDiv.remove();
+            }
+        });
     }
 
     addDialogStyles() {
@@ -417,10 +751,10 @@ export default class DialogManager {
     handleChoice(choice, index) {
         console.log(`[DialogManager] Choice ${index} selected:`, choice);
 
-        // Add score
+        // Add score silently (no visual feedback during gameplay)
         if (choice.score > 0) {
-            const newScore = this.scoreManager.addScore(choice.score);
-            this.showScoreChange(choice.score, newScore);
+            this.scoreManager.addScore(choice.score);
+            // Don't show score change notification - keep it hidden until ending
         }
 
         // Hide current dialog with animation
@@ -479,38 +813,9 @@ export default class DialogManager {
     }
 
     showScoreChange(points, newScore) {
-        const changeDiv = document.createElement('div');
-        changeDiv.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.9);
-            padding: 20px 40px;
-            border-radius: 15px;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            z-index: 2000;
-            animation: fadeIn 0.3s ease-in;
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
-        `;
-
-        changeDiv.innerHTML = `
-            Corruption +${points}%<br>
-            <span style="font-size: 18px;">Total: ${newScore}%</span>
-        `;
-
-        document.body.appendChild(changeDiv);
-
-        setTimeout(() => {
-            changeDiv.style.animation = 'fadeOut 0.3s ease-out';
-            changeDiv.style.opacity = '0';
-            setTimeout(() => changeDiv.remove(), 300);
-        }, 1500);
-
-        // Update score UI
-        this.scoreManager.showScoreUI();
+        // Disabled - score changes are hidden during gameplay
+        // Score is only revealed at ending
+        // This method is kept for backward compatibility but does nothing
     }
 
     hideDialog() {
@@ -550,6 +855,9 @@ export default class DialogManager {
     // Show ending screen
     showEnding() {
         this.hideAll();
+        
+        // Enable and show score UI at ending (reveal corruption level now)
+        this.scoreManager.enableScoreUI();
 
         const ending = this.scoreManager.getEnding();
         console.log('[DialogManager] Showing ending:', ending);
@@ -645,6 +953,10 @@ export default class DialogManager {
 
         if (restartBtn) {
             restartBtn.addEventListener('click', () => {
+                // Play click sound for button
+                if (this.experience && this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
                 this.scoreManager.resetScore();
                 window.location.href = window.location.pathname + '?scene=a_scene1';
             });
@@ -658,6 +970,10 @@ export default class DialogManager {
 
         if (menuBtn) {
             menuBtn.addEventListener('click', () => {
+                // Play click sound for button
+                if (this.experience && this.experience.soundManager) {
+                    this.experience.soundManager.play('click', 0.6);
+                }
                 this.scoreManager.resetScore();
                 window.location.href = window.location.pathname + '?scene=westgate';
             });
