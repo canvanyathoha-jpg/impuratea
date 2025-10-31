@@ -56,7 +56,10 @@ export default class Player {
 
         // MODIFIED: Sesuaikan dengan scale avatar 3.96
         this.player.height = 4.75; // 1.2 * 3.96 ≈ 4.75
-        this.player.speedMultiplier = 0.35;
+        // Speed multiplier untuk berjalan normal - sudah disesuaikan agar tidak terlalu berat
+        this.player.speedMultiplier = 1.2; // Kecepatan berjalan normal yang nyaman
+        // Run multiplier terpisah untuk berlari - akan digunakan saat run action aktif
+        this.player.runMultiplier = 1.8; // Kecepatan berlari yang lebih cepat tapi tidak terlalu ekstrem
         this.player.position = new THREE.Vector3();
         this.player.quaternion = new THREE.Euler();
         this.player.directionOffset = 0;
@@ -404,20 +407,24 @@ export default class Player {
     resize() {}
 
     updateColliderMovement() {
-        const speed =
-            (this.player.onFloor ? 1.75 : 0.1) *
-            this.player.gravity *
-            this.player.speedMultiplier;
-
+        // Tentukan base speed berdasarkan apakah sedang di lantai atau tidak
+        const baseSpeed = (this.player.onFloor ? 1.75 : 0.1) * this.player.gravity;
+        
+        // Pilih multiplier berdasarkan apakah sedang berlari atau berjalan normal
+        // Jika run action aktif, gunakan runMultiplier, jika tidak gunakan speedMultiplier normal
+        const currentMultiplier = this.actions.run ? this.player.runMultiplier : this.player.speedMultiplier;
+        
+        const speed = baseSpeed * currentMultiplier;
         let speedDelta = this.time.delta * speed;
 
         if (this.actions.movingJoyStick) {
             this.player.velocity.add(this.getJoyStickDirectionalVector());
         }
 
-        if (this.actions.run) {
-            speedDelta *= 2.5;
-        }
+        // Tidak perlu lagi speedDelta *= 2.5 karena sudah menggunakan runMultiplier terpisah di atas
+        // if (this.actions.run) {
+        //     speedDelta *= 2.5;
+        // }
 
         if (this.actions.forward) {
             this.player.velocity.add(
@@ -447,7 +454,8 @@ export default class Player {
             this.jumpOnce = false;
         }
 
-        let damping = Math.exp(-15 * this.time.delta) - 1;
+        // Reduced damping untuk membuat gerakan lebih responsif dan tidak terlalu terasa berat
+        let damping = Math.exp(-12 * this.time.delta) - 1; // Dikurangi dari -15 menjadi -12 untuk gerakan lebih ringan
 
         if (!this.player.onFloor) {
             if (this.player.animation === "jumping") {

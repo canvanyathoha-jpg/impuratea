@@ -77,7 +77,8 @@ export default class Resources extends EventEmitter {
         }
     }
 
-    loadSceneAssets(sceneName, callback) {
+    loadSceneAssets(sceneName, callback, progressCallback = null) {
+        // progressCallback: function(loaded, total, percentage) - untuk update progress bar
         console.log(`[Resources] Loading assets for scene: ${sceneName}`);
 
         if (!this.assets[0][sceneName]) {
@@ -97,7 +98,17 @@ export default class Resources extends EventEmitter {
 
         if (allLoaded) {
             console.log(`[Resources] Assets for "${sceneName}" already loaded`);
-            if (callback) callback();
+            // Jika sudah loaded, tetap tampilkan progress bar sedikit untuk UX
+            if (progressCallback) {
+                // Animate dari 0% ke 100% dengan delay kecil
+                setTimeout(() => {
+                    progressCallback(sceneAssets.length, sceneAssets.length, 100);
+                }, 200);
+            }
+            // Delay callback sedikit agar preloader terlihat
+            setTimeout(() => {
+                if (callback) callback();
+            }, 300);
             return;
         }
 
@@ -115,7 +126,15 @@ export default class Resources extends EventEmitter {
 
         const checkComplete = () => {
             loadedCount++;
-            console.log(`[Resources] Scene assets: ${loadedCount}/${toLoad} loaded`);
+            const totalAssets = sceneAssets.length;
+            const percentage = Math.round((loadedCount / toLoad) * 100);
+            console.log(`[Resources] Scene assets: ${loadedCount}/${toLoad} loaded (${percentage}%)`);
+            
+            // Update progress callback jika ada
+            if (progressCallback) {
+                progressCallback(loadedCount, toLoad, percentage);
+            }
+            
             if (loadedCount === toLoad) {
                 console.log(`[Resources] All assets for "${sceneName}" loaded!`);
                 this.currentScene = sceneName;
