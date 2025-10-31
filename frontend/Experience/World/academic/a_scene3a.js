@@ -2,6 +2,7 @@ import Experience from "../../Experience.js";
 import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import DialogManager from "../../Utils/DialogManager.js";
+import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
 
 export default class AcademicScene3A {
     constructor() {
@@ -11,6 +12,8 @@ export default class AcademicScene3A {
         this.octree = this.experience.world.octree;
 
         this.dialogManager = new DialogManager(this.experience);
+        this.speechAudioManager = new SpeechAudioManager();
+        this.npcGender = 'female'; // NPC di scene 3a menggunakan model female
         this.npcGroupmate = null;
         this.speechBubbleGroup = null;
 
@@ -330,20 +333,26 @@ export default class AcademicScene3A {
         const speaker = "Teman Kelompok";
         const text = "Eh, kamu mau ikutan praktik atau mau ngerjain tugas makalahmu? Soalnya kita butuh semua orang fokus nih.";
 
-        this.create3DSpeechBubble(speaker, text);
-
-        this.dialogManager.showDialog({
-            speaker: speaker,
-            text: text,
-            choices: [
+        // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager dengan choices
+        // Cleanup screen bubble jika ada, kemudian tampilkan DialogManager
+        this.create3DSpeechBubble(speaker, text, false); // false = jangan tampilkan screen dialog
+        
+        // Cleanup screen bubble sebelum showDialog untuk memastikan tidak overlap
+        setTimeout(() => {
+            this.cleanupScreenSpeechBubble();
+            this.dialogManager.showDialog({
+                speaker: speaker,
+                text: text,
+                choices: [
                 { text: "Mengerjakan tugas makalah Kimia dan numpang nama di kelompok biologi.", score: 10, path: 'makalah' },
                 { text: "Ikut andil dalam kelompok biologi dan bayar joki untuk tugas makalah Kimia.", score: 5, path: 'biologi' }
             ],
-            onChoice: (choice) => {
-                this.cleanupSpeechBubble();
-                this.handleFirstChoice(choice);
-            }
-        });
+                    onChoice: (choice) => {
+                        this.cleanupSpeechBubble();
+                        this.handleFirstChoice(choice);
+                    }
+                });
+            }, 350); // Delay sedikit untuk memastikan cleanup terjadi
     }
 
     handleFirstChoice(choice) {
@@ -367,32 +376,40 @@ export default class AcademicScene3A {
         const speaker = "Teman Kelompok";
         const text = "Eh, aku dapat info dari kakak kelas! Soal praktik biologi kita ini SAMA persis dengan tahun lalu! Kita bisa minta bocoran jawaban dari kakak kelas!";
 
-        this.create3DSpeechBubble(speaker, text);
-
-        this.dialogManager.showDialog({
-            speaker: speaker,
-            text: text,
-            onChoice: () => {
-                this.cleanupSpeechBubble();
-                this.showLeakProposal();
-            }
-        });
+        // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
+        this.create3DSpeechBubble(speaker, text, false);
+        
+        setTimeout(() => {
+            this.cleanupScreenSpeechBubble();
+            this.dialogManager.showDialog({
+                speaker: speaker,
+                text: text,
+                onChoice: () => {
+                    this.cleanupSpeechBubble();
+                    this.showLeakProposal();
+                }
+            });
+        }, 350);
     }
 
     showLeakProposal() {
         const speaker = "Teman Kelompok";
         const text = "Kamu kan kenal sama kakak kelas itu kan? Minta tolong dong! Kalau kita pakai bocoran, praktik kita pasti sempurna!";
 
-        this.create3DSpeechBubble(speaker, text);
-
-        this.dialogManager.showDialog({
-            speaker: speaker,
-            text: text,
-            onChoice: () => {
-                this.cleanupSpeechBubble();
-                this.showMainChoice();
-            }
-        });
+        // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
+        this.create3DSpeechBubble(speaker, text, false);
+        
+        setTimeout(() => {
+            this.cleanupScreenSpeechBubble();
+            this.dialogManager.showDialog({
+                speaker: speaker,
+                text: text,
+                onChoice: () => {
+                    this.cleanupSpeechBubble();
+                    this.showMainChoice();
+                }
+            });
+        }, 350);
     }
 
     showMainChoice() {
@@ -423,16 +440,20 @@ export default class AcademicScene3A {
         const speaker = "Teman Kelompok";
         const text = "Serius?! Kamu terlalu idealis! Ya udah, kalau gitu namamu kami coret aja dari kelompok. Kerjain sendiri praktikmu!";
 
-        this.create3DSpeechBubble(speaker, text);
-
-        this.dialogManager.showDialog({
-            speaker: speaker,
-            text: text,
-            onChoice: () => {
-                this.cleanupSpeechBubble();
-                this.showRefuseConsequence();
-            }
-        });
+        // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
+        this.create3DSpeechBubble(speaker, text, false);
+        
+        setTimeout(() => {
+            this.cleanupScreenSpeechBubble();
+            this.dialogManager.showDialog({
+                speaker: speaker,
+                text: text,
+                onChoice: () => {
+                    this.cleanupSpeechBubble();
+                    this.showRefuseConsequence();
+                }
+            });
+        }, 350);
     }
 
     showRefuseConsequence() {
@@ -453,7 +474,9 @@ export default class AcademicScene3A {
 
     // --- Speech Bubble Logic ---
 
-    create3DSpeechBubble(speaker, text) {
+    create3DSpeechBubble(speaker, text, showScreenDialog = true) {
+        // showScreenDialog: apakah harus menampilkan screen dialog otomatis
+        // false jika akan ada DialogManager.showDialog yang dipanggil setelahnya
         this.cleanupSpeechBubble();
         this.speechBubbleGroup = new THREE.Group();
 
@@ -506,7 +529,24 @@ export default class AcademicScene3A {
         this.speechBubbleGroup.rotation.y = Math.PI; 
 
         this.scene.add(this.speechBubbleGroup);
-        this.createAlternativeButton(speaker, text);
+        // Dialog muncul otomatis HANYA jika showScreenDialog = true
+        // Jika false, biarkan DialogManager yang menampilkan (untuk avoid overlap dengan choices)
+        if (showScreenDialog) {
+            setTimeout(() => {
+                this.showScreenSpeechBubble(speaker, text);
+            }, 300);
+        }
+        
+        // Play speech audio menggunakan Web Speech API dengan voice sesuai gender NPC
+        if (this.speechAudioManager && this.speechAudioManager.isSupported) {
+            const fullText = `${speaker}: ${text}`;
+            this.speechAudioManager.speak(fullText, {
+                gender: this.npcGender, // Gunakan gender NPC yang sesuai
+                rate: 0.95,
+                pitch: 1.0,
+                volume: 0.85
+            });
+        }
     }
 
     createSpeechTextTexture(speaker, text) {
@@ -529,32 +569,32 @@ export default class AcademicScene3A {
         context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw speaker name with enhanced, clearer styling - diperbesar lagi
-        context.font = 'bold 80px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        // Draw speaker name with MUCH LARGER font untuk visibility yang jauh lebih baik
+        context.font = 'bold 140px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
         context.fillStyle = '#0d47a1'; // Biru lebih gelap untuk kontras lebih baik
         context.textAlign = 'center';
         context.textBaseline = 'top';
         // Enhanced shadow untuk depth
-        context.shadowColor = 'rgba(25, 118, 210, 0.4)';
-        context.shadowBlur = 8;
+        context.shadowColor = 'rgba(25, 118, 210, 0.5)';
+        context.shadowBlur = 12;
         context.shadowOffsetX = 0;
-        context.shadowOffsetY = 2;
-        context.fillText(speaker + ':', canvas.width / 2, 140);
+        context.shadowOffsetY = 3;
+        context.fillText(speaker + ':', canvas.width / 2, 120);
         
         // Reset shadow untuk text body
-        context.shadowColor = 'rgba(0, 0, 0, 0.15)';
-        context.shadowBlur = 3;
+        context.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        context.shadowBlur = 5;
         context.shadowOffsetX = 0;
-        context.shadowOffsetY = 1;
+        context.shadowOffsetY = 2;
         
-        // Draw text dengan font lebih besar dan kontras lebih baik - diperbesar lagi
-        context.font = 'bold 60px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
-        context.fillStyle = '#1a1a1a'; // Hitam lebih gelap untuk readability lebih baik
+        // Draw text dengan font JAUH LEBIH BESAR untuk visibility maksimal
+        context.font = 'bold 110px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#000000';
         context.textAlign = 'center';
         
-        const lines = this.getLines(context, text, canvas.width - 160); // Margin lebih besar untuk font besar
-        const lineHeight = 85; // Line spacing lebih besar untuk readability
-        const startY = 250; // Start position lebih bawah untuk speaker name
+        const lines = this.getLines(context, text, canvas.width - 200);
+        const lineHeight = 130;
+        const startY = 320;
         
         lines.forEach((line, index) => {
             context.fillText(line, canvas.width / 2, startY + (index * lineHeight));
@@ -638,20 +678,17 @@ export default class AcademicScene3A {
     showScreenSpeechBubble(speaker, text) {
         this.cleanupScreenSpeechBubble();
         
-        const backdrop = document.createElement('div');
-        backdrop.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); z-index: 10001; animation: fadeIn 0.3s ease;
-        `;
+        // TIDAK PERLU BACKDROP GELAP - Dialog muncul jelas tanpa overlay
+        // Hapus backdrop untuk visibility yang lebih baik
         
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
         screenBubble.style.cssText = `
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%); border: 3px solid #1976d2;
-            padding: 30px 40px; border-radius: 20px; z-index: 10002; max-width: 600px; width: 90%;
-            cursor: pointer; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: slideUp 0.4s ease;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 30px 40px; border-radius: 20px; z-index: 10002; max-width: 700px; width: 85%;
+            cursor: pointer; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); animation: slideUp 0.4s ease;
+            font-family: 'Segoe UI', Arial, sans-serif; backdrop-filter: blur(10px);
         `;
         
         screenBubble.innerHTML = `
@@ -670,17 +707,13 @@ export default class AcademicScene3A {
         
         const closeBubble = () => {
             screenBubble.style.animation = 'slideDown 0.3s ease';
-            backdrop.style.animation = 'fadeOut 0.3s ease';
             setTimeout(() => {
                 screenBubble.remove();
-                backdrop.remove();
             }, 300);
         };
         
         screenBubble.addEventListener('click', closeBubble);
-        backdrop.addEventListener('click', closeBubble);
         
-        document.body.appendChild(backdrop);
         document.body.appendChild(screenBubble);
         
         const style = document.createElement('style');
@@ -697,6 +730,11 @@ export default class AcademicScene3A {
     }
 
     cleanupSpeechBubble() {
+        // Stop any ongoing speech audio
+        if (this.speechAudioManager) {
+            this.speechAudioManager.stop();
+        }
+        
         if (this.speechBubbleGroup) {
             this.scene.remove(this.speechBubbleGroup);
             this.speechBubbleGroup = null;

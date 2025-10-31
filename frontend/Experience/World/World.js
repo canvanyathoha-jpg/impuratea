@@ -218,9 +218,16 @@ export default class World extends EventEmitter {
     switchSceneWithPosition(sceneName, targetPosition, sourcePortal = null) {
         console.log(`[World] Switching to scene: ${sceneName} at position:`, targetPosition);
 
-        // Load assets untuk scene baru dulu
-        this.experience.resources.loadSceneAssets(sceneName, () => {
-            console.log(`[World] Assets loaded, now switching scene...`);
+        // Show preloader saat scene transition
+        this.showScenePreloader();
+
+        // Delay kecil untuk memastikan preloader muncul dulu
+        setTimeout(() => {
+            // Load assets untuk scene baru dulu dengan progress callback
+            this.experience.resources.loadSceneAssets(sceneName, () => {
+                // Set progress ke 100% saat semua assets loaded
+                this.updateSceneProgress(1, 1, 100);
+                console.log(`[World] Assets loaded, now switching scene...`);
 
             try {
                 // Clear current scene
@@ -245,8 +252,10 @@ export default class World extends EventEmitter {
 
                 console.log(`[World] ✅ Scene switched successfully to: ${sceneName}`);
 
-                // Remove fade effect setelah scene loaded
+                // Hide preloader dan remove fade effect setelah scene loaded
+                // Tambah delay lebih lama untuk memastikan scene benar-benar loaded
                 setTimeout(() => {
+                    this.hideScenePreloader();
                     console.log("[World] Removing fade effect...");
                     // Gunakan source portal jika ada
                     if (sourcePortal && sourcePortal.removeFade) {
@@ -262,7 +271,7 @@ export default class World extends EventEmitter {
                         }
                         console.log("[World] Fade removed via scene portals");
                     }
-                }, 100); // Dikurangi dari 800ms ke 100ms
+                }, 500); // Delay lebih lama untuk memastikan scene benar-benar loaded dan visible
             } catch (error) {
                 console.error("[World] ❌ Error during scene switch:", error);
                 console.error("[World] Error stack:", error.stack);
@@ -271,7 +280,163 @@ export default class World extends EventEmitter {
                     sourcePortal.removeFade();
                 }
             }
-        });
+            }, (loaded, total, percentage) => {
+                // Progress callback: update progress bar saat assets sedang dimuat
+                this.updateSceneProgress(loaded, total, percentage);
+            });
+        }, 100); // Delay 100ms untuk memastikan preloader muncul dulu
+    }
+
+    /**
+     * Show preloader saat scene transition dengan progress bar
+     */
+    showScenePreloader() {
+        // Remove existing preloader if any
+        const existing = document.getElementById('scene-transition-preloader');
+        if (existing) {
+            existing.remove();
+        }
+        
+        // Create preloader element
+        const preloader = document.createElement('div');
+        preloader.id = 'scene-transition-preloader';
+        preloader.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1E407C 0%, #0a1f3d 100%);
+            z-index: 999999999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 1; // Langsung visible, tidak perlu fade-in untuk memastikan terlihat
+            visibility: visible;
+        `;
+        
+        // Create loading spinner
+        const spinner = document.createElement('div');
+        spinner.style.cssText = `
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #96BEE6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 30px;
+        `;
+        
+        // Create loading text
+        const text = document.createElement('div');
+        text.textContent = 'Memuat Scene...';
+        text.style.cssText = `
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', Arial, sans-serif;
+            margin-bottom: 30px;
+        `;
+        
+        // Create progress bar container
+        const progressContainer = document.createElement('div');
+        progressContainer.style.cssText = `
+            width: 400px;
+            max-width: 80%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        `;
+        
+        // Create progress bar fill
+        const progressBar = document.createElement('div');
+        progressBar.id = 'scene-progress-bar-fill';
+        progressBar.style.cssText = `
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #96BEE6 0%, #5A9BD4 50%, #96BEE6 100%);
+            background-size: 200% 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease-out;
+            animation: shimmer 2s linear infinite;
+        `;
+        
+        // Create percentage text
+        const percentageText = document.createElement('div');
+        percentageText.id = 'scene-progress-percentage';
+        percentageText.textContent = '0%';
+        percentageText.style.cssText = `
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            font-weight: 500;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', Arial, sans-serif;
+        `;
+        
+        // Add keyframes animation
+        if (!document.getElementById('scene-preloader-animations')) {
+            const style = document.createElement('style');
+            style.id = 'scene-preloader-animations';
+            style.textContent = `
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes shimmer {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        progressContainer.appendChild(progressBar);
+        preloader.appendChild(spinner);
+        preloader.appendChild(text);
+        preloader.appendChild(progressContainer);
+        preloader.appendChild(percentageText);
+        
+        // Store reference untuk update progress
+        this.sceneProgressBar = progressBar;
+        this.sceneProgressPercentage = percentageText;
+        
+        // Langsung append ke body dan pastikan visible
+        document.body.appendChild(preloader);
+        console.log('[World] Preloader created and appended to body');
+        
+        // Force reflow untuk memastikan render
+        void preloader.offsetHeight;
+    }
+    
+    /**
+     * Update progress bar saat loading assets
+     */
+    updateSceneProgress(loaded, total, percentage) {
+        if (this.sceneProgressBar && this.sceneProgressPercentage) {
+            // Smooth transition ke percentage baru
+            this.sceneProgressBar.style.width = `${percentage}%`;
+            this.sceneProgressPercentage.textContent = `${percentage}%`;
+        }
+    }
+    
+    /**
+     * Hide preloader setelah scene loaded
+     */
+    hideScenePreloader() {
+        const preloader = document.getElementById('scene-transition-preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => {
+                if (preloader.parentNode) {
+                    preloader.remove();
+                }
+                // Cleanup references
+                this.sceneProgressBar = null;
+                this.sceneProgressPercentage = null;
+            }, 300);
+        }
     }
 
     update() {

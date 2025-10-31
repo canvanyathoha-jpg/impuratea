@@ -222,20 +222,8 @@ export default class DialogManager {
         const existingBackdrop = document.getElementById('dialog-backdrop');
         if (existingBackdrop) existingBackdrop.remove();
 
-        // Create backdrop to block camera controls and other interactions
-        const backdrop = document.createElement('div');
-        backdrop.id = 'dialog-backdrop';
-        backdrop.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 9998;
-            pointer-events: auto;
-        `;
-        document.body.appendChild(backdrop);
+        // TIDAK PERLU BACKDROP GELAP - Dialog muncul tanpa overlay gelap untuk visibility yang lebih baik
+        // Hapus backdrop untuk membuat dialog jelas tanpa overlay gelap
 
         const dialogDiv = document.createElement('div');
         dialogDiv.id = 'story-dialog';
@@ -246,14 +234,15 @@ export default class DialogManager {
             transform: translateX(-50%);
             width: 80%;
             max-width: 800px;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
             padding: 30px;
             border-radius: 15px;
-            border: 2px solid #00ffff;
-            color: white;
+            border: 3px solid #1976d2;
+            color: #212121;
             font-family: 'Segoe UI', Arial, sans-serif;
-            z-index: 9999;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            z-index: 10010; // Lebih tinggi dari showScreenSpeechBubble (10002) untuk memastikan choices tidak tertutup
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             animation: slideUp 0.5s ease-out;
             pointer-events: auto;
         `;
@@ -261,37 +250,35 @@ export default class DialogManager {
         let html = '';
 
         // Determine if this dialog text should be visually rendered by this UI.
-        // It should render for:
-        // - Narrative text (no speaker) 
-        // - Inner monologue (Kamu batin)
-        // - Teacher dialogs (Guru) - these should display in story-dialog
-        // It should NOT render for NPCs, as they use a 3D speech bubble.
-        const shouldRenderText = !config.speaker 
-            || config.speaker === "Kamu (batin)" 
-            || config.speaker?.includes("Guru");
+        // Render SEMUA dialog di DialogManager untuk visibility yang jelas
+        // Termasuk NPC dialogs yang dipanggil melalui DialogManager
+        const shouldRenderText = true; // SELALU render untuk semua dialog yang masuk ke DialogManager
 
         if (shouldRenderText) {
-            // Speaker name (if provided)
+            // Speaker name (if provided) - SELALU tampilkan dengan warna gelap yang kontras
             if (config.speaker) {
-                // Different styling for teacher vs inner monologue
+                // Different styling untuk berbagai jenis speaker
                 const isTeacher = config.speaker.includes("Guru");
-                const speakerColor = isTeacher ? '#ffd700' : '#00ffff'; // Gold for teachers, cyan for inner monologue
-                const speakerEmoji = isTeacher ? '👨‍🏫' : '💭';
+                const isBatin = config.speaker === "Kamu (batin)" || config.speaker.includes("batin");
+                
+                // Warna gelap untuk kontras dengan background putih
+                const speakerColor = isTeacher ? '#b8860b' : isBatin ? '#1565c0' : '#1976d2'; // Dark colors untuk semua
+                const speakerEmoji = isTeacher ? '👨‍🏫' : isBatin ? '💭' : '👤';
                 
                 html += `
-                    <div style="font-size: 14px; color: ${speakerColor}; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                    <div style="font-size: 16px; color: ${speakerColor}; margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                         <span>${speakerEmoji}</span>
                         <span>${config.speaker}</span>
                     </div>
                 `;
             }
 
-            // Dialog text with enhanced styling for teacher dialogs
+            // Dialog text dengan warna gelap HITAM untuk kontras maksimal dengan background putih
             const isTeacher = config.speaker?.includes("Guru");
-            const textColor = isTeacher ? '#f0f0f0' : '#ffffff';
+            const textColor = '#000000'; // HITAM MURNI untuk kontras maksimal
             
             html += `
-                <div style="font-size: 18px; line-height: 1.6; margin-bottom: 20px; color: ${textColor}; ${isTeacher ? 'border-left: 3px solid #ffd700; padding-left: 15px;' : ''}">
+                <div style="font-size: 20px; line-height: 1.8; margin-bottom: 20px; color: ${textColor}; font-weight: 600; text-shadow: none; ${isTeacher ? 'border-left: 3px solid #ffd700; padding-left: 15px;' : ''}">
                     ${config.text}
                 </div>
             `;
@@ -375,7 +362,7 @@ export default class DialogManager {
         // Add auto-play controls and history button (only if no choices or after choices)
         if (!config.choices || config.choices.length === 0) {
             const autoPlayIndicator = this.autoPlayEnabled 
-                ? `<div style="font-size: 12px; color: #00ffff; margin-top: 15px; text-align: center; opacity: 0.8; padding: 5px;">
+                ? `<div style="font-size: 12px; color: #1976d2; margin-top: 15px; text-align: center; font-weight: 600; padding: 5px;">
                     ⏩ Auto-play: ${(this.autoPlaySpeed / 1000).toFixed(1)}s
                    </div>`
                 : '';
@@ -425,7 +412,7 @@ export default class DialogManager {
                         style="width: 150px;"
                         title="Auto-play Speed"
                     />
-                    <label for="autoplay-speed" style="font-size: 11px; color: #aaa;">
+                    <label for="autoplay-speed" style="font-size: 11px; color: #333; font-weight: 500;">
                         Speed: ${(this.autoPlaySpeed / 1000).toFixed(1)}s
                     </label>
                 ` : ''}
@@ -992,3 +979,5 @@ export default class DialogManager {
         return this.scoreManager;
     }
 }
+
+

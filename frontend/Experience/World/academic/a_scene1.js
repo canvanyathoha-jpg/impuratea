@@ -3,6 +3,7 @@ import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import Portal from "../Portal.js";
 import DialogManager from "../../Utils/DialogManager.js";
+import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
 
 export default class AcademicScene1 {
     constructor() {
@@ -19,6 +20,8 @@ export default class AcademicScene1 {
         }
 
         this.dialogManager = new DialogManager(this.experience);
+        this.speechAudioManager = new SpeechAudioManager(); // Initialize speech audio manager
+        this.npcGender = 'female'; // NPC di scene 1 menggunakan model female
         this.npcDeskmate = null;
         this.speechBubbleGroup = null;
 
@@ -331,11 +334,30 @@ export default class AcademicScene1 {
         this.speechBubbleGroup.userData.hoverScale = 1;
 
         this.scene.add(this.speechBubbleGroup);
-        this.createAlternativeButton(speaker, text, callback);
+        // Dialog muncul otomatis tanpa perlu klik tombol "Baca Percakapan"
+        setTimeout(() => {
+            this.showScreenSpeechBubble(speaker, text, callback);
+        }, 300);
         
         // Play dialog open sound
         if (this.experience.soundManager) {
             this.experience.soundManager.play('dialogOpen');
+        }
+        
+        // Play speech audio menggunakan Web Speech API dengan voice sesuai gender NPC
+        if (this.speechAudioManager && this.speechAudioManager.isSupported) {
+            const fullText = `${speaker}: ${text}`;
+            // Jangan set pitch/rate secara eksplisit - biarkan SpeechAudioManager set otomatis berdasarkan gender
+            this.speechAudioManager.speak(fullText, {
+                gender: this.npcGender, // Gunakan gender NPC yang sesuai (female untuk scene 1)
+                // Pitch dan rate akan otomatis di-set:
+                // Female: pitch 1.35, rate 0.95
+                // Male: pitch 0.8, rate 0.95
+                volume: 0.85,
+                onError: (error) => {
+                    console.warn('[AcademicScene1] Speech audio error, falling back to text only:', error);
+                }
+            });
         }
         
         // Fade in animation
@@ -451,32 +473,32 @@ export default class AcademicScene1 {
         context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw speaker name with enhanced, clearer styling - diperbesar lagi
-        context.font = 'bold 80px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        // Draw speaker name with MUCH LARGER font untuk visibility yang jauh lebih baik
+        context.font = 'bold 140px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
         context.fillStyle = '#0d47a1'; // Biru lebih gelap untuk kontras lebih baik
         context.textAlign = 'center';
         context.textBaseline = 'top';
         // Enhanced shadow untuk depth
-        context.shadowColor = 'rgba(25, 118, 210, 0.4)';
-        context.shadowBlur = 8;
+        context.shadowColor = 'rgba(25, 118, 210, 0.5)';
+        context.shadowBlur = 12;
         context.shadowOffsetX = 0;
-        context.shadowOffsetY = 2;
-        context.fillText(speaker + ':', canvas.width / 2, 140);
+        context.shadowOffsetY = 3;
+        context.fillText(speaker + ':', canvas.width / 2, 120);
         
         // Reset shadow untuk text body
-        context.shadowColor = 'rgba(0, 0, 0, 0.15)';
-        context.shadowBlur = 3;
+        context.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        context.shadowBlur = 5;
         context.shadowOffsetX = 0;
-        context.shadowOffsetY = 1;
+        context.shadowOffsetY = 2;
         
-        // Draw text dengan font lebih besar dan kontras lebih baik - diperbesar lagi
-        context.font = 'bold 60px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
-        context.fillStyle = '#1a1a1a'; // Hitam lebih gelap untuk readability lebih baik
+        // Draw text dengan font JAUH LEBIH BESAR untuk visibility maksimal
+        context.font = 'bold 110px "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", Arial, sans-serif';
+        context.fillStyle = '#000000'; // Hitam murni untuk kontras maksimal
         context.textAlign = 'center';
         
-        const lines = this.getLines(context, text, canvas.width - 160); // Margin lebih besar untuk font besar
-        const lineHeight = 85; // Line spacing lebih besar untuk readability
-        const startY = 250; // Start position lebih bawah untuk speaker name
+        const lines = this.getLines(context, text, canvas.width - 200); // Margin lebih besar untuk font sangat besar
+        const lineHeight = 130; // Line spacing jauh lebih besar untuk readability
+        const startY = 320; // Start position lebih bawah untuk speaker name yang lebih besar
         
         lines.forEach((line, index) => {
             context.fillText(line, canvas.width / 2, startY + (index * lineHeight));
@@ -697,30 +719,21 @@ export default class AcademicScene1 {
     showScreenSpeechBubble(speaker, text, callback) {
         this.cleanupScreenSpeechBubble(); // Ensure no duplicates
         
-        // Create backdrop overlay
-        const backdrop = document.createElement('div');
-        backdrop.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 10001;
-            animation: fadeIn 0.3s ease;
-        `;
+        // TIDAK PERLU BACKDROP GELAP - Dialog muncul jelas tanpa overlay
+        // Hapus backdrop untuk visibility yang lebih baik
         
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
         screenBubble.style.cssText = `
             position: fixed;
-            top: 50%;
+            bottom: 100px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
             border: 3px solid #1976d2;
             padding: 30px 40px;
             border-radius: 20px;
+            backdrop-filter: blur(10px);
             z-index: 10002;
             max-width: 600px;
             width: 90%;
@@ -736,7 +749,7 @@ export default class AcademicScene1 {
                     👤 ${speaker}
                 </h3>
             </div>
-            <p style="margin: 15px 0; color: #212121; font-size: 16px; line-height: 1.6;">
+            <p style="margin: 15px 0; color: #000000; font-size: 18px; line-height: 1.7; font-weight: 500;">
                 ${text}
             </p>
             <small style="color: #757575; font-size: 12px; font-style: italic;">
@@ -746,10 +759,8 @@ export default class AcademicScene1 {
         
         const closeBubble = () => {
             screenBubble.style.animation = 'slideDown 0.3s ease';
-            backdrop.style.animation = 'fadeOut 0.3s ease';
             setTimeout(() => {
                 screenBubble.remove();
-                backdrop.remove();
                 this.cleanupSpeechBubble(); // Clean up the 3D bubble as well
                 if (callback) {
                     callback(); // Continue the story
@@ -758,9 +769,7 @@ export default class AcademicScene1 {
         };
         
         screenBubble.addEventListener('click', closeBubble);
-        backdrop.addEventListener('click', closeBubble);
         
-        document.body.appendChild(backdrop);
         document.body.appendChild(screenBubble);
         
         // Add CSS animations
@@ -791,6 +800,11 @@ export default class AcademicScene1 {
 
     cleanupSpeechBubble() {
         if (this.speechBubbleGroup) {
+            // Stop any ongoing speech audio
+            if (this.speechAudioManager) {
+                this.speechAudioManager.stop();
+            }
+            
             // Play dialog close sound
             if (this.experience.soundManager) {
                 this.experience.soundManager.play('dialogClose');
