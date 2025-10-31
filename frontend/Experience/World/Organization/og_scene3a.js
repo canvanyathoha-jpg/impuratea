@@ -43,29 +43,27 @@ export default class OrganizationScene3A {
             // Hide loading indicator
             this.hideLoadingIndicator();
             
-            // Show opening story overlay
-            setTimeout(() => {
-                console.log("[OrgScene3A] Scene loaded, now showing opening story overlay...");
+            // Show opening story overlay immediately (no delay)
+            console.log("[OrgScene3A] Scene loaded, now showing opening story overlay...");
+            
+            try {
+                this.openingStory = new OpeningStory(SCENE_DATA.og_scene3a);
                 
-                try {
-                    this.openingStory = new OpeningStory(SCENE_DATA.og_scene3a);
+                // Show opening story overlay (blocks screen with z-index 10000000)
+                this.openingStory.show().then(() => {
+                    console.log("[OrgScene3A] Opening story dismissed - scene is now fully visible");
                     
-                    // Show opening story overlay (blocks screen with z-index 10000000)
-                    this.openingStory.show().then(() => {
-                        console.log("[OrgScene3A] Opening story dismissed - scene is now fully visible");
-                        
-                        // Auto-start conversation after opening story (no proximity needed)
-                        setTimeout(() => {
-                            console.log("[OrgScene3A] Auto-starting conversation...");
-                            this.startConversation();
-                        }, 2000);
-                    }).catch((error) => {
-                        console.error("[OrgScene3A] Error in opening story:", error);
-                    });
-                } catch (error) {
-                    console.error("[OrgScene3A] Error creating opening story:", error);
-                }
-            }, 300);
+                    // Auto-start conversation after opening story (no proximity needed)
+                    setTimeout(() => {
+                        console.log("[OrgScene3A] Auto-starting conversation...");
+                        this.startConversation();
+                    }, 2000);
+                }).catch((error) => {
+                    console.error("[OrgScene3A] Error in opening story:", error);
+                });
+            } catch (error) {
+                console.error("[OrgScene3A] Error creating opening story:", error);
+            }
         }).catch((error) => {
             console.error("[OrgScene3A] Error loading scene:", error);
             this.hideLoadingIndicator();
@@ -81,6 +79,7 @@ export default class OrganizationScene3A {
 
         this.loadingIndicator = document.createElement('div');
         this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.style.pointerEvents = 'none'; // Jangan halangi input canvas
         this.loadingIndicator.innerHTML = `
             <div style="
                 position: fixed;
@@ -94,6 +93,7 @@ export default class OrganizationScene3A {
                 text-align: center;
                 z-index: 10000001;
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                pointer-events: none;
             ">
                 <div style="
                     color: #FFD700;
@@ -187,10 +187,8 @@ export default class OrganizationScene3A {
                     // Step 5: Finalize
                     this.updateLoadingProgress(100);
                     
-                    // Resolve setelah sedikit delay untuk smooth transition
-                    setTimeout(() => {
-                        resolve();
-                    }, 300);
+                    // Resolve immediately - no delay needed
+                    resolve();
                 });
             } catch (error) {
                 reject(error);
@@ -201,31 +199,29 @@ export default class OrganizationScene3A {
     ensurePlayerSpawned() {
         console.log("[OrgScene3A] Ensuring player is spawned...");
         
-        // Use requestAnimationFrame untuk non-blocking
+        // Use requestAnimationFrame untuk non-blocking - no delay needed
         requestAnimationFrame(() => {
-            setTimeout(() => {
-                if (this.experience.world && this.experience.world.player) {
-                    // Get spawn point for this scene
-                    const spawnPoint = this.experience.world.spawnPoints?.og_scene3a || new THREE.Vector3(-5, 10, 20);
-                    console.log("[OrgScene3A] Setting player spawn point to:", spawnPoint);
+            if (this.experience.world && this.experience.world.player) {
+                // Get spawn point for this scene
+                const spawnPoint = this.experience.world.spawnPoints?.og_scene3a || new THREE.Vector3(-5, 10, 20);
+                console.log("[OrgScene3A] Setting player spawn point to:", spawnPoint);
+                
+                // Set spawn point (single call, let Player.js handle it)
+                this.experience.world.player.setSpawnPoint(spawnPoint);
+                
+                // Ensure avatar is visible and in scene (lightweight check)
+                if (this.experience.world.player.avatar?.avatar) {
+                    this.experience.world.player.avatar.avatar.visible = true;
                     
-                    // Set spawn point (single call, let Player.js handle it)
-                    this.experience.world.player.setSpawnPoint(spawnPoint);
-                    
-                    // Ensure avatar is visible and in scene (lightweight check)
-                    if (this.experience.world.player.avatar?.avatar) {
-                        this.experience.world.player.avatar.avatar.visible = true;
-                        
-                        // Only add to scene if not already there
-                        if (!this.experience.world.player.avatar.avatar.parent) {
-                            this.scene.add(this.experience.world.player.avatar.avatar);
-                            console.log("[OrgScene3A] Player avatar added to scene");
-                        }
+                    // Only add to scene if not already there
+                    if (!this.experience.world.player.avatar.avatar.parent) {
+                        this.scene.add(this.experience.world.player.avatar.avatar);
+                        console.log("[OrgScene3A] Player avatar added to scene");
                     }
-                } else {
-                    console.warn("[OrgScene3A] Player not found in world!");
                 }
-            }, 300); // Reduced delay
+            } else {
+                console.warn("[OrgScene3A] Player not found in world!");
+            }
         });
     }
 

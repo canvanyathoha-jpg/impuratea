@@ -34,13 +34,17 @@ export default class OrganizationScene2B {
     initWithOpening() {
         console.log("[OrgScene2B] Loading scene in background first...");
         
-        // Load scene models in background first (they'll be hidden by overlay)
-        this.setWorld();
-        this.createPortals();
-        this.createNPCs();
+        // Show loading indicator
+        this.showLoadingIndicator();
         
-        // Wait a moment for scene to load, then show opening story overlay
-        setTimeout(() => {
+        // Load scene models asynchronously (non-blocking)
+        this.loadSceneAsync().then(() => {
+            console.log("[OrgScene2B] Scene loaded successfully!");
+            
+            // Hide loading indicator
+            this.hideLoadingIndicator();
+            
+            // Show opening story overlay immediately (no delay)
             console.log("[OrgScene2B] Scene loaded, now showing opening story overlay...");
             
             try {
@@ -55,51 +59,260 @@ export default class OrganizationScene2B {
             } catch (error) {
                 console.error("[OrgScene2B] Error creating opening story:", error);
             }
-        }, 500); // Short delay to let scene start loading
+        }).catch((error) => {
+            console.error("[OrgScene2B] Error loading scene:", error);
+            this.hideLoadingIndicator();
+        });
+    }
+
+    showLoadingIndicator() {
+        // Remove existing loader if any
+        const existingLoader = document.getElementById('scene-loading-indicator');
+        if (existingLoader) {
+            existingLoader.remove();
+        }
+
+        this.loadingIndicator = document.createElement('div');
+        this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.style.pointerEvents = 'none'; // Jangan halangi input canvas
+        this.loadingIndicator.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                border: 3px solid rgba(255, 215, 0, 0.8);
+                border-radius: 20px;
+                padding: 40px;
+                text-align: center;
+                z-index: 10000001;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                pointer-events: none;
+            ">
+                <div style="
+                    color: #FFD700;
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Memuat Scene...
+                </div>
+                <div style="
+                    width: 300px;
+                    height: 8px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin: 0 auto;
+                ">
+                    <div id="loading-progress-bar" style="
+                        width: 0%;
+                        height: 100%;
+                        background: linear-gradient(90deg, #1E407C, #8B0000, #FFD700);
+                        border-radius: 10px;
+                        transition: width 0.3s ease;
+                        animation: pulse 1.5s ease-in-out infinite;
+                    "></div>
+                </div>
+                <div style="
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 14px;
+                    margin-top: 15px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Mohon tunggu sebentar...
+                </div>
+            </div>
+        `;
+        
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(this.loadingIndicator);
+    }
+
+    hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.opacity = '0';
+            this.loadingIndicator.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (this.loadingIndicator && document.body.contains(this.loadingIndicator)) {
+                    this.loadingIndicator.remove();
+                }
+                this.loadingIndicator = null;
+            }, 500);
+        }
+    }
+
+    updateLoadingProgress(progress) {
+        const progressBar = document.getElementById('loading-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+    }
+
+    async loadSceneAsync() {
+        return new Promise((resolve, reject) => {
+            try {
+                // Step 1: Load basic scene structure (non-blocking)
+                this.updateLoadingProgress(20);
+                this.setWorldAsync(() => {
+                    this.updateLoadingProgress(60);
+                    
+                    // Step 2: Create portals (lightweight)
+                    this.createPortals();
+                    this.updateLoadingProgress(70);
+                    
+                    // Step 3: Create NPCs (lightweight)
+                    this.createNPCs();
+                    this.updateLoadingProgress(90);
+                    
+                    // Step 4: Ensure player is spawned correctly
+                    this.ensurePlayerSpawned();
+                    
+                    // Step 5: Finalize
+                    this.updateLoadingProgress(100);
+                    
+                    // Resolve immediately - no delay needed
+                    resolve();
+                });
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    ensurePlayerSpawned() {
+        console.log("[OrgScene2B] Ensuring player is spawned...");
+        
+        // Use requestAnimationFrame untuk non-blocking - no delay needed
+        requestAnimationFrame(() => {
+            if (this.experience.world && this.experience.world.player) {
+                // Get spawn point for this scene
+                const spawnPoint = this.experience.world.spawnPoints?.og_scene2b || new THREE.Vector3(-5, 10, 20);
+                console.log("[OrgScene2B] Setting player spawn point to:", spawnPoint);
+                
+                // Set spawn point (single call, let Player.js handle it)
+                this.experience.world.player.setSpawnPoint(spawnPoint);
+                
+                // Ensure avatar is visible and in scene (lightweight check)
+                if (this.experience.world.player.avatar?.avatar) {
+                    this.experience.world.player.avatar.avatar.visible = true;
+                    
+                    // Only add to scene if not already there
+                    if (!this.experience.world.player.avatar.avatar.parent) {
+                        this.scene.add(this.experience.world.player.avatar.avatar);
+                        console.log("[OrgScene2B] Player avatar added to scene");
+                    }
+                }
+            } else {
+                console.warn("[OrgScene2B] Player not found in world!");
+            }
+        });
     }
 
     setWorld() {
-        console.log("[OrgScene2B] setWorld() called");
+        // Synchronous version (backward compatibility)
+        this.setWorldAsync(() => {});
+    }
+
+    setWorldAsync(callback) {
+        console.log("[OrgScene2B] setWorldAsync() called");
         
         // Create a group for all collidable objects
-        const collidableGroup = new THREE.Group();
+        this.collidableGroup = new THREE.Group();
 
         // Load the organization model - 7x scale (same as scene1)
         console.log("[OrgScene2B] Loading organization model...");
-        this.organizationModel = this.resources.items.organization.scene;
-        this.organizationModel.position.set(0, 0, 0);
-        this.organizationModel.rotation.set(0, 0, 0);
-        this.organizationModel.scale.set(7, 7, 7);
-        collidableGroup.add(this.organizationModel);
-
-        // Setup collider for physics - match the organization model scale
-        console.log("[OrgScene2B] Loading collider...");
-        this.collider = this.resources.items.collider.scene;
-        this.collider.position.set(0, 0, 0);
-        this.collider.rotation.set(0, 0, 0);
-        this.collider.scale.set(7, 7, 7);
-
-        // Make collider invisible
-        this.collider.traverse((child) => {
-            if (child.isMesh) {
-                child.visible = false;
+        
+        // Clone model if already loaded to avoid re-parsing
+        // Use requestAnimationFrame to avoid blocking during clone
+        requestAnimationFrame(() => {
+            if (this.resources.items.organization && this.resources.items.organization.scene) {
+                // Use clone to avoid mutating the original
+                // Clone is done in animation frame to avoid blocking
+                this.organizationModel = this.resources.items.organization.scene.clone(true);
+                this.organizationModel.position.set(0, 0, 0);
+                this.organizationModel.rotation.set(0, 0, 0);
+                this.organizationModel.scale.set(7, 7, 7);
+                this.collidableGroup.add(this.organizationModel);
+                
+                // Continue with collider setup
+                this.setupCollider(callback);
+            } else {
+                console.error("[OrgScene2B] Organization model not found!");
+                if (callback) callback();
             }
         });
-        collidableGroup.add(this.collider);
+    }
+    
+    setupCollider(callback) {
+        // Setup collider for physics - match the organization model scale
+        console.log("[OrgScene2B] Loading collider...");
+        
+        // Use requestAnimationFrame for non-blocking clone
+        requestAnimationFrame(() => {
+            if (this.resources.items.collider && this.resources.items.collider.scene) {
+                // Clone collider as well
+                this.collider = this.resources.items.collider.scene.clone(true);
+                this.collider.position.set(0, 0, 0);
+                this.collider.rotation.set(0, 0, 0);
+                this.collider.scale.set(7, 7, 7);
 
-        // Add the group to the scene
-        this.scene.add(collidableGroup);
+                // Make collider invisible (lightweight operation)
+                this.collider.traverse((child) => {
+                    if (child.isMesh) {
+                        child.visible = false;
+                    }
+                });
+                this.collidableGroup.add(this.collider);
+            } else {
+                console.error("[OrgScene2B] Collider not found!");
+            }
 
-        // Build the octree
-        this.octree.fromGraphNode(collidableGroup);
+            // Add the group to the scene
+            this.scene.add(this.collidableGroup);
 
-        // Set collision objects for camera
-        if (this.experience.camera && this.experience.camera.controls) {
-            this.experience.camera.controls.collisionObjects = this.collider;
-            console.log("[OrgScene2B] Camera collision objects set");
-        }
+            // Build octree asynchronously to avoid blocking main thread
+            // This is the heavy operation - do it in chunks using setTimeout
+            console.log("[OrgScene2B] Building octree asynchronously...");
+            
+            // Defer octree building to next event loop tick
+            setTimeout(() => {
+                // Further defer to allow rendering
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        try {
+                            this.octree.fromGraphNode(this.collidableGroup);
+                            console.log("[OrgScene2B] Octree built successfully");
 
-        console.log("Organization Scene 2B loaded with full collision enabled.");
+                            // Set collision objects for camera
+                            if (this.experience.camera && this.experience.camera.controls) {
+                                this.experience.camera.controls.collisionObjects = this.collider;
+                                console.log("[OrgScene2B] Camera collision objects set");
+                            }
+                            
+                            console.log("Organization Scene 2B loaded with full collision enabled.");
+                            
+                            // Call callback when done
+                            if (callback) callback();
+                        } catch (error) {
+                            console.error("[OrgScene2B] Error building octree:", error);
+                            if (callback) callback();
+                        }
+                    }, 100); // Small delay
+                });
+            }, 100); // Initial delay
+        });
     }
 
     createPortals() {
@@ -681,6 +894,11 @@ export default class OrganizationScene2B {
 
         if (this.organizationModel && this.organizationModel.parent) {
             this.scene.remove(this.organizationModel.parent);
+        }
+
+        // Clean up loading indicator
+        if (this.loadingIndicator) {
+            this.hideLoadingIndicator();
         }
 
         console.log("[OrganizationScene2B] Disposed");

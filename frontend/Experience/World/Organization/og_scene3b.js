@@ -43,29 +43,27 @@ export default class OrganizationScene3B {
             // Hide loading indicator
             this.hideLoadingIndicator();
             
-            // Show opening story overlay
-            setTimeout(() => {
-                console.log("[OrgScene3B] Scene loaded, now showing opening story overlay...");
+            // Show opening story overlay immediately (no delay)
+            console.log("[OrgScene3B] Scene loaded, now showing opening story overlay...");
+            
+            try {
+                this.openingStory = new OpeningStory(SCENE_DATA.og_scene3b);
                 
-                try {
-                    this.openingStory = new OpeningStory(SCENE_DATA.og_scene3b);
+                // Show opening story overlay (blocks screen with z-index 10000000)
+                this.openingStory.show().then(() => {
+                    console.log("[OrgScene3B] Opening story dismissed - scene is now fully visible");
                     
-                    // Show opening story overlay (blocks screen with z-index 10000000)
-                    this.openingStory.show().then(() => {
-                        console.log("[OrgScene3B] Opening story dismissed - scene is now fully visible");
-                        
-                        // Auto-start conversation after opening story (no proximity needed)
-                        setTimeout(() => {
-                            console.log("[OrgScene3B] Auto-starting conversation...");
-                            this.startConversation();
-                        }, 2000);
-                    }).catch((error) => {
-                        console.error("[OrgScene3B] Error in opening story:", error);
-                    });
-                } catch (error) {
-                    console.error("[OrgScene3B] Error creating opening story:", error);
-                }
-            }, 300);
+                    // Auto-start conversation after opening story (no proximity needed)
+                    setTimeout(() => {
+                        console.log("[OrgScene3B] Auto-starting conversation...");
+                        this.startConversation();
+                    }, 2000);
+                }).catch((error) => {
+                    console.error("[OrgScene3B] Error in opening story:", error);
+                });
+            } catch (error) {
+                console.error("[OrgScene3B] Error creating opening story:", error);
+            }
         }).catch((error) => {
             console.error("[OrgScene3B] Error loading scene:", error);
             this.hideLoadingIndicator();
@@ -81,6 +79,7 @@ export default class OrganizationScene3B {
 
         this.loadingIndicator = document.createElement('div');
         this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.style.pointerEvents = 'none'; // Jangan halangi input canvas
         this.loadingIndicator.innerHTML = `
             <div style="
                 position: fixed;
@@ -94,6 +93,7 @@ export default class OrganizationScene3B {
                 text-align: center;
                 z-index: 10000001;
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                pointer-events: none;
             ">
                 <div style="
                     color: #FFD700;
@@ -184,10 +184,8 @@ export default class OrganizationScene3B {
                     // Step 4: Finalize
                     this.updateLoadingProgress(100);
                     
-                    // Resolve setelah sedikit delay untuk smooth transition
-                    setTimeout(() => {
-                        resolve();
-                    }, 300);
+                    // Resolve immediately - no delay needed
+                    resolve();
                 });
             } catch (error) {
                 reject(error);
