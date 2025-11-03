@@ -217,12 +217,8 @@ export default class Portal {
         const playerPos = this.player.avatar.avatar.position;
         const distance = playerPos.distanceTo(this.position);
 
-        // Debug: log setiap beberapa frame (1% chance)
-        if (Math.random() < 0.01) {
-            console.log(`[Portal] Distance to player: ${distance.toFixed(2)} units (activation: ${this.activationRadius})`);
-            console.log(`[Portal] Player pos: (${playerPos.x.toFixed(1)}, ${playerPos.y.toFixed(1)}, ${playerPos.z.toFixed(1)})`);
-            console.log(`[Portal] Portal pos: (${this.position.x.toFixed(1)}, ${this.position.y.toFixed(1)}, ${this.position.z.toFixed(1)})`);
-        }
+        // Debug logging removed to reduce console spam
+        // Only log when state changes (entering/leaving portal zone)
 
         if (distance < this.activationRadius && !this.isPlayerNear) {
             this.isPlayerNear = true;

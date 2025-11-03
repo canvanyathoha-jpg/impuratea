@@ -541,6 +541,11 @@ export default [
                     path: "/models/caffe.glb",
                 },
                 {
+                    name: "bos_caffe",
+                    type: "glbModel",
+                    path: "/models/bos_caffe.glb",
+                },
+                {
                     name: "male",
                     type: "glbModel",
                     path: "/models/asian_male_animated.glb",
@@ -580,6 +585,11 @@ export default [
                     name: "caffe",
                     type: "glbModel",
                     path: "/models/caffe.glb",
+                },
+                {
+                    name: "bos_caffe",
+                    type: "glbModel",
+                    path: "/models/bos_caffe.glb",
                 },
                 {
                     name: "male",
@@ -623,6 +633,11 @@ export default [
                     path: "/models/Ruang_Guru.glb",
                 },
                 {
+                    name: "guru",
+                    type: "glbModel",
+                    path: "/models/guru.glb",
+                },
+                {
                     name: "male",
                     type: "glbModel",
                     path: "/models/asian_male_animated.glb",
@@ -662,6 +677,11 @@ export default [
                     name: "ruangguru",
                     type: "glbModel",
                     path: "/models/Ruang_Guru.glb",
+                },
+                {
+                    name: "guru",
+                    type: "glbModel",
+                    path: "/models/guru.glb",
                 },
                 {
                     name: "male",

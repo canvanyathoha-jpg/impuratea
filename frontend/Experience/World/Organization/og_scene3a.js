@@ -333,14 +333,14 @@ export default class OrganizationScene3A {
     createNPC() {
         console.log("[OrgScene3A] Creating Vendor NPC...");
         
-        const maleModel = this.resources.items.male;
-        if (!maleModel) {
-            console.error("[OrgScene3A] Male avatar model not found!");
+        const bosCaffeModel = this.resources.items.bos_caffe;
+        if (!bosCaffeModel) {
+            console.error("[OrgScene3A] Bos Caffe model not found!");
             return;
         }
 
         // Create Vendor NPC (representative)
-        this.npcVendor = SkeletonUtils.clone(maleModel.scene);
+        this.npcVendor = SkeletonUtils.clone(bosCaffeModel.scene);
         this.npcVendor.position.set(25, -2, 10); // Position in cafe - moved further right
         this.npcVendor.rotation.y = 0; // Facing opposite direction
         this.npcVendor.scale.set(9, 9, 9);
@@ -356,13 +356,34 @@ export default class OrganizationScene3A {
     }
 
     setupNPCAnimations() {
-        this.npcAnimations = this.resources.items.male.animations.map((clip) => clip.clone());
+        // Clone animations from model - handle cases where model may not have animations
+        if (!this.resources.items.bos_caffe || !this.resources.items.bos_caffe.animations) {
+            console.warn("[OrgScene3A] Bos Caffe model has no animations, NPC will be static");
+            return;
+        }
+
+        this.npcAnimations = this.resources.items.bos_caffe.animations.map((clip) => clip.clone());
         
+        if (this.npcAnimations.length === 0) {
+            console.warn("[OrgScene3A] No animations found for bos_caffe model");
+            return;
+        }
+
         this.npcMixer = new THREE.AnimationMixer(this.npcVendor);
         this.npcActions = {};
-        this.npcActions.idle = this.npcMixer.clipAction(this.npcAnimations[1]);
-        this.npcCurrentAction = this.npcActions.idle;
-        this.npcCurrentAction.play();
+        
+        // Try to find idle animation by name, or use first available animation as fallback
+        const idleAnimation = this.npcAnimations.find(clip => 
+            clip.name && clip.name.toLowerCase().includes('idle')
+        ) || this.npcAnimations[0]; // Fallback to first animation if no idle found
+        
+        if (idleAnimation) {
+            this.npcActions.idle = this.npcMixer.clipAction(idleAnimation);
+            this.npcCurrentAction = this.npcActions.idle;
+            this.npcCurrentAction.play();
+        } else {
+            console.warn("[OrgScene3A] Could not find any animation to play");
+        }
     }
 
     checkPlayerProximity() {
