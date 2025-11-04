@@ -334,14 +334,14 @@ export default class OrganizationScene4B {
     createNPC() {
         console.log("[OrgScene4B] Creating Pembina NPC...");
         
-        const maleModel = this.resources.items.male;
-        if (!maleModel) {
-            console.error("[OrgScene4B] Male avatar model not found!");
+        const guruModel = this.resources.items.guru;
+        if (!guruModel) {
+            console.error("[OrgScene4B] Guru model not found!");
             return;
         }
 
         // Create Pembina OSIS NPC
-        this.npcPembina = SkeletonUtils.clone(maleModel.scene);
+        this.npcPembina = SkeletonUtils.clone(guruModel.scene);
         this.npcPembina.position.set(8, -2, 25); // Position in RuangGuru - moved forward
         this.npcPembina.rotation.y = Math.PI + Math.PI / 2; // Rotate 90 degrees clockwise
         this.npcPembina.scale.set(9, 9, 9);
@@ -357,13 +357,34 @@ export default class OrganizationScene4B {
     }
 
     setupNPCAnimations() {
-        this.npcAnimations = this.resources.items.male.animations.map((clip) => clip.clone());
+        // Clone animations from model - handle cases where model may not have animations
+        if (!this.resources.items.guru || !this.resources.items.guru.animations) {
+            console.warn("[OrgScene4B] Guru model has no animations, NPC will be static");
+            return;
+        }
+
+        this.npcAnimations = this.resources.items.guru.animations.map((clip) => clip.clone());
         
+        if (this.npcAnimations.length === 0) {
+            console.warn("[OrgScene4B] No animations found for guru model");
+            return;
+        }
+
         this.npcMixer = new THREE.AnimationMixer(this.npcPembina);
         this.npcActions = {};
-        this.npcActions.idle = this.npcMixer.clipAction(this.npcAnimations[1]);
-        this.npcCurrentAction = this.npcActions.idle;
-        this.npcCurrentAction.play();
+        
+        // Try to find idle animation by name, or use first available animation as fallback
+        const idleAnimation = this.npcAnimations.find(clip => 
+            clip.name && clip.name.toLowerCase().includes('idle')
+        ) || this.npcAnimations[0]; // Fallback to first animation if no idle found
+        
+        if (idleAnimation) {
+            this.npcActions.idle = this.npcMixer.clipAction(idleAnimation);
+            this.npcCurrentAction = this.npcActions.idle;
+            this.npcCurrentAction.play();
+        } else {
+            console.warn("[OrgScene4B] Could not find any animation to play");
+        }
     }
 
     checkPlayerProximity() {
