@@ -16,6 +16,9 @@ export default class AcademicScene4B {
         this.npcGender = 'male'; // NPC di scene 4b menggunakan model male
         this.npcSenior = null;
         this.speechBubbleGroup = null;
+        this.teacherNPC = null;
+        this.teacherMixer = null;
+        this.teacherActions = null;
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -25,6 +28,7 @@ export default class AcademicScene4B {
 
         this.setWorld();
         this.createNPC();
+        this.createTeacherNPC();
         
         // Sistem manual - dialog hanya dimulai saat player mengklik NPC atau tombol
         // TIDAK ADA timeout otomatis, player bebas menjelajah sepuasnya
@@ -87,6 +91,37 @@ export default class AcademicScene4B {
 
         this.npcActions.idle.play();
         console.log("[AcademicScene4B] Senior NPC created.");
+    }
+
+    createTeacherNPC() {
+        console.log("[AcademicScene4B] Creating Teacher NPC...");
+        const teacherModel = this.resources.items.teacher;
+        if (!teacherModel) {
+            console.error("[AcademicScene4B] Teacher model not found!");
+            return;
+        }
+
+        // Clone dengan scene.clone() untuk mempertahankan material
+        this.teacherNPC = teacherModel.scene.clone();
+        this.teacherNPC.position.set(0, 0, -30); // Guru menghadap ke kelas, Y = 0 untuk ground level
+        this.teacherNPC.rotation.y = Math.PI; // Rotate 180 deg untuk menghadap ke kelas
+        this.teacherNPC.scale.set(10, 10, 10);
+        this.teacherNPC.visible = false; // Hidden by default
+        this.scene.add(this.teacherNPC);
+
+        this.teacherAnimations = teacherModel.animations ? teacherModel.animations.map((clip) => clip.clone()) : [];
+        this.teacherMixer = new THREE.AnimationMixer(this.teacherNPC);
+        this.teacherActions = {};
+
+        if (this.teacherAnimations.length > 0) {
+            const idleAnimation = this.teacherAnimations.find(clip => clip.name === 'idle') || this.teacherAnimations[1];
+            if (idleAnimation) {
+                this.teacherActions.idle = this.teacherMixer.clipAction(idleAnimation);
+                this.teacherActions.idle.play();
+            }
+        }
+
+        console.log("[AcademicScene4B] Teacher NPC created.");
     }
 
     // Setup sistem interaksi manual: player harus klik NPC atau tombol untuk mulai dialog
@@ -242,6 +277,10 @@ export default class AcademicScene4B {
     }
 
     showRefuseEpilogue() {
+        // Show teacher NPC
+        if (this.teacherNPC) {
+            this.teacherNPC.visible = true;
+        }
         this.dialogManager.showDialog({ speaker: "Guru", text: "Saya tahu kamu mengalami masa sulit semester ini. Tapi saya menghargai bahwa kamu akhirnya memilih untuk jujur. Tetap pertahankan itu.", onChoice: () => this.showEnding() });
     }
 
@@ -315,19 +354,18 @@ export default class AcademicScene4B {
         
         this.createSpeechTextTexture(speaker, text);
 
+        // Posisikan speech bubble di samping NPC, setinggi kepala
+        // NPC memiliki scale 10x, jadi tinggi NPC sekitar 10-15 unit
         const npcPosition = this.npcSenior.position.clone();
-        // NPC berada di posisi (-15, 1.5, 6) dengan rotasi y = Math.PI / 2 (menghadap kanan)
-        // Posisikan speech bubble di samping kanan NPC, sejajar dengan tinggi kepala
-        // Offset ke kanan (X positif karena NPC di X = -15), sedikit lebih tinggi dari NPC, sedikit ke depan
         this.speechBubbleGroup.position.set(
             npcPosition.x + 8,      // 8 unit di kanan NPC (di samping kanan)
-            npcPosition.y + 10,     // 10 unit di atas NPC (setinggi kepala, bukan terlalu tinggi)
+            npcPosition.y + 13,     // 13 unit di atas NPC (setinggi kepala: NPC base 1.5 + tinggi ~12-15 unit = ~13.5-16.5)
             npcPosition.z + 1       // Sedikit ke depan untuk visibility
         );
         
-        // Rotasi speech bubble agar menghadap ke kamera (bukan rotasi tetap)
-        // Akan diupdate setiap frame di update() agar selalu menghadap ke kamera
-        this.speechBubbleGroup.rotation.y = Math.PI; // Initial rotation
+        // Rotasi speech bubble agar selalu menghadap ke depan (selaras dengan NPC)
+        // NPC menghadap ke kanan (rotation.y = Math.PI / 2), maka bubble harus menghadap ke depan juga
+        this.speechBubbleGroup.rotation.y = Math.PI / 2; // Menghadap ke kanan/ke depan sesuai NPC
 
         this.scene.add(this.speechBubbleGroup);
         // Dialog muncul otomatis HANYA jika showScreenDialog = true
@@ -659,11 +697,14 @@ export default class AcademicScene4B {
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
         }
-        
-        // Update rotasi speech bubble agar selalu menghadap ke kamera
-        if (this.needsSpeechBubbleUpdate && this.speechBubbleGroup) {
-            this.updateSpeechBubbleRotation();
+        if (this.teacherMixer) {
+            this.teacherMixer.update(this.experience.time.delta * 0.001);
         }
+        
+        // TIDAK perlu update rotasi lagi - speech bubble sudah di-set rotation tetap menghadap ke depan
+        // if (this.needsSpeechBubbleUpdate && this.speechBubbleGroup) {
+        //     this.updateSpeechBubbleRotation();
+        // }
     }
 
     dispose() {
@@ -696,6 +737,12 @@ export default class AcademicScene4B {
         }
         if (this.npcMixer) {
             this.npcMixer.stopAllAction();
+        }
+        if (this.teacherNPC) {
+            this.scene.remove(this.teacherNPC);
+        }
+        if (this.teacherMixer) {
+            this.teacherMixer.stopAllAction();
         }
     }
 }

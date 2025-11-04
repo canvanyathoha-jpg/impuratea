@@ -21,7 +21,84 @@ export default class DialogManager {
         this.dialogHistory = [];
         this.maxHistorySize = 50; // Maximum number of dialogs to keep in history
 
+        // Create permanent history button di pojok kiri atas
+        this.createPermanentHistoryButton();
+
         console.log('[DialogManager] Initialized');
+    }
+    
+    /**
+     * Create permanent history button di pojok kiri atas layar
+     * Button ini terpisah dari dialog dan selalu terlihat
+     */
+    createPermanentHistoryButton() {
+        // Remove existing button if any
+        const existing = document.getElementById('dialog-history-button-permanent');
+        if (existing) {
+            existing.remove();
+        }
+        
+        // Create new permanent button
+        const historyButton = document.createElement('button');
+        historyButton.id = 'dialog-history-button-permanent';
+        historyButton.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10011;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        `;
+        
+        historyButton.innerHTML = `📜 History (${this.dialogHistory.length})`;
+        
+        // Add click event listener
+        historyButton.addEventListener('click', () => {
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
+            this.showHistory();
+        });
+        
+        // Hover effects
+        historyButton.addEventListener('mouseenter', (e) => {
+            e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+            e.target.style.borderColor = '#00ffff';
+            e.target.style.transform = 'scale(1.05)';
+            e.target.style.boxShadow = '0 6px 20px rgba(0, 255, 255, 0.5)';
+        });
+        
+        historyButton.addEventListener('mouseleave', (e) => {
+            e.target.style.background = 'rgba(0, 0, 0, 0.8)';
+            e.target.style.borderColor = '#00ffff';
+            e.target.style.transform = 'scale(1)';
+            e.target.style.boxShadow = '0 4px 15px rgba(0, 255, 255, 0.3)';
+        });
+        
+        document.body.appendChild(historyButton);
+        
+        // Store reference untuk update counter
+        this.permanentHistoryButton = historyButton;
+    }
+    
+    /**
+     * Update history button counter
+     */
+    updateHistoryButtonCounter() {
+        if (this.permanentHistoryButton) {
+            this.permanentHistoryButton.innerHTML = `📜 History (${this.dialogHistory.length})`;
+        }
     }
 
     /**
@@ -49,8 +126,8 @@ export default class DialogManager {
         // Add to dialog history
         this.addToHistory(config);
 
-        // Disable camera controls
-        this.disableCameraControls();
+        // Camera controls tetap enabled agar player bisa melihat lingkungan saat dialog
+        // this.disableCameraControls(); // DISABLED - biarkan kamera tetap bisa digerakkan
 
         // Create dialog container
         this.createDialogUI(config);
@@ -81,6 +158,9 @@ export default class DialogManager {
         if (this.dialogHistory.length > this.maxHistorySize) {
             this.dialogHistory.shift();
         }
+        
+        // Update history button counter
+        this.updateHistoryButtonCounter();
     }
     
     /**
@@ -290,14 +370,23 @@ export default class DialogManager {
             
             config.choices.forEach((choice, index) => {
                 const letter = String.fromCharCode(65 + index); // A, B, C...
+                
+                // Tentukan warna berdasarkan score: hijau untuk jujur (score 0), merah untuk korupsi (score > 0)
+                const isHonest = choice.score === 0 || choice.score === undefined;
+                const buttonColor = isHonest ? '#00ff00' : '#ff0000'; // Hijau untuk jujur, Merah untuk korupsi
+                const bgGradient = isHonest 
+                    ? 'linear-gradient(135deg, #0d4d00 0%, #0a3d00 100%)' // Hijau gelap untuk jujur
+                    : 'linear-gradient(135deg, #4d0000 0%, #3d0000 100%)'; // Merah gelap untuk korupsi
+                const labelColor = isHonest ? '#00ff00' : '#ff4444'; // Hijau terang/merah terang untuk label
+                
                 html += `
                     <button 
                         id="choice-${index}" 
                         class="choice-button"
                         style="
                             padding: 15px 20px;
-                            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                            border: 2px solid #00ffff;
+                            background: ${bgGradient};
+                            border: 2px solid ${buttonColor};
                             border-radius: 10px;
                             color: white;
                             font-size: 16px;
@@ -310,7 +399,7 @@ export default class DialogManager {
                             user-select: none;
                         "
                     >
-                        <strong style="color: #00ffff;">[${letter}]</strong> ${choice.text}
+                        <strong style="color: ${labelColor};">[${letter}]</strong> ${choice.text}
                     </button>
                 `;
             });
@@ -387,21 +476,6 @@ export default class DialogManager {
                 >
                     ${this.autoPlayEnabled ? '⏸️ Auto-play: ON' : '▶️ Auto-play: OFF'}
                 </button>
-                <button 
-                    id="history-button"
-                    style="
-                        padding: 8px 16px;
-                        background: #555;
-                        border: none;
-                        border-radius: 6px;
-                        color: white;
-                        font-size: 12px;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                    "
-                >
-                    📜 History (${this.dialogHistory.length})
-                </button>
                 ${!config.choices || config.choices.length === 0 ? `
                     <input 
                         type="range" 
@@ -443,16 +517,25 @@ export default class DialogManager {
                         this.handleChoice(choice, index);
                     });
                     
-                    // Hover effect
+                    // Hover effect - warna hover sesuai dengan jenis pilihan (jujur/korupsi)
                     button.addEventListener('mouseenter', (e) => {
-                        e.target.style.background = 'linear-gradient(135deg, #00ffff 0%, #0088ff 100%)';
+                        const isHonest = choice.score === 0 || choice.score === undefined;
+                        const hoverBg = isHonest 
+                            ? 'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)' // Hijau terang untuk jujur
+                            : 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)'; // Merah terang untuk korupsi
+                        e.target.style.background = hoverBg;
                         e.target.style.transform = 'translateX(10px)';
-                        e.target.style.borderColor = '#ffffff';
+                        e.target.style.borderColor = isHonest ? '#00ff88' : '#ff8888';
                     });
                     button.addEventListener('mouseleave', (e) => {
-                        e.target.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+                        const isHonest = choice.score === 0 || choice.score === undefined;
+                        const normalBg = isHonest 
+                            ? 'linear-gradient(135deg, #0d4d00 0%, #0a3d00 100%)' // Hijau gelap untuk jujur
+                            : 'linear-gradient(135deg, #4d0000 0%, #3d0000 100%)'; // Merah gelap untuk korupsi
+                        const borderColor = isHonest ? '#00ff00' : '#ff0000';
+                        e.target.style.background = normalBg;
                         e.target.style.transform = 'translateX(0)';
-                        e.target.style.borderColor = '#00ffff';
+                        e.target.style.borderColor = borderColor;
                     });
                 }
             });
@@ -503,16 +586,25 @@ export default class DialogManager {
                         this.handleChoice(choice, index);
                     });
                     
-                    // Hover effects
+                    // Hover effects - warna hover sesuai dengan jenis pilihan (jujur/korupsi)
                     newButton.addEventListener('mouseenter', (e) => {
-                        e.target.style.background = 'linear-gradient(135deg, #00ffff 0%, #0088ff 100%)';
+                        const isHonest = choice.score === 0 || choice.score === undefined;
+                        const hoverBg = isHonest 
+                            ? 'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)' // Hijau terang untuk jujur
+                            : 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)'; // Merah terang untuk korupsi
+                        e.target.style.background = hoverBg;
                         e.target.style.transform = 'translateX(10px)';
-                        e.target.style.borderColor = '#ffffff';
+                        e.target.style.borderColor = isHonest ? '#00ff88' : '#ff8888';
                     });
                     newButton.addEventListener('mouseleave', (e) => {
-                        e.target.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+                        const isHonest = choice.score === 0 || choice.score === undefined;
+                        const normalBg = isHonest 
+                            ? 'linear-gradient(135deg, #0d4d00 0%, #0a3d00 100%)' // Hijau gelap untuk jujur
+                            : 'linear-gradient(135deg, #4d0000 0%, #3d0000 100%)'; // Merah gelap untuk korupsi
+                        const borderColor = isHonest ? '#00ff00' : '#ff0000';
+                        e.target.style.background = normalBg;
                         e.target.style.transform = 'translateX(0)';
-                        e.target.style.borderColor = '#00ffff';
+                        e.target.style.borderColor = borderColor;
                     });
                     
                     console.log(`[DialogManager] ✅ Event listener attached to choice-${index}`);
@@ -570,17 +662,7 @@ export default class DialogManager {
             });
         }
         
-        // Add history button listener
-        const historyButton = document.getElementById('history-button');
-        if (historyButton) {
-            historyButton.addEventListener('click', () => {
-                // Play click sound
-                if (this.experience && this.experience.soundManager) {
-                    this.experience.soundManager.play('click', 0.6);
-                }
-                this.showHistory();
-            });
-        }
+        // History button sekarang permanent di pojok kiri atas, tidak perlu event listener lagi
         
         // Add auto-play speed slider
         const autoplaySpeedSlider = document.getElementById('autoplay-speed');
@@ -629,7 +711,7 @@ export default class DialogManager {
             padding: 20px;
             color: white;
             font-family: 'Segoe UI', Arial, sans-serif;
-            z-index: 10000;
+            z-index: 10020;
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
             overflow-y: auto;
         `;
@@ -820,8 +902,8 @@ export default class DialogManager {
             setTimeout(() => backdrop.remove(), 300);
         }
 
-        // Re-enable camera controls
-        this.enableCameraControls();
+        // Camera controls tidak perlu di-enable karena tidak pernah di-disable
+        // this.enableCameraControls(); // DISABLED - kamera tetap enabled
     }
 
     // Hide all UI elements
@@ -835,8 +917,8 @@ export default class DialogManager {
         const backdrop = document.getElementById('dialog-backdrop');
         if (backdrop) backdrop.remove();
         
-        // Re-enable camera
-        this.enableCameraControls();
+        // Camera controls tidak perlu di-enable karena tidak pernah di-disable
+        // this.enableCameraControls(); // DISABLED - kamera tetap enabled
     }
 
     // Show ending screen

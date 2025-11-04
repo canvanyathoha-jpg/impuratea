@@ -194,8 +194,8 @@ export default class AcademicScene4A {
     }
 
     showSeniorResponse() {
-        const speaker = "Kakak Kelas (via chat)";
-        const text = "Oh iya, aku masih punya materi presentasinya. Lengkap sama slide PowerPoint-nya. Tapi... ini gak gratis ya. Transfer 50rb dulu, baru aku kasih materinya.";
+        const speaker = "Kakak Kelas (via chat)"
+        const text = "Oh iya, aku masih punya materi presentasinya. Lengkap sama slide PowerPoint-nya. Tapi... ini gak gratis ya. Transfer 50ribu dulu, baru aku kasih materinya.";
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager dengan choices
         this.create3DSpeechBubble(speaker, text, false);
@@ -310,17 +310,18 @@ export default class AcademicScene4A {
 
         const npcPosition = this.npcSenior.position.clone();
         // NPC berada di posisi (-15, 1.5, 6) dengan rotasi y = Math.PI / 2 (menghadap kanan)
-        // Posisikan speech bubble di samping kanan NPC, sejajar dengan tinggi kepala
-        // Offset ke kanan (X positif karena NPC di X = -15), sedikit lebih tinggi dari NPC, sedikit ke depan
+        // NPC memiliki scale 10x, jadi tinggi NPC sekitar 10-15 unit
+        // Posisikan speech bubble di samping kanan NPC, setinggi kepala NPC
+        // Offset ke kanan (X positif karena NPC di X = -15), setinggi kepala (sekitar 10-12 unit dari ground)
         this.speechBubbleGroup.position.set(
             npcPosition.x + 8,      // 8 unit di kanan NPC (di samping kanan)
-            npcPosition.y + 10,     // 10 unit di atas NPC (setinggi kepala, bukan terlalu tinggi)
+            npcPosition.y + 13,     // 13 unit di atas NPC (setinggi kepala: NPC base 1.5 + tinggi ~12-15 unit = ~13.5-16.5)
             npcPosition.z + 1       // Sedikit ke depan untuk visibility
         );
         
-        // Rotasi speech bubble agar menghadap ke kamera (bukan rotasi tetap)
-        // Akan diupdate setiap frame di update() agar selalu menghadap ke kamera
-        this.speechBubbleGroup.rotation.y = Math.PI; // Initial rotation
+        // Rotasi speech bubble agar selalu menghadap ke depan (selaras dengan NPC)
+        // NPC menghadap ke kanan (rotation.y = Math.PI / 2), maka bubble harus menghadap ke depan juga
+        this.speechBubbleGroup.rotation.y = Math.PI / 2; // Menghadap ke kanan/ke depan sesuai NPC
 
         this.scene.add(this.speechBubbleGroup);
         // Dialog muncul otomatis HANYA jika showScreenDialog = true
@@ -653,10 +654,10 @@ export default class AcademicScene4A {
             this.npcMixer.update(this.experience.time.delta * 0.001);
         }
         
-        // Update rotasi speech bubble agar selalu menghadap ke kamera
-        if (this.needsSpeechBubbleUpdate && this.speechBubbleGroup) {
-            this.updateSpeechBubbleRotation();
-        }
+        // TIDAK perlu update rotasi lagi - speech bubble sudah di-set rotation tetap menghadap ke depan
+        // if (this.needsSpeechBubbleUpdate && this.speechBubbleGroup) {
+        //     this.updateSpeechBubbleRotation();
+        // }
     }
 
     dispose() {

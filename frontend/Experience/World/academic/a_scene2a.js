@@ -16,6 +16,9 @@ export default class AcademicScene2A {
         this.npcGender = 'female'; // NPC di scene 2a menggunakan model female
         this.npcDeskmate = null;
         this.speechBubbleGroup = null;
+        this.teacherNPC = null;
+        this.teacherMixer = null;
+        this.teacherActions = null;
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -25,6 +28,7 @@ export default class AcademicScene2A {
 
         this.setWorld();
         this.createNPC();
+        this.createTeacherNPC();
         
         setTimeout(() => {
             this.startStory();
@@ -34,6 +38,7 @@ export default class AcademicScene2A {
     setWorld() {
         const collidableGroup = new THREE.Group();
 
+        console.log("Available resources in a_scene2a:", this.resources.items);
         this.classModel = this.resources.items.class.scene;
         this.classModel.position.set(0, 0, 0);
         this.classModel.rotation.set(0, 0, 0);
@@ -97,11 +102,123 @@ export default class AcademicScene2A {
         console.log("[AcademicScene2A] Deskmate NPC created.");
     }
 
+    createTeacherNPC() {
+        console.log("[AcademicScene2A] Creating Teacher NPC...");
+        const teacherModel = this.resources.items.teacher;
+        if (!teacherModel) {
+            console.error("[AcademicScene2A] Teacher model not found!");
+            return;
+        }
+
+        // Clone dengan scene.clone() untuk mempertahankan material dan texture
+        this.teacherNPC = teacherModel.scene.clone();
+        
+        // Position teacher di depan kelas
+        this.teacherNPC.position.set(0, 11, 25); // Y = 0 untuk ground level
+        this.teacherNPC.rotation.y = Math.PI; // Rotate 180 deg untuk menghadap ke kelas
+        this.teacherNPC.scale.set(34, 34, 34); // Scale sama dengan NPC lainnya
+        this.teacherNPC.visible = false; // Hidden by default
+        this.scene.add(this.teacherNPC);
+
+        this.teacherAnimations = teacherModel.animations ? teacherModel.animations.map((clip) => clip.clone()) : [];
+        this.teacherMixer = new THREE.AnimationMixer(this.teacherNPC);
+        this.teacherActions = {};
+
+        // JANGAN play animasi untuk teacher agar pose statis marah bisa diterapkan
+        // if (this.teacherAnimations.length > 0) {
+        //     const idleAnimation = this.teacherAnimations.find(clip => clip.name === 'idle') || this.teacherAnimations[1];
+        //     if (idleAnimation) {
+        //         this.teacherActions.idle = this.teacherMixer.clipAction(idleAnimation);
+        //         this.teacherActions.idle.play();
+        //     }
+        // }
+
+        // Set angry/pointing pose untuk teacher
+        this.setTeacherAngryPose();
+
+        console.log("[AcademicScene2A] Teacher NPC created.");
+    }
+
+    // Fungsi untuk mengatur pose marah/menunjuk teacher
+    setTeacherAngryPose() {
+        console.log("[AcademicScene2A] setTeacherAngryPose called, teacherNPC:", this.teacherNPC);
+        if (!this.teacherNPC) {
+            console.error("[AcademicScene2A] teacherNPC is null!");
+            return;
+        }
+
+        let foundSkinnedMesh = false;
+        // Traverse semua mesh dan cari bones
+        this.teacherNPC.traverse((child) => {
+            console.log("[AcademicScene2A] Traversing:", child.type, child.isSkinnedMesh);
+            if (child.isSkinnedMesh && child.skeleton) {
+                foundSkinnedMesh = true;
+                const bones = child.skeleton.bones;
+                
+                // Log semua bones untuk debug
+                console.log("[AcademicScene2A] Found skinned mesh! Available bones:", bones.map(b => b.name).join(', '));
+                
+                // Temukan bone berdasarkan nama (ini akan berbeda tergantung model)
+                // Biasanya bone tangan: "LeftHand", "RightHand", "LeftArm", "RightArm", dll
+                // Coba beberapa variasi nama bone yang umum
+                for (let i = 0; i < bones.length; i++) {
+                    const bone = bones[i];
+                    const boneName = bone.name.toLowerCase();
+                    
+                    // Rotasi tangan kanan untuk pose menunjuk
+                    if (boneName.includes('righthand') || boneName.includes('r_hand') || boneName.includes('hand.r') || 
+                        boneName.includes('hand_r') || boneName.includes('right_hand')) {
+                        // Rotasi untuk pointing gesture
+                        bone.rotation.x = THREE.MathUtils.degToRad(-30); // Naik sedikit
+                        bone.rotation.y = THREE.MathUtils.degToRad(15);  // Geser sedikit ke kanan
+                        bone.rotation.z = THREE.MathUtils.degToRad(0);   // Lurus
+                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for pointing gesture`);
+                    }
+                    // Rotasi lengan kanan untuk pose menunjuk
+                    if (boneName.includes('rightarm') || boneName.includes('r_arm') || boneName.includes('upperarm.r') ||
+                        boneName.includes('arm_r') || boneName.includes('right_arm') || boneName.includes('upperarm_r')) {
+                        bone.rotation.x = THREE.MathUtils.degToRad(-90); // Lurus ke depan
+                        bone.rotation.y = THREE.MathUtils.degToRad(0);
+                        bone.rotation.z = THREE.MathUtils.degToRad(25);  // Geser ke kanan sedikit
+                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for pointing gesture`);
+                    }
+                    // Rotasi bahu untuk pose marah
+                    if (boneName.includes('rightshoulder') || boneName.includes('r_shoulder') || boneName.includes('shoulder.r') ||
+                        boneName.includes('shoulder_r') || boneName.includes('right_shoulder')) {
+                        bone.rotation.x = THREE.MathUtils.degToRad(-20);
+                        bone.rotation.y = THREE.MathUtils.degToRad(-10);
+                        bone.rotation.z = THREE.MathUtils.degToRad(20);
+                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for angry pose`);
+                    }
+                    // Rotasi kepala untuk melihat ke sisi (seperti marah/menghadap murid)
+                    if (boneName === 'head' || boneName.includes('head_') || boneName === 'mixamorig:head') {
+                        bone.rotation.y = THREE.MathUtils.degToRad(-15); // Menoleh sedikit
+                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for looking gesture`);
+                    }
+                    // Rotasi spine untuk tubuh sedikit condong ke depan (pose marah)
+                    if (boneName.includes('spine') && !boneName.includes('spine_0')) {
+                        bone.rotation.x = THREE.MathUtils.degToRad(-10);
+                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for angry lean`);
+                    }
+                }
+                
+                // Update matrix untuk apply changes
+                child.skeleton.update();
+            }
+        });
+        
+        console.log("[AcademicScene2A] Teacher angry/pointing pose set.");
+    }
+
     startStory() {
         this.dialogManager.showDialog({ text: "Beberapa hari setelah ujian... Situasi berubah drastis.", onChoice: () => setTimeout(() => this.showIncident(), 50) });
     }
 
     showIncident() {
+        // Show teacher NPC
+        if (this.teacherNPC) {
+            this.teacherNPC.visible = true;
+        }
         this.dialogManager.showDialog({ speaker: "Guru", text: "STOP! Saya melihat kamu dan temanmu! Kalian mencontek! Ini sangat mengecewakan!", onChoice: () => setTimeout(() => this.showConsequence(), 50) });
     }
 
@@ -493,6 +610,9 @@ export default class AcademicScene2A {
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
         }
+        if (this.teacherMixer) {
+            this.teacherMixer.update(this.experience.time.delta * 0.001);
+        }
     }
 
     dispose() {
@@ -504,5 +624,7 @@ export default class AcademicScene2A {
         if (this.classModel && this.classModel.parent) this.scene.remove(this.classModel.parent);
         if (this.npcDeskmate) this.scene.remove(this.npcDeskmate);
         if (this.npcMixer) this.npcMixer.stopAllAction();
+        if (this.teacherNPC) this.scene.remove(this.teacherNPC);
+        if (this.teacherMixer) this.teacherMixer.stopAllAction();
     }
 }

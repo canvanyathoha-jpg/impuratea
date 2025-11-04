@@ -100,6 +100,11 @@ export default [
                     path: "/models/asian_female_animated.glb",
                 },
                 {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
+                },
+                {
                     name: "collider",
                     type: "glbModel",
                     path: "/models/collider.glb",
@@ -141,6 +146,11 @@ export default [
                     path: "/models/asian_female_animated.glb",
                 },
                 {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
+                },
+                {
                     name: "collider",
                     type: "glbModel",
                     path: "/models/collider.glb",
@@ -180,6 +190,11 @@ export default [
                     name: "female",
                     type: "glbModel",
                     path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
                 },
                 {
                     name: "collider",
@@ -305,6 +320,11 @@ export default [
                     path: "/models/asian_female_animated.glb",
                 },
                 {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
+                },
+                {
                     name: "collider",
                     type: "glbModel",
                     path: "/models/collider.glb",
@@ -344,6 +364,11 @@ export default [
                     name: "female",
                     type: "glbModel",
                     path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
                 },
                 {
                     name: "collider",
@@ -387,6 +412,11 @@ export default [
                     path: "/models/asian_female_animated.glb",
                 },
                 {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
+                },
+                {
                     name: "collider",
                     type: "glbModel",
                     path: "/models/collider.glb",
@@ -426,6 +456,11 @@ export default [
                     name: "female",
                     type: "glbModel",
                     path: "/models/asian_female_animated.glb",
+                },
+                {
+                    name: "teacher",
+                    type: "glbModel",
+                    path: "/models/teacher.glb",
                 },
                 {
                     name: "collider",
