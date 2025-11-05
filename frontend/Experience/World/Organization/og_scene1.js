@@ -1,9 +1,11 @@
+
 import Experience from "../../Experience.js";
 import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import Portal from "../Portal.js";
 import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
+import AIVoice from "../../Utils/AIVoice.js";
 
 export default class Organization {
     constructor() {
@@ -17,6 +19,17 @@ export default class Organization {
         this.isPlayerNear = false;
         this.conversationStarted = false;
         this.openingShown = false;
+
+        // Stop any existing AI Voice from previous scenes
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+
+        // Initialize AI Voice for this scene
+        this.aiVoice = new AIVoice();
+
+        // Track AI voice timeout to clear on dispose
+        this.aiVoiceTimeout = null;
         
         // Raycasting for speech bubble interaction
         this.raycaster = new THREE.Raycaster();
@@ -532,7 +545,7 @@ export default class Organization {
 
     createSimpleSpeechBubble() {
         console.log("[OrgScene1] Creating 3D speech bubble above NPC...");
-        
+
         // Remove existing bubble if any
         const existingBubble = document.getElementById('senior-speech-bubble');
         if (existingBubble) {
@@ -541,6 +554,19 @@ export default class Organization {
 
         // Create 3D speech bubble using Three.js
         this.create3DSpeechBubble();
+
+        // Clear any existing timeout first
+        if (this.aiVoiceTimeout) {
+            clearTimeout(this.aiVoiceTimeout);
+        }
+
+        // Speak the dialogue with AI voice after a delay (give time for opening story to finish and user to see the bubble)
+        this.aiVoiceTimeout = setTimeout(() => {
+            if (this.aiVoice) { // Check if AI voice still exists (scene not disposed)
+                const dialogue = "Dengar, dana acara kita mepet. Saya butuh kamu serahkan sebagian uang kas yang kamu pegang untuk dana taktis. Nanti laporannya gampang, kita manipulasi saja agar semuanya terlihat pas.";
+                this.aiVoice.speak(dialogue);
+            }
+        }, 1000); // 1 second delay after speech bubble appears
     }
 
     create3DSpeechBubble() {
@@ -1134,6 +1160,18 @@ export default class Organization {
 
     dispose() {
         console.log("[Organization] Disposing Organization scene...");
+
+        // Clear AI voice timeout to prevent delayed speech in next scene
+        if (this.aiVoiceTimeout) {
+            clearTimeout(this.aiVoiceTimeout);
+            this.aiVoiceTimeout = null;
+        }
+
+        // Dispose AI Voice
+        if (this.aiVoice) {
+            this.aiVoice.dispose();
+            this.aiVoice = null;
+        }
 
         // Clean up event listeners
         if (this.canvas) {
