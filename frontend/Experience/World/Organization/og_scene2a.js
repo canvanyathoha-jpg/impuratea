@@ -5,6 +5,7 @@ import Portal from "../Portal.js";
 import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
 import Ending from "../../Utils/Ending.js";
+import AIVoice from "../../Utils/AIVoice.js";
 
 export default class OrganizationScene2A {
     constructor() {
@@ -18,7 +19,18 @@ export default class OrganizationScene2A {
         this.uiManager = null;
         this.isPlayerNear = false;
         this.conversationStarted = false;
-        
+
+        // Stop any existing AI Voice from previous scenes
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+
+        // Initialize AI Voice for this scene
+        this.aiVoice = new AIVoice();
+
+        // Track AI voice timeout to clear on dispose
+        this.aiVoiceTimeout = null;
+
         // Raycasting for speech bubble interaction
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -434,6 +446,19 @@ export default class OrganizationScene2A {
 
         // Create 3D speech bubble using Three.js
         this.create3DSpeechBubble();
+
+        // Speak the dialogue with AI voice after a delay
+        // Clear any existing timeout first
+        if (this.aiVoiceTimeout) {
+            clearTimeout(this.aiVoiceTimeout);
+        }
+
+        this.aiVoiceTimeout = setTimeout(() => {
+            if (this.aiVoice) { // Check if AI voice still exists (scene not disposed)
+                const dialogue = "Uang ini akan saya berikan ke Ketua OSIS. Dia yang akan menyiapkan acaranya, jadi tugas kamu lebih ringan.";
+                this.aiVoice.speak(dialogue);
+            }
+        }, 1000); // 1 second delay after speech bubble appears
     }
 
     create3DSpeechBubble() {
@@ -899,6 +924,18 @@ export default class OrganizationScene2A {
 
     dispose() {
         console.log("[OrganizationScene2A] Disposing Organization Scene 2A...");
+
+        // Clear AI voice timeout to prevent delayed speech in next scene
+        if (this.aiVoiceTimeout) {
+            clearTimeout(this.aiVoiceTimeout);
+            this.aiVoiceTimeout = null;
+        }
+
+        // Dispose AI Voice
+        if (this.aiVoice) {
+            this.aiVoice.dispose();
+            this.aiVoice = null;
+        }
 
         // Clean up event listeners
         if (this.canvas) {

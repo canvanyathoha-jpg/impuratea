@@ -14,6 +14,19 @@ export default class Westgate {
         this.npcs = [];
         this.npcPairs = [];
 
+        // IMPORTANT: Force stop any AI Voice from previous scenes (e.g., Organization scenes)
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            console.log("[Westgate] Force stopped all speech synthesis from previous scenes");
+        }
+
+        // Remove any AI Voice controls UI that might still be visible
+        const existingAIVoiceControls = document.getElementById('ai-voice-controls');
+        if (existingAIVoiceControls) {
+            existingAIVoiceControls.remove();
+            console.log("[Westgate] Removed AI Voice controls UI from previous scenes");
+        }
+
         // Show loading indicator and load scene asynchronously
         this.initWithPreload();
     }
