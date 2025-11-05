@@ -38,9 +38,83 @@
             .made-by-section { margin-top: 80px; padding-top: 60px; border-top: 2px solid rgba(255,255,255,.2); text-align: center; }
             .made-by-title { font-size: 32px; font-weight: 600; color: #fff; margin-bottom: 20px; }
             .made-by-text { font-size: 18px; color: rgba(255,255,255,.85); line-height: 1.8; max-width: 900px; margin: 0 auto; }
+            /* Ensure language toggle button is always visible */
+            #language-toggle-btn {
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 999999999999999 !important;
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+                border: 3px solid rgba(255, 255, 255, 0.9) !important;
+                border-radius: 50px !important;
+                padding: 10px 20px !important;
+                color: white !important;
+                font-size: 0 !important;
+                font-weight: 600 !important;
+                cursor: pointer !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 10px !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
+                min-width: 100px !important;
+                height: 44px !important;
+                backdrop-filter: blur(10px) !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                user-select: none !important;
+                -webkit-user-select: none !important;
+            }
+            
+            #language-toggle-btn:hover {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+                transform: translateY(-2px) scale(1.02) !important;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.4) inset !important;
+                border-color: rgba(255, 255, 255, 1) !important;
+            }
+            
+            #language-toggle-btn:active {
+                transform: translateY(0) scale(0.98) !important;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+            }
+            
+            #language-flag {
+                font-size: 22px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                line-height: 1 !important;
+                width: 24px !important;
+                height: 24px !important;
+                filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)) !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            #language-text {
+                color: white !important;
+                font-size: 15px !important;
+                font-weight: 600 !important;
+                font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif !important;
+                letter-spacing: 0.5px !important;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+                display: inline-block !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                white-space: nowrap !important;
+            }
         </style>
     </head>
     <body>
+        <!-- Language Toggle Button - MUST be outside preloader -->
+        <button id="language-toggle-btn">
+            <span id="language-flag"></span>
+            <span id="language-text"></span>
+        </button>
+
         <!-- song -->
         <audio
             id="myAudio"

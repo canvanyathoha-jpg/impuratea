@@ -118,6 +118,10 @@ export default class Organization {
         // Add button event listener
         document.getElementById('start-scene-btn').addEventListener('click', () => {
             console.log("[OrgScene1] Start scene button clicked");
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.startScene();
         });
 
@@ -840,6 +844,10 @@ export default class Organization {
         const button = this.alternativeButton.querySelector('#read-speech-btn');
         button.addEventListener('click', () => {
             console.log("[OrgScene1] Alternative button clicked!");
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.showScreenSpeechBubble();
             
             // Add click animation
@@ -919,6 +927,10 @@ export default class Organization {
         
         // Add click event to close
         screenBubble.addEventListener('click', () => {
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             document.body.removeChild(screenBubble);
             console.log("[OrgScene1] Screen speech bubble closed");
         });

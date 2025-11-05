@@ -4,6 +4,7 @@ import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import Portal from "../Portal.js";
 import DialogManager from "../../Utils/DialogManager.js";
 import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
 
 export default class AcademicScene1 {
     constructor() {
@@ -31,18 +32,36 @@ export default class AcademicScene1 {
         this.canvas.addEventListener('click', this.onMouseClick.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
 
-        this.setWorld();
-        this.createPortals();
-        this.createNPC();
+        // Show loading indicator and load scene asynchronously
+        this.initWithPreloader();
+    }
+
+    initWithPreloader() {
+        console.log("[AcademicScene1] Loading scene in background first...");
         
-        // Start ambient classroom sound
-        if (this.experience.soundManager) {
-            this.experience.soundManager.playAmbient('ambientClassroom', 0.2);
-        }
+        // Show loading indicator
+        this.showLoadingIndicator();
         
-        setTimeout(() => {
-            this.startStory();
-        }, 1000);
+        // Load scene models asynchronously (non-blocking)
+        this.loadSceneAsync().then(() => {
+            console.log("[AcademicScene1] Scene loaded successfully!");
+            
+            // Hide loading indicator
+            this.hideLoadingIndicator();
+            
+            // Start ambient classroom sound
+            if (this.experience.soundManager) {
+                this.experience.soundManager.playAmbient('ambientClassroom', 0.2);
+            }
+            
+            // Start story after scene is loaded
+            setTimeout(() => {
+                this.startStory();
+            }, 1000);
+        }).catch((error) => {
+            console.error("[AcademicScene1] Error loading scene:", error);
+            this.hideLoadingIndicator();
+        });
     }
 
     setWorld() {
@@ -172,7 +191,10 @@ export default class AcademicScene1 {
         this.hideNPCHighlight(); // Hide highlight when story starts
         
         this.dialogManager.showDialog({
-            text: "Kamu memasuki ruangan kelas yang sedang disibukkan dengan persiapan ujian harian fisika hari ini. Suasana tegang, semua orang membuka-buka catatan mereka dengan cemas.",
+            text: {
+                id: "Kamu memasuki ruangan kelas yang sedang disibukkan dengan persiapan ujian harian fisika hari ini. Suasana tegang, semua orang membuka-buka catatan mereka dengan cemas.",
+                en: "You enter the classroom which is bustling with preparations for today's physics daily exam. The atmosphere is tense, everyone is anxiously flipping through their notes."
+            },
             onChoice: () => {
                 this.showScene1Part2();
             }
@@ -186,8 +208,14 @@ export default class AcademicScene1 {
 
     showScene1Part2() {
         this.dialogManager.showDialog({
-            speaker: "Kamu (batin)",
-            text: "Aduh... aku tidak belajar dengan baik untuk ujian ini. Kalau nilainya jelek, pasti orang tua bakal menyita HP ku dan mengurangi uang jajan... Gimana nih?",
+            speaker: {
+                id: "Kamu (batin)",
+                en: "You (inner voice)"
+            },
+            text: {
+                id: "Aduh... aku tidak belajar dengan baik untuk ujian ini. Kalau nilainya jelek, pasti orang tua bakal menyita HP ku dan mengurangi uang jajan... Gimana nih?",
+                en: "Oh no... I didn't study well for this exam. If my grade is bad, my parents will definitely confiscate my phone and reduce my allowance... What should I do?"
+            },
             onChoice: () => {
                 this.showScene1Part3();
             }
@@ -207,24 +235,42 @@ export default class AcademicScene1 {
 
     showScene1Part4() {
         this.dialogManager.showDialog({
-            speaker: "Teman Sebangku",
-            text: "Nih, nanti pas ujian kamu tinggal lihat kertas jawaban ku. Udah deh, pasti aman. Gak ada yang tau kok!",
+            speaker: {
+                id: "Teman Sebangku",
+                en: "Deskmate"
+            },
+            text: {
+                id: "Nih, nanti pas ujian kamu tinggal lihat kertas jawaban ku. Udah deh, pasti aman. Gak ada yang tau kok!",
+                en: "Here, during the exam just look at my answer sheet. Don't worry, it's safe. No one will know!"
+            },
             onChoice: () => {
                 this.dialogManager.showDialog({
-                    text: "Temanmu menyodorkan kertas jawabannya. Apa yang akan kamu lakukan?",
+                    text: {
+                        id: "Temanmu menyodorkan kertas jawabannya. Apa yang akan kamu lakukan?",
+                        en: "Your friend offers you their answer sheet. What will you do?"
+                    },
                     choices: [
                         {
-                            text: "Menolak contekan dan mengerjakan sendiri. Risikonya nilaimu jelek dan HP disita orang tua.",
+                            text: {
+                                id: "Menolak contekan dan mengerjakan sendiri. Risikonya nilaimu jelek dan HP disita orang tua.",
+                                en: "Refuse the cheat sheet and work on your own. Risk: bad grades and parents confiscating your phone."
+                            },
                             score: 0,
                             nextScene: 'a_scene2b'
                         },
                         {
-                            text: "Menerima contekan. Nilaimu bagus dan tidak ketahuan oleh guru.",
+                            text: {
+                                id: "Menerima contekan. Nilaimu bagus dan tidak ketahuan oleh guru.",
+                                en: "Accept the cheat sheet. Your grades will be good and the teacher won't find out."
+                            },
                             score: 20,
                             nextScene: 'a_scene2a'
                         }
                     ],
-                    sublimentMessage: "Jalan pintas sering terlihat mudah, tapi setiap langkah meninggalkan jejak.",
+                    sublimentMessage: {
+                        id: "Jalan pintas sering terlihat mudah, tapi setiap langkah meninggalkan jejak.",
+                        en: "Shortcuts often seem easy, but every step leaves a trace."
+                    },
                     onChoice: (choice) => {
                         this.handleChoice(choice);
                     }
@@ -244,28 +290,40 @@ export default class AcademicScene1 {
 
     showPathA() {
         this.dialogManager.showDialog({
-            text: "Kamu menolak tawaran temanmu dengan sopan. \"Terima kasih, tapi aku mau coba kerjakan sendiri.\" Temanmu tampak sedikit kesal tetapi tidak memaksa lagi.",
+            text: {
+                id: "Kamu menolak tawaran temanmu dengan sopan. \"Terima kasih, tapi aku mau coba kerjakan sendiri.\" Temanmu tampak sedikit kesal tetapi tidak memaksa lagi.",
+                en: "You politely decline your friend's offer. \"Thanks, but I want to try doing it myself.\" Your friend looks a bit annoyed but doesn't push further."
+            },
             onChoice: () => this.showPathAResult()
         });
     }
 
     showPathAResult() {
         this.dialogManager.showDialog({
-            text: "Ujian dimulai. Kamu mengerjakan soal-soal dengan kemampuan terbaikmu, meskipun tidak yakin dengan banyak jawabanmu. Beberapa hari kemudian, nilaimu keluar: 60. Cukup untuk lulus, tapi orang tuamu kecewa.",
+            text: {
+                id: "Ujian dimulai. Kamu mengerjakan soal-soal dengan kemampuan terbaikmu, meskipun tidak yakin dengan banyak jawabanmu. Beberapa hari kemudian, nilaimu keluar: 60. Cukup untuk lulus, tapi orang tuamu kecewa.",
+                en: "The exam begins. You answer the questions with your best effort, even though you're not sure about many answers. A few days later, your grade comes out: 60. Enough to pass, but your parents are disappointed."
+            },
             onChoice: () => this.transitionToNextScene('a_scene2b')
         });
     }
 
     showPathB() {
         this.dialogManager.showDialog({
-            text: "Kamu menerima tawaran temanmu. \"Oke deh, terima kasih ya...\" Saat ujian berlangsung, kamu beberapa kali melirik jawaban temanmu. Guru tidak menyadari apa-apa.",
+            text: {
+                id: "Kamu menerima tawaran temanmu. \"Oke deh, terima kasih ya...\" Saat ujian berlangsung, kamu beberapa kali melirik jawaban temanmu. Guru tidak menyadari apa-apa.",
+                en: "You accept your friend's offer. \"Okay, thanks...\" During the exam, you glance at your friend's answers several times. The teacher doesn't notice anything."
+            },
             onChoice: () => this.showPathBResult()
         });
     }
 
     showPathBResult() {
         this.dialogManager.showDialog({
-            text: "Beberapa hari kemudian, nilaimu keluar: 85! Orang tuamu sangat bangga. Kamu merasa lega... tapi ada perasaan tidak enak di hatimu.",
+            text: {
+                id: "Beberapa hari kemudian, nilaimu keluar: 85! Orang tuamu sangat bangga. Kamu merasa lega... tapi ada perasaan tidak enak di hatimu.",
+                en: "A few days later, your grade comes out: 85! Your parents are very proud. You feel relieved... but there's a bad feeling in your heart."
+            },
             onChoice: () => this.transitionToNextScene('a_scene2a')
         });
     }
@@ -832,19 +890,163 @@ export default class AcademicScene1 {
 
     // --- End Speech Bubble Logic ---
 
+    showLoadingIndicator() {
+        // Remove existing loader if any
+        const existingLoader = document.getElementById('scene-loading-indicator');
+        if (existingLoader) {
+            existingLoader.remove();
+        }
+
+        this.loadingIndicator = document.createElement('div');
+        this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.style.pointerEvents = 'none'; // Jangan halangi input canvas
+        this.loadingIndicator.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                border: 3px solid rgba(255, 215, 0, 0.8);
+                border-radius: 20px;
+                padding: 40px;
+                text-align: center;
+                z-index: 10000001;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                pointer-events: none;
+            ">
+                <div style="
+                    color: #FFD700;
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Memuat Scene...
+                </div>
+                <div style="
+                    width: 300px;
+                    height: 8px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin: 0 auto;
+                ">
+                    <div id="loading-progress-bar" style="
+                        width: 0%;
+                        height: 100%;
+                        background: linear-gradient(90deg, #1E407C, #8B0000, #FFD700);
+                        border-radius: 10px;
+                        transition: width 0.3s ease;
+                        animation: pulse 1.5s ease-in-out infinite;
+                    "></div>
+                </div>
+                <div style="
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 14px;
+                    margin-top: 15px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Mohon tunggu sebentar...
+                </div>
+            </div>
+        `;
+        
+        // Add pulse animation
+        if (!document.getElementById('scene-loading-pulse-animation')) {
+            const style = document.createElement('style');
+            style.id = 'scene-loading-pulse-animation';
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.7; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(this.loadingIndicator);
+    }
+
+    hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.opacity = '0';
+            this.loadingIndicator.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (this.loadingIndicator && document.body.contains(this.loadingIndicator)) {
+                    this.loadingIndicator.remove();
+                }
+                this.loadingIndicator = null;
+            }, 500);
+        }
+    }
+
+    updateLoadingProgress(progress) {
+        const progressBar = document.getElementById('loading-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+    }
+
+    async loadSceneAsync() {
+        return new Promise((resolve, reject) => {
+            try {
+                // Step 1: Load basic scene structure
+                this.updateLoadingProgress(20);
+                this.setWorld();
+                this.updateLoadingProgress(40);
+                
+                // Step 2: Create portals (if any)
+                this.createPortals();
+                this.updateLoadingProgress(60);
+                
+                // Step 3: Create NPC
+                this.createNPC();
+                this.updateLoadingProgress(80);
+                
+                // Step 4: Ensure player is spawned correctly
+                this.ensurePlayerSpawned();
+                this.updateLoadingProgress(100);
+                
+                // Resolve immediately - no delay needed
+                resolve();
+            } catch (error) {
+                console.error("[AcademicScene1] Error in loadSceneAsync:", error);
+                reject(error);
+            }
+        });
+    }
+
+    ensurePlayerSpawned() {
+        // Ensure player is spawned at correct position
+        if (this.experience.world && this.experience.world.player) {
+            const spawnPoint = this.experience.world.spawnPoints?.a_scene1 || new THREE.Vector3(0, 10, 0);
+            console.log("[AcademicScene1] Setting player spawn point to:", spawnPoint);
+            this.experience.world.player.setSpawnPoint(spawnPoint);
+        }
+    }
+
     transitionToNextScene(sceneName) {
         console.log(`[AcademicScene1] Loading scene: ${sceneName}`);
-        const fadeDiv = document.createElement('div');
-        fadeDiv.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; opacity: 0; transition: opacity 0.5s;`;
-        document.body.appendChild(fadeDiv);
-        setTimeout(() => fadeDiv.style.opacity = '1', 10);
-        setTimeout(() => {
-            this.dialogManager.hideAll();
-            this.cleanupSpeechBubble();
+        
+        // Hide dialog first
+        this.dialogManager.hideAll();
+        this.cleanupSpeechBubble();
+        
+        // Use World's switchSceneWithPosition to show loading bar
+        if (this.experience.world && this.experience.world.switchSceneWithPosition) {
+            // Get spawn point for target scene
+            const spawnPoint = this.experience.world.spawnPoints?.[sceneName] || new THREE.Vector3(0, 10, 0);
+            console.log(`[AcademicScene1] Switching to ${sceneName} at position:`, spawnPoint);
+            
+            // Switch scene with loading bar
+            this.experience.world.switchSceneWithPosition(sceneName, spawnPoint);
+        } else {
+            console.error("[AcademicScene1] World.switchSceneWithPosition not available, falling back to reload");
+            // Fallback to reload if World method not available
             const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
-            console.log(`[AcademicScene1] Navigating to: ${newUrl}`);
             window.location.href = newUrl;
-        }, 500);
+        }
     }
 
     update() {
@@ -856,6 +1058,11 @@ export default class AcademicScene1 {
     dispose() {
         console.log("[AcademicScene1] Disposing Academic Scene 1...");
         this.cleanupSpeechBubble();
+        
+        // Clean up loading indicator
+        if (this.loadingIndicator) {
+            this.hideLoadingIndicator();
+        }
         
         // Stop ambient sound
         if (this.experience.soundManager) {

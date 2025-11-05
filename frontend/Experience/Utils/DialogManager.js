@@ -3,6 +3,8 @@
  * Manages story dialogs, choices, and scene progression
  */
 
+import { languageManager } from './LanguageManager.js';
+
 export default class DialogManager {
     constructor(experience = null) {
         this.experience = experience;
@@ -11,6 +13,12 @@ export default class DialogManager {
         this.dialogQueue = [];
         this.isShowing = false;
         this.onChoiceCallback = null;
+        this.languageManager = languageManager;
+        
+        // Listen for language changes to update UI
+        this.languageManager.onLanguageChange(() => {
+            this.updateUIForLanguage();
+        });
 
         // Auto-play settings
         this.autoPlayEnabled = false;
@@ -60,7 +68,7 @@ export default class DialogManager {
             backdrop-filter: blur(10px);
         `;
         
-        historyButton.innerHTML = `📜 History (${this.dialogHistory.length})`;
+        historyButton.innerHTML = `📜 ${this.languageManager.t('ui.history', 'History')} (${this.dialogHistory.length})`;
         
         // Add click event listener
         historyButton.addEventListener('click', () => {
@@ -97,7 +105,7 @@ export default class DialogManager {
      */
     updateHistoryButtonCounter() {
         if (this.permanentHistoryButton) {
-            this.permanentHistoryButton.innerHTML = `📜 History (${this.dialogHistory.length})`;
+            this.permanentHistoryButton.innerHTML = `📜 ${this.languageManager.t('ui.history', 'History')} (${this.dialogHistory.length})`;
         }
     }
 
@@ -338,8 +346,9 @@ export default class DialogManager {
             // Speaker name (if provided) - SELALU tampilkan dengan warna gelap yang kontras
             if (config.speaker) {
                 // Different styling untuk berbagai jenis speaker
-                const isTeacher = config.speaker.includes("Guru");
-                const isBatin = config.speaker === "Kamu (batin)" || config.speaker.includes("batin");
+                const speakerText = this.languageManager.translate(config.speaker);
+                const isTeacher = speakerText.includes("Guru") || speakerText.toLowerCase().includes("teacher");
+                const isBatin = speakerText.includes("batin") || speakerText.toLowerCase().includes("inner");
                 
                 // Warna gelap untuk kontras dengan background putih
                 const speakerColor = isTeacher ? '#b8860b' : isBatin ? '#1565c0' : '#1976d2'; // Dark colors untuk semua
@@ -348,18 +357,21 @@ export default class DialogManager {
                 html += `
                     <div style="font-size: 16px; color: ${speakerColor}; margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                         <span>${speakerEmoji}</span>
-                        <span>${config.speaker}</span>
+                        <span>${speakerText}</span>
                     </div>
                 `;
             }
 
             // Dialog text dengan warna gelap HITAM untuk kontras maksimal dengan background putih
-            const isTeacher = config.speaker?.includes("Guru");
+            // Translate dialog text if it's bilingual object, otherwise use as is
+            const dialogText = this.languageManager.translate(config.text);
+            const speakerText = config.speaker ? this.languageManager.translate(config.speaker) : '';
+            const isTeacher = speakerText && (speakerText.includes("Guru") || speakerText.toLowerCase().includes("teacher"));
             const textColor = '#000000'; // HITAM MURNI untuk kontras maksimal
             
             html += `
                 <div style="font-size: 20px; line-height: 1.8; margin-bottom: 20px; color: ${textColor}; font-weight: 600; text-shadow: none; ${isTeacher ? 'border-left: 3px solid #ffd700; padding-left: 15px;' : ''}">
-                    ${config.text}
+                    ${dialogText}
                 </div>
             `;
         }
@@ -399,7 +411,7 @@ export default class DialogManager {
                             user-select: none;
                         "
                     >
-                        <strong style="color: ${labelColor};">[${letter}]</strong> ${choice.text}
+                        <strong style="color: ${labelColor};">[${letter}]</strong> ${this.languageManager.translate(choice.text)}
                     </button>
                 `;
             });
@@ -425,7 +437,7 @@ export default class DialogManager {
                         user-select: none;
                     "
                 >
-                    Lanjutkan →
+                    ${this.languageManager.t('choices.continue', 'Continue')} →
                 </button>
             `;
         }
@@ -735,6 +747,14 @@ export default class DialogManager {
         } else {
             this.dialogHistory.forEach((entry, index) => {
                 const time = new Date(entry.timestamp).toLocaleTimeString();
+                
+                // Translate speaker, text, and choices if they are bilingual objects
+                const translatedSpeaker = entry.speaker ? this.languageManager.translate(entry.speaker) : 'Narator';
+                const translatedText = entry.text ? this.languageManager.translate(entry.text) : '';
+                const translatedChoices = entry.choices && Array.isArray(entry.choices) 
+                    ? entry.choices.map(c => c ? this.languageManager.translate(c) : '').filter(c => c !== '')
+                    : null;
+                
                 historyHtml += `
                     <div style="
                         margin-bottom: 15px;
@@ -747,14 +767,14 @@ export default class DialogManager {
                             #${index + 1} - ${time}
                         </div>
                         <div style="font-weight: bold; color: #00ffff; margin-bottom: 8px;">
-                            ${entry.speaker}
+                            ${translatedSpeaker}
                         </div>
                         <div style="font-size: 14px; line-height: 1.5;">
-                            ${entry.text}
+                            ${translatedText}
                         </div>
-                        ${entry.choices ? `
+                        ${translatedChoices ? `
                             <div style="margin-top: 10px; font-size: 12px; color: #aaa;">
-                                Choices: ${entry.choices.join(', ')}
+                                Choices: ${translatedChoices.join(', ')}
                             </div>
                         ` : ''}
                     </div>
@@ -920,6 +940,40 @@ export default class DialogManager {
         // Camera controls tidak perlu di-enable karena tidak pernah di-disable
         // this.enableCameraControls(); // DISABLED - kamera tetap enabled
     }
+    
+    /**
+     * Update UI elements when language changes
+     */
+    updateUIForLanguage() {
+        // Update history button
+        this.updateHistoryButtonCounter();
+        
+        // Update current dialog if showing
+        if (this.isShowing && this.currentDialog) {
+            // Recreate dialog UI with new language
+            const existing = document.getElementById('story-dialog');
+            if (existing) {
+                existing.remove();
+            }
+            this.createDialogUI(this.currentDialog);
+        }
+        
+        // Update history if showing
+        const historyUI = document.getElementById('dialog-history-ui');
+        if (historyUI) {
+            // Recreate history UI with new language
+            historyUI.remove();
+            this.showHistory();
+        }
+        
+        // Update ending screen if showing
+        const endingScreen = document.getElementById('ending-screen');
+        if (endingScreen) {
+            // Recreate ending screen with new language
+            endingScreen.remove();
+            this.showEnding();
+        }
+    }
 
     // Show ending screen
     showEnding() {
@@ -949,14 +1003,15 @@ export default class DialogManager {
 
         endingDiv.innerHTML = `
             <div style="
-                max-width: 700px;
+                max-width: 580px;
                 text-align: center;
                 color: white;
-                padding: 40px;
+                padding: 10px 15px;
+                box-sizing: border-box;
             ">
                 <h1 style="
-                    font-size: 48px;
-                    margin-bottom: 20px;
+                    font-size: 28px;
+                    margin: 0 0 8px 0;
                     color: ${ending.color};
                     text-shadow: 0 0 20px ${ending.color};
                 ">
@@ -964,52 +1019,114 @@ export default class DialogManager {
                 </h1>
                 
                 <div style="
-                    font-size: 20px;
-                    margin: 30px 0;
-                    padding: 30px;
+                    font-size: 14px;
+                    margin: 10px 0;
+                    padding: 12px;
                     background: rgba(255, 255, 255, 0.05);
-                    border-radius: 15px;
-                    line-height: 1.8;
+                    border-radius: 8px;
+                    line-height: 1.4;
                 ">
                     ${ending.description}
                 </div>
 
                 <div style="
-                    font-size: 36px;
-                    margin: 30px 0;
+                    font-size: 24px;
+                    margin: 10px 0;
                     color: ${ending.color};
                 ">
-                    Final Corruption Score: ${this.scoreManager.getScore()}%
+                    ${this.languageManager.t('ui.finalScore', 'Final Corruption Score')}: ${this.scoreManager.getScore()}%
+                </div>
+
+                <div style="
+                    margin: 10px 0;
+                    padding: 12px;
+                    background: linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(13, 71, 161, 0.2) 100%);
+                    border-left: 4px solid #1976d2;
+                    border-radius: 8px;
+                    text-align: left;
+                    box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
+                ">
+                    <h2 style="
+                        font-size: 16px;
+                        margin: 0 0 8px 0;
+                        color: #64b5f6;
+                    ">
+                        💡 ${this.languageManager.t('ui.wisdomTitle', 'Wisdom & Moral Message')}
+                    </h2>
+                    <div style="
+                        font-size: 12px;
+                        line-height: 1.3;
+                        color: #e3f2fd;
+                    ">
+                        <p style="margin: 6px 0;">
+                            <strong style="color: #90caf9;">✨ ${this.languageManager.t('ending.honestyFoundation', 'Honesty is the Foundation')}</strong><br/>
+                            ${this.languageManager.t('ending.honestyFoundationDesc', 'Every dishonest act damages integrity. Honesty builds trust.')}
+                        </p>
+                        <p style="margin: 6px 0;">
+                            <strong style="color: #90caf9;">🚫 ${this.languageManager.t('ending.corruptionStartsSmall', 'Corruption Starts from Small Things')}</strong><br/>
+                            ${this.languageManager.t('ending.corruptionStartsSmallDesc', 'Cheating and buying answers are academic corruption that can grow larger.')}
+                        </p>
+                        <p style="margin: 6px 0;">
+                            <strong style="color: #90caf9;">🌟 ${this.languageManager.t('ending.integrityMoreValuable', 'Integrity is More Valuable')}</strong><br/>
+                            ${this.languageManager.t('ending.integrityMoreValuableDesc', 'Strong character is more valuable than high grades obtained through cheating.')}
+                        </p>
+                    </div>
+                </div>
+
+                <div style="
+                    margin: 10px 0;
+                    padding: 10px;
+                    background: rgba(255, 193, 7, 0.15);
+                    border: 2px solid #ffc107;
+                    border-radius: 8px;
+                    text-align: center;
+                ">
+                    <div style="
+                        font-size: 14px;
+                        font-weight: bold;
+                        color: #ffc107;
+                        margin-bottom: 6px;
+                    ">
+                        📌 ${this.languageManager.t('ui.rememberMessage', 'Remember This Message')}
+                    </div>
+                    <div style="
+                        font-size: 12px;
+                        line-height: 1.3;
+                        color: #fff9c4;
+                        font-style: italic;
+                    ">
+                        "${this.languageManager.t('ending.rememberQuote', 'Choose honesty, because it is the best investment for the future.')}"
+                    </div>
                 </div>
 
                 <button id="restart-button" style="
-                    padding: 15px 40px;
+                    padding: 10px 25px;
                     background: ${ending.color};
                     border: none;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     color: white;
-                    font-size: 20px;
+                    font-size: 16px;
                     font-weight: bold;
                     cursor: pointer;
-                    margin-top: 20px;
+                    margin-top: 8px;
                     transition: all 0.3s;
                 ">
-                    Main Lagi
+                    ${this.languageManager.t('ui.restart', 'Play Again')}
                 </button>
 
                 <button id="back-to-menu" style="
-                    padding: 15px 40px;
+                    padding: 10px 25px;
                     background: #333;
                     border: 2px solid white;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     color: white;
-                    font-size: 18px;
+                    font-size: 14px;
                     font-weight: bold;
                     cursor: pointer;
-                    margin: 10px;
+                    margin: 8px;
                     transition: all 0.3s;
                 ">
-                    Kembali ke Menu
+                    ${this.languageManager.t('ui.backToMenu', 'Back to Menu')}
                 </button>
             </div>
         `;

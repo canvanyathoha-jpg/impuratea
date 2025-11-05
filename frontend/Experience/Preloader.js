@@ -153,6 +153,10 @@ export default class Preloader {
 
     onStartButtonClick = () => {
         console.log('[Preloader] Start button clicked!');
+        // Play click sound
+        if (this.experience && this.experience.soundManager) {
+            this.experience.soundManager.play('click', 0.6);
+        }
         // Hide landing page and show name input
         this.landingToNameInput();
     };
@@ -237,6 +241,11 @@ export default class Preloader {
     onNameInput = () => {
         if (this.domElements.nameInput.value === "") return;
 
+        // Play click sound
+        if (this.experience && this.experience.soundManager) {
+            this.experience.soundManager.play('click', 0.6);
+        }
+
         // Save username to localStorage
         localStorage.setItem('impuratea-username', this.domElements.nameInput.value);
 
@@ -244,6 +253,11 @@ export default class Preloader {
     };
 
     onCharacterSelect = (event) => {
+        // Play click sound
+        if (this.experience && this.experience.soundManager) {
+            this.experience.soundManager.play('click', 0.6);
+        }
+
         // Determine which avatar was selected
         // Check if clicked element or its parent is avatar-left or avatar-right
         let target = event.target;

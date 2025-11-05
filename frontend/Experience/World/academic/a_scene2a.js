@@ -3,6 +3,7 @@ import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import DialogManager from "../../Utils/DialogManager.js";
 import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
 
 export default class AcademicScene2A {
     constructor() {
@@ -26,13 +27,31 @@ export default class AcademicScene2A {
         this.canvas.addEventListener('click', this.onMouseClick.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
 
-        this.setWorld();
-        this.createNPC();
-        this.createTeacherNPC();
+        // Show loading indicator and load scene asynchronously
+        this.initWithPreloader();
+    }
+
+    initWithPreloader() {
+        console.log("[AcademicScene2A] Loading scene in background first...");
         
-        setTimeout(() => {
-            this.startStory();
-        }, 1000);
+        // Show loading indicator
+        this.showLoadingIndicator();
+        
+        // Load scene models asynchronously (non-blocking)
+        this.loadSceneAsync().then(() => {
+            console.log("[AcademicScene2A] Scene loaded successfully!");
+            
+            // Hide loading indicator
+            this.hideLoadingIndicator();
+            
+            // Start story after scene is loaded
+            setTimeout(() => {
+                this.startStory();
+            }, 1000);
+        }).catch((error) => {
+            console.error("[AcademicScene2A] Error loading scene:", error);
+            this.hideLoadingIndicator();
+        });
     }
 
     setWorld() {
@@ -102,162 +121,418 @@ export default class AcademicScene2A {
         console.log("[AcademicScene2A] Deskmate NPC created.");
     }
 
+    // Membuat model 3D guru yang akan muncul saat menegur siswa
     createTeacherNPC() {
-        console.log("[AcademicScene2A] Creating Teacher NPC...");
-        const teacherModel = this.resources.items.teacher;
-        if (!teacherModel) {
-            console.error("[AcademicScene2A] Teacher model not found!");
+        console.log("[AcademicScene2A] Creating Teacher (Guru) NPC...");
+        console.log("[AcademicScene2A] Available resources:", Object.keys(this.resources.items));
+        
+        const guruModel = this.resources.items.guru;
+        if (!guruModel) {
+            console.error("[AcademicScene2A] Guru model not found in resources!");
+            console.error("[AcademicScene2A] Available items:", this.resources.items);
             return;
         }
 
-        // Clone dengan scene.clone() untuk mempertahankan material dan texture
-        this.teacherNPC = teacherModel.scene.clone();
-        
-        // Position teacher di depan kelas
-        this.teacherNPC.position.set(0, 11, 25); // Y = 0 untuk ground level
-        this.teacherNPC.rotation.y = Math.PI; // Rotate 180 deg untuk menghadap ke kelas
-        this.teacherNPC.scale.set(34, 34, 34); // Scale sama dengan NPC lainnya
-        this.teacherNPC.visible = false; // Hidden by default
-        this.scene.add(this.teacherNPC);
+        console.log("[AcademicScene2A] Guru model found:", guruModel);
+        console.log("[AcademicScene2A] Guru model scene:", guruModel.scene);
+        console.log("[AcademicScene2A] Guru model scene children:", guruModel.scene.children.length);
 
-        this.teacherAnimations = teacherModel.animations ? teacherModel.animations.map((clip) => clip.clone()) : [];
+        // Clone model guru untuk digunakan di scene
+        // Gunakan SkeletonUtils.clone seperti NPC lainnya untuk memastikan skeleton dan materials ter-copy dengan benar
+        this.teacherNPC = SkeletonUtils.clone(guruModel.scene);
+        
+        // Log struktur model setelah clone
+        console.log("[AcademicScene2A] Teacher NPC cloned, children count:", this.teacherNPC.children.length);
+        let meshCount = 0;
+        this.teacherNPC.traverse((child) => {
+            console.log("[AcademicScene2A] Child:", child.type, child.name || 'unnamed', "visible:", child.visible);
+            if (child.isMesh) {
+                meshCount++;
+                console.log("[AcademicScene2A] Mesh found:", child.name, "material:", child.material ? "exists" : "missing");
+            }
+        });
+        console.log("[AcademicScene2A] Total meshes:", meshCount);
+        
+        // Position guru di depan kelas (menghadap ke siswa)
+        // Posisi di depan kelas, menghadap ke arah siswa
+        // Y position disesuaikan dengan ground level (sama dengan NPC lainnya yang menggunakan 1.5)
+        this.teacherNPC.position.set(0, 1.5, 25);
+        this.teacherNPC.rotation.y = Math.PI; // Rotate 180 derajat untuk menghadap ke kelas
+        this.teacherNPC.scale.set(10, 10, 10); // Scale sama dengan NPC lainnya
+        this.teacherNPC.visible = false; // Hidden by default, akan muncul saat dialog "STOP!" muncul
+        
+        // Pastikan semua children juga INVISIBLE (tidak visible) sampai saatnya muncul
+        this.teacherNPC.traverse((child) => {
+            child.visible = false; // Set semua children juga invisible
+        });
+        
+        this.scene.add(this.teacherNPC);
+        
+        console.log("[AcademicScene2A] Teacher NPC added to scene");
+        console.log("[AcademicScene2A] Position:", this.teacherNPC.position);
+        console.log("[AcademicScene2A] Scale:", this.teacherNPC.scale);
+        console.log("[AcademicScene2A] Visible:", this.teacherNPC.visible);
+        console.log("[AcademicScene2A] In scene:", this.scene.children.includes(this.teacherNPC));
+
+        // Setup animations jika ada
+        this.teacherAnimations = guruModel.animations ? guruModel.animations.map((clip) => clip.clone()) : [];
+        console.log("[AcademicScene2A] Teacher animations count:", this.teacherAnimations.length);
         this.teacherMixer = new THREE.AnimationMixer(this.teacherNPC);
         this.teacherActions = {};
 
-        // JANGAN play animasi untuk teacher agar pose statis marah bisa diterapkan
-        // if (this.teacherAnimations.length > 0) {
-        //     const idleAnimation = this.teacherAnimations.find(clip => clip.name === 'idle') || this.teacherAnimations[1];
-        //     if (idleAnimation) {
-        //         this.teacherActions.idle = this.teacherMixer.clipAction(idleAnimation);
-        //         this.teacherActions.idle.play();
-        //     }
-        // }
+        // JANGAN play animasi idle karena kita akan set pose marah secara manual
+        // Pose marah akan di-set dengan rotasi bones langsung
 
-        // Set angry/pointing pose untuk teacher
-        this.setTeacherAngryPose();
+        // HAPUS pose - biarkan model murni tanpa pose
+        // this.setTeacherAngryPose();
 
-        console.log("[AcademicScene2A] Teacher NPC created.");
+        console.log("[AcademicScene2A] Teacher (Guru) NPC created successfully.");
     }
 
-    // Fungsi untuk mengatur pose marah/menunjuk teacher
+    // Fungsi untuk mengatur pose marah/menegur dengan rotasi bones
     setTeacherAngryPose() {
-        console.log("[AcademicScene2A] setTeacherAngryPose called, teacherNPC:", this.teacherNPC);
         if (!this.teacherNPC) {
             console.error("[AcademicScene2A] teacherNPC is null!");
             return;
         }
 
-        let foundSkinnedMesh = false;
-        // Traverse semua mesh dan cari bones
+        console.log("[AcademicScene2A] Setting angry/scolding pose for teacher...");
+
+        // Traverse semua mesh untuk menemukan skinned mesh dengan skeleton
         this.teacherNPC.traverse((child) => {
-            console.log("[AcademicScene2A] Traversing:", child.type, child.isSkinnedMesh);
             if (child.isSkinnedMesh && child.skeleton) {
-                foundSkinnedMesh = true;
                 const bones = child.skeleton.bones;
                 
-                // Log semua bones untuk debug
-                console.log("[AcademicScene2A] Found skinned mesh! Available bones:", bones.map(b => b.name).join(', '));
+                // Log semua bones dengan detail untuk debugging
+                console.log("[AcademicScene2A] ===== ALL BONES =====");
+                bones.forEach((bone, index) => {
+                    console.log(`[${index}] ${bone.name} (type: ${bone.type})`);
+                });
+                console.log("[AcademicScene2A] ====================");
                 
-                // Temukan bone berdasarkan nama (ini akan berbeda tergantung model)
-                // Biasanya bone tangan: "LeftHand", "RightHand", "LeftArm", "RightArm", dll
-                // Coba beberapa variasi nama bone yang umum
-                for (let i = 0; i < bones.length; i++) {
-                    const bone = bones[i];
-                    const boneName = bone.name.toLowerCase();
+                // Helper function untuk mencari bone berdasarkan nama exact atau pattern
+                // Prioritas: exact match > pattern dengan "right"/"left" > pattern generic
+                const findBone = (exactNames, patterns) => {
+                    // Cari exact match terlebih dahulu
+                    if (exactNames && exactNames.length > 0) {
+                        for (const exactName of exactNames) {
+                            const found = bones.find(b => b.name === exactName);
+                            if (found) return found;
+                        }
+                    }
                     
-                    // Rotasi tangan kanan untuk pose menunjuk
-                    if (boneName.includes('righthand') || boneName.includes('r_hand') || boneName.includes('hand.r') || 
-                        boneName.includes('hand_r') || boneName.includes('right_hand')) {
-                        // Rotasi untuk pointing gesture
-                        bone.rotation.x = THREE.MathUtils.degToRad(-30); // Naik sedikit
-                        bone.rotation.y = THREE.MathUtils.degToRad(15);  // Geser sedikit ke kanan
-                        bone.rotation.z = THREE.MathUtils.degToRad(0);   // Lurus
-                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for pointing gesture`);
+                    // Jika tidak ditemukan, cari dengan pattern
+                    if (patterns && patterns.length > 0) {
+                        for (const pattern of patterns) {
+                            const found = bones.find(b => {
+                                const name = b.name.toLowerCase();
+                                if (typeof pattern === 'string') {
+                                    return name.includes(pattern);
+                                } else if (pattern instanceof RegExp) {
+                                    return pattern.test(name);
+                                }
+                                return false;
+                            });
+                            if (found) return found;
+                        }
                     }
-                    // Rotasi lengan kanan untuk pose menunjuk
-                    if (boneName.includes('rightarm') || boneName.includes('r_arm') || boneName.includes('upperarm.r') ||
-                        boneName.includes('arm_r') || boneName.includes('right_arm') || boneName.includes('upperarm_r')) {
-                        bone.rotation.x = THREE.MathUtils.degToRad(-90); // Lurus ke depan
-                        bone.rotation.y = THREE.MathUtils.degToRad(0);
-                        bone.rotation.z = THREE.MathUtils.degToRad(25);  // Geser ke kanan sedikit
-                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for pointing gesture`);
-                    }
-                    // Rotasi bahu untuk pose marah
-                    if (boneName.includes('rightshoulder') || boneName.includes('r_shoulder') || boneName.includes('shoulder.r') ||
-                        boneName.includes('shoulder_r') || boneName.includes('right_shoulder')) {
-                        bone.rotation.x = THREE.MathUtils.degToRad(-20);
-                        bone.rotation.y = THREE.MathUtils.degToRad(-10);
-                        bone.rotation.z = THREE.MathUtils.degToRad(20);
-                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for angry pose`);
-                    }
-                    // Rotasi kepala untuk melihat ke sisi (seperti marah/menghadap murid)
-                    if (boneName === 'head' || boneName.includes('head_') || boneName === 'mixamorig:head') {
-                        bone.rotation.y = THREE.MathUtils.degToRad(-15); // Menoleh sedikit
-                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for looking gesture`);
-                    }
-                    // Rotasi spine untuk tubuh sedikit condong ke depan (pose marah)
-                    if (boneName.includes('spine') && !boneName.includes('spine_0')) {
-                        bone.rotation.x = THREE.MathUtils.degToRad(-10);
-                        console.log(`[AcademicScene2A] ✓ Rotated bone: ${bone.name} for angry lean`);
-                    }
+                    return null;
+                };
+                
+                // Cari bones dengan nama exact terlebih dahulu (berdasarkan log console)
+                // Tangan kanan (hand) - RightHand_49
+                const rightHand = findBone(
+                    ['RightHand_49'],
+                    [/^righthand/i, /hand.*right/i, /right.*hand/i]
+                );
+                
+                // Lengan kanan (upper arm) - RightArm_51
+                const rightUpperArm = findBone(
+                    ['RightArm_51'],
+                    [/^rightarm/i, /arm.*right/i, /right.*arm/i, /upper.*arm.*right/i]
+                );
+                
+                // Lengan bawah kanan (forearm) - RightForeArm_50
+                const rightForearm = findBone(
+                    ['RightForeArm_50'],
+                    [/^rightforearm/i, /forearm.*right/i, /right.*forearm/i]
+                );
+                
+                // Bahu kanan - RightShoulder_52
+                const rightShoulder = findBone(
+                    ['RightShoulder_52'],
+                    [/^rightshoulder/i, /shoulder.*right/i, /right.*shoulder/i]
+                );
+                
+                // Tangan kiri - LeftHand_25
+                const leftHand = findBone(
+                    ['LeftHand_25'],
+                    [/^lefthand/i, /hand.*left/i, /left.*hand/i]
+                );
+                
+                // Lengan kiri - LeftArm_27
+                const leftUpperArm = findBone(
+                    ['LeftArm_27'],
+                    [/^leftarm/i, /arm.*left/i, /left.*arm/i, /upper.*arm.*left/i]
+                );
+                
+                // Kepala - Head_3
+                const head = findBone(
+                    ['Head_3'],
+                    [/^head_3$/i, /^head$/i]
+                );
+                
+                // Spine - Spine_55, Spine1_54, atau Spine2_53
+                const spine = findBone(
+                    ['Spine_55', 'Spine1_54', 'Spine2_53'],
+                    [/^spine/i]
+                );
+                
+                // Cari semua spine bones untuk efek condong yang lebih natural
+                const spine1 = bones.find(b => b.name === 'Spine1_54');
+                const spine2 = bones.find(b => b.name === 'Spine2_53');
+                
+                console.log("[AcademicScene2A] Found bones:");
+                console.log("  Right Hand:", rightHand?.name || "NOT FOUND");
+                console.log("  Right Upper Arm:", rightUpperArm?.name || "NOT FOUND");
+                console.log("  Right Forearm:", rightForearm?.name || "NOT FOUND");
+                console.log("  Right Shoulder:", rightShoulder?.name || "NOT FOUND");
+                console.log("  Left Hand:", leftHand?.name || "NOT FOUND");
+                console.log("  Left Upper Arm:", leftUpperArm?.name || "NOT FOUND");
+                console.log("  Head:", head?.name || "NOT FOUND");
+                console.log("  Spine:", spine?.name || "NOT FOUND");
+                console.log("  Spine1:", spine1?.name || "NOT FOUND");
+                console.log("  Spine2:", spine2?.name || "NOT FOUND");
+                
+                // Apply rotations - gunakan local rotation jika tersedia
+                if (rightHand) {
+                    rightHand.rotation.x = THREE.MathUtils.degToRad(-10);
+                    rightHand.rotation.y = THREE.MathUtils.degToRad(5);
+                    rightHand.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated right hand: ${rightHand.name}`);
                 }
                 
-                // Update matrix untuk apply changes
+                if (rightForearm) {
+                    rightForearm.rotation.x = THREE.MathUtils.degToRad(-30);
+                    rightForearm.rotation.y = THREE.MathUtils.degToRad(0);
+                    rightForearm.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated right forearm: ${rightForearm.name}`);
+                }
+                
+                if (rightUpperArm) {
+                    rightUpperArm.rotation.x = THREE.MathUtils.degToRad(-45);
+                    rightUpperArm.rotation.y = THREE.MathUtils.degToRad(0);
+                    rightUpperArm.rotation.z = THREE.MathUtils.degToRad(10);
+                    console.log(`[AcademicScene2A] ✓ Rotated right upper arm: ${rightUpperArm.name}`);
+                }
+                
+                if (rightShoulder) {
+                    rightShoulder.rotation.x = THREE.MathUtils.degToRad(-10);
+                    rightShoulder.rotation.y = THREE.MathUtils.degToRad(0);
+                    rightShoulder.rotation.z = THREE.MathUtils.degToRad(5);
+                    console.log(`[AcademicScene2A] ✓ Rotated right shoulder: ${rightShoulder.name}`);
+                }
+                
+                if (leftHand) {
+                    leftHand.rotation.x = THREE.MathUtils.degToRad(0);
+                    leftHand.rotation.y = THREE.MathUtils.degToRad(0);
+                    leftHand.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated left hand: ${leftHand.name}`);
+                }
+                
+                if (leftUpperArm) {
+                    leftUpperArm.rotation.x = THREE.MathUtils.degToRad(0);
+                    leftUpperArm.rotation.y = THREE.MathUtils.degToRad(0);
+                    leftUpperArm.rotation.z = THREE.MathUtils.degToRad(-5);
+                    console.log(`[AcademicScene2A] ✓ Rotated left upper arm: ${leftUpperArm.name}`);
+                }
+                
+                if (head) {
+                    head.rotation.x = THREE.MathUtils.degToRad(0);
+                    head.rotation.y = THREE.MathUtils.degToRad(0);
+                    head.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated head: ${head.name}`);
+                }
+                
+                if (spine) {
+                    spine.rotation.x = THREE.MathUtils.degToRad(-5);
+                    spine.rotation.y = THREE.MathUtils.degToRad(0);
+                    spine.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated spine: ${spine.name}`);
+                }
+                
+                // Rotasi spine1 dan spine2 untuk efek condong yang lebih natural
+                if (spine1) {
+                    spine1.rotation.x = THREE.MathUtils.degToRad(-3);
+                    spine1.rotation.y = THREE.MathUtils.degToRad(0);
+                    spine1.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated spine1: ${spine1.name}`);
+                }
+                
+                if (spine2) {
+                    spine2.rotation.x = THREE.MathUtils.degToRad(-5);
+                    spine2.rotation.y = THREE.MathUtils.degToRad(0);
+                    spine2.rotation.z = THREE.MathUtils.degToRad(0);
+                    console.log(`[AcademicScene2A] ✓ Rotated spine2: ${spine2.name}`);
+                }
+                
+                // Update skeleton matrix untuk apply changes
                 child.skeleton.update();
+                
+                // Force update matrix world
+                this.teacherNPC.updateMatrixWorld(true);
             }
         });
         
-        console.log("[AcademicScene2A] Teacher angry/pointing pose set.");
+        console.log("[AcademicScene2A] Teacher angry/scolding pose set.");
     }
 
     startStory() {
-        this.dialogManager.showDialog({ text: "Beberapa hari setelah ujian... Situasi berubah drastis.", onChoice: () => setTimeout(() => this.showIncident(), 50) });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Beberapa hari setelah ujian... Situasi berubah drastis.",
+                en: "A few days after the exam... The situation changed drastically."
+            }, 
+            onChoice: () => setTimeout(() => this.showIncident(), 50) 
+        });
     }
 
     showIncident() {
-        // Show teacher NPC
-        if (this.teacherNPC) {
-            this.teacherNPC.visible = true;
-        }
-        this.dialogManager.showDialog({ speaker: "Guru", text: "STOP! Saya melihat kamu dan temanmu! Kalian mencontek! Ini sangat mengecewakan!", onChoice: () => setTimeout(() => this.showConsequence(), 50) });
+        // Tampilkan dialog DULU, baru munculkan model setelah dialog muncul
+        console.log("[AcademicScene2A] showIncident called");
+        
+        // Tampilkan dialog terlebih dahulu
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru",
+                en: "Teacher"
+            }, 
+            text: {
+                id: "STOP! Saya melihat kamu dan temanmu! Kalian mencontek! Ini sangat mengecewakan!",
+                en: "STOP! I saw you and your friend! You were cheating! This is very disappointing!"
+            }, 
+            onChoice: () => setTimeout(() => this.showConsequence(), 50) 
+        });
+        
+        // Munculkan model 3D guru SETELAH dialog muncul (delay kecil untuk memastikan dialog sudah ter-render)
+        // Delay 100ms untuk memastikan dialog sudah muncul di layar
+        setTimeout(() => {
+            console.log("[AcademicScene2A] Making teacher NPC visible...");
+            console.log("[AcademicScene2A] teacherNPC exists:", !!this.teacherNPC);
+            
+            if (this.teacherNPC) {
+                this.teacherNPC.visible = true;
+                // Pastikan semua children juga visible
+                this.teacherNPC.traverse((child) => {
+                    child.visible = true;
+                });
+                
+                console.log("[AcademicScene2A] Teacher NPC is now visible");
+                console.log("[AcademicScene2A] Teacher NPC position:", this.teacherNPC.position);
+                console.log("[AcademicScene2A] Teacher NPC scale:", this.teacherNPC.scale);
+                console.log("[AcademicScene2A] Teacher NPC in scene:", this.scene.children.includes(this.teacherNPC));
+            } else {
+                console.error("[AcademicScene2A] Teacher NPC is null!");
+            }
+        }, 100);
     }
 
     showConsequence() {
-        this.dialogManager.showDialog({ text: "Ternyata ada siswa lain yang melaporkan bahwa kalian mencontek. Guru mencoret nilai ujian kalian berdua. Temanmu yang memberikan contekan dipanggil ke BK dan mendapat surat peringatan.", onChoice: () => this.showFriendReaction() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Ternyata ada siswa lain yang melaporkan bahwa kalian mencontek. Guru mencoret nilai ujian kalian berdua. Temanmu yang memberikan contekan dipanggil ke BK dan mendapat surat peringatan.",
+                en: "It turns out another student reported that you were cheating. The teacher crossed out both of your exam scores. Your friend who provided the cheat sheet was called to the guidance counselor and received a warning letter."
+            }, 
+            onChoice: () => this.showFriendReaction() 
+        });
     }
 
     showFriendReaction() {
-        const speaker = "Teman Sebangku";
-        const text = "Ini semua gara-gara kamu! Harusnya kamu lebih hati-hati! Sekarang aku kena masalah juga! Aku gak mau ngomong sama kamu lagi!";
+        const speaker = {
+            id: "Teman Sebangku",
+            en: "Deskmate"
+        };
+        const text = {
+            id: "Ini semua gara-gara kamu! Harusnya kamu lebih hati-hati! Sekarang aku kena masalah juga! Aku gak mau ngomong sama kamu lagi!",
+            en: "This is all your fault! You should have been more careful! Now I'm in trouble too! I don't want to talk to you anymore!"
+        };
         this.create3DSpeechBubble(speaker, text, () => this.showIsolation());
     }
 
     showIsolation() {
-        this.dialogManager.showDialog({ text: "Sejak kejadian itu, teman sebangkumu menjauhi kamu. Kalian sekarang dalam situasi yang sangat canggung. Dan yang lebih buruk, kalian harus mengerjakan tugas makalah biologi bersama...", onChoice: () => setTimeout(() => this.showAssignment(), 50) });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Sejak kejadian itu, teman sebangkumu menjauhi kamu. Kalian sekarang dalam situasi yang sangat canggung. Dan yang lebih buruk, kalian harus mengerjakan tugas makalah biologi bersama...",
+                en: "Since that incident, your deskmate has been avoiding you. You are now in a very awkward situation. And worse, you have to work on a biology paper assignment together..."
+            }, 
+            onChoice: () => setTimeout(() => this.showAssignment(), 50) 
+        });
     }
 
     showAssignment() {
-        this.dialogManager.showDialog({ speaker: "Guru Biologi", text: "Baik semuanya, kalian harus membuat makalah 10 halaman tentang topik biologi. Dikerjakan berpasangan. Deadline-nya seminggu lagi!", onChoice: () => setTimeout(() => this.showDilemma(), 50) });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru Biologi",
+                en: "Biology Teacher"
+            }, 
+            text: {
+                id: "Baik semuanya, kalian harus membuat makalah 10 halaman tentang topik biologi. Dikerjakan berpasangan. Deadline-nya seminggu lagi!",
+                en: "Alright everyone, you must create a 10-page paper on a biology topic. Work in pairs. The deadline is in one week!"
+            }, 
+            onChoice: () => setTimeout(() => this.showDilemma(), 50) 
+        });
     }
 
     showDilemma() {
-        this.dialogManager.showDialog({ text: "Kamu dan teman sebangkumu yang masih marah sama kamu ternyata satu kelompok. Kalian tidak punya waktu untuk berdiskusi karena dia menolak berbicara denganmu. Sehari sebelum pengumpulan, kamu memaksa untuk bertemu.", onChoice: () => this.showFriendSuggestion() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu dan teman sebangkumu yang masih marah sama kamu ternyata satu kelompok. Kalian tidak punya waktu untuk berdiskusi karena dia menolak berbicara denganmu. Sehari sebelum pengumpulan, kamu memaksa untuk bertemu.",
+                en: "You and your deskmate who is still angry with you are in the same group. You don't have time to discuss because they refuse to talk to you. One day before submission, you force a meeting."
+            }, 
+            onChoice: () => this.showFriendSuggestion() 
+        });
     }
 
     showFriendSuggestion() {
-        const speaker = "Teman Sebangku";
-        const text = "Dengar, aku gak punya waktu buat urusan ini. Pake AI aja buat bikin makalahnya. Cepat dan gampang. Selesai!";
+        const speaker = {
+            id: "Teman Sebangku",
+            en: "Deskmate"
+        };
+        const text = {
+            id: "Dengar, aku gak punya waktu buat urusan ini. Pake AI aja buat bikin makalahnya. Cepat dan gampang. Selesai!",
+            en: "Listen, I don't have time for this. Just use AI to make the paper. Fast and easy. Done!"
+        };
         this.create3DSpeechBubble(speaker, text, () => this.showMainChoice());
     }
 
     showMainChoice() {
         this.dialogManager.showDialog({
-            text: "Kamu harus memutuskan. Waktu tinggal satu hari lagi...",
+            text: {
+                id: "Kamu harus memutuskan. Waktu tinggal satu hari lagi...",
+                en: "You must decide. Only one day left..."
+            },
             choices: [
-                { text: "Mengerjakan sendiri sampai tidak tidur. Hasilnya kurang bagus karena terburu-buru dan kelelahan.", score: 0, nextScene: 'a_scene3a' },
-                { text: "Menggunakan AI untuk membuat makalah. Hasilnya bagus dan selesai cepat.", score: 20, nextScene: 'a_scene3b' }
+                { 
+                    text: {
+                        id: "Mengerjakan sendiri sampai tidak tidur. Hasilnya kurang bagus karena terburu-buru dan kelelahan.",
+                        en: "Work alone until not sleeping. The result is not good because of rushing and exhaustion."
+                    }, 
+                    score: 0, 
+                    nextScene: 'a_scene3a' 
+                },
+                { 
+                    text: {
+                        id: "Menggunakan AI untuk membuat makalah. Hasilnya bagus dan selesai cepat.",
+                        en: "Use AI to create the paper. Good result and finished quickly."
+                    }, 
+                    score: 20, 
+                    nextScene: 'a_scene3b' 
+                }
             ],
-            sublimentMessage: "Korupsi sering dimulai dari rasa putus asa mencari jalan mudah.",
+            sublimentMessage: {
+                id: "Korupsi sering dimulai dari rasa putus asa mencari jalan mudah.",
+                en: "Corruption often starts from desperation to find an easy way out."
+            },
             onChoice: (choice) => this.handleChoice(choice)
         });
     }
@@ -271,31 +546,72 @@ export default class AcademicScene2A {
     }
 
     showPathA() {
-        this.dialogManager.showDialog({ text: "Kamu memutuskan untuk mengerjakan sendiri. Semalam suntuk kamu begadang, mengetik dengan mata yang hampir terpejam. Paginya, kamu selesai... tapi makalahnya terlihat berantakan dan penuh kesalahan.", onChoice: () => this.showPathAResult() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu memutuskan untuk mengerjakan sendiri. Semalam suntuk kamu begadang, mengetik dengan mata yang hampir terpejam. Paginya, kamu selesai... tapi makalahnya terlihat berantakan dan penuh kesalahan.",
+                en: "You decide to work alone. You stay up all night, typing with eyes almost closed. In the morning, you're done... but the paper looks messy and full of errors."
+            }, 
+            onChoice: () => this.showPathAResult() 
+        });
     }
 
     showPathAResult() {
-        this.dialogManager.showDialog({ speaker: "Guru Biologi", text: "Hmm... makalah kalian kurang rapi dan ada beberapa kesalahan konsep. Tapi saya menghargai usaha kalian. Nilai: 70.", onChoice: () => this.transitionToNextScene('a_scene3a') });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru Biologi",
+                en: "Biology Teacher"
+            }, 
+            text: {
+                id: "Hmm... makalah kalian kurang rapi dan ada beberapa kesalahan konsep. Tapi saya menghargai usaha kalian. Nilai: 70.",
+                en: "Hmm... your paper is not very neat and has some conceptual errors. But I appreciate your effort. Score: 70."
+            }, 
+            onChoice: () => this.transitionToNextScene('a_scene3a') 
+        });
     }
 
     showPathB() {
-        this.dialogManager.showDialog({ text: "Kamu membuka AI dan mengetikkan topik makalah. Dalam 30 menit, makalah 10 halaman siap. Kamu edit sedikit agar terlihat natural. Besoknya kamu kumpulkan dengan percaya diri.", onChoice: () => this.showPathBResult() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu membuka AI dan mengetikkan topik makalah. Dalam 30 menit, makalah 10 halaman siap. Kamu edit sedikit agar terlihat natural. Besoknya kamu kumpulkan dengan percaya diri.",
+                en: "You open AI and type the paper topic. In 30 minutes, a 10-page paper is ready. You edit it a bit to make it look natural. The next day you submit it confidently."
+            }, 
+            onChoice: () => this.showPathBResult() 
+        });
     }
 
     showPathBResult() {
-        this.dialogManager.showDialog({ speaker: "Guru Biologi", text: "Wow, makalah kalian sangat bagus! Rapi, lengkap, dan mendalam. Ini contoh yang sempurna! Nilai: 95!", onChoice: () => this.showPathBTwist() });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru Biologi",
+                en: "Biology Teacher"
+            }, 
+            text: {
+                id: "Wow, makalah kalian sangat bagus! Rapi, lengkap, dan mendalam. Ini contoh yang sempurna! Nilai: 95!",
+                en: "Wow, your paper is very good! Neat, complete, and in-depth. This is a perfect example! Score: 95!"
+            }, 
+            onChoice: () => this.showPathBTwist() 
+        });
     }
 
     showPathBTwist() {
-        this.dialogManager.showDialog({ text: "Kamu merasa lega... untuk sementara. Tapi perasaan bersalah mulai menumpuk. Dan yang tidak kamu sadari, guru mulai curiga karena gaya penulisan makalahmu sangat berbeda dari tulisan biasamu...", onChoice: () => this.transitionToNextScene('a_scene3b') });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu merasa lega... untuk sementara. Tapi perasaan bersalah mulai menumpuk. Dan yang tidak kamu sadari, guru mulai curiga karena gaya penulisan makalahmu sangat berbeda dari tulisan biasamu...",
+                en: "You feel relieved... temporarily. But guilt starts to build up. And what you don't realize, the teacher starts to suspect because your paper's writing style is very different from your usual writing..."
+            }, 
+            onChoice: () => this.transitionToNextScene('a_scene3b') 
+        });
     }
 
     // --- Speech Bubble Logic (Copied and adapted) ---
 
     create3DSpeechBubble(speaker, text, callback) {
         this.cleanupSpeechBubble();
+        // Translate speaker and text
+        const translatedSpeaker = languageManager.translate(speaker);
+        const translatedText = languageManager.translate(text);
         this.speechBubbleGroup = new THREE.Group();
-        this.speechBubbleGroup.userData = { speaker, text, callback };
+        this.speechBubbleGroup.userData = { speaker: translatedSpeaker, text: translatedText, callback };
 
         // Create enhanced bubble with better visual design
         const bubblePlane = new THREE.Mesh(
@@ -339,7 +655,7 @@ export default class AcademicScene2A {
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
-        this.createSpeechTextTexture(speaker, text);
+        this.createSpeechTextTexture(translatedSpeaker, translatedText);
 
         const npcPosition = this.npcDeskmate.position.clone();
         // Position speech bubble to the left side of NPC, slightly above eye level
@@ -355,12 +671,12 @@ export default class AcademicScene2A {
         // Dialog muncul otomatis tanpa perlu klik tombol "Baca Percakapan"
         // Panggil langsung showScreenSpeechBubble setelah speech bubble dibuat
         setTimeout(() => {
-            this.showScreenSpeechBubble(speaker, text, callback);
+            this.showScreenSpeechBubble(translatedSpeaker, translatedText, callback);
         }, 300); // Delay kecil untuk animasi yang smooth
         
         // Play speech audio menggunakan Web Speech API dengan voice sesuai gender NPC
         if (this.speechAudioManager && this.speechAudioManager.isSupported) {
-            const fullText = `${speaker}: ${text}`;
+            const fullText = `${translatedSpeaker}: ${translatedText}`;
             // Jangan set pitch/rate secara eksplisit - biarkan SpeechAudioManager set otomatis berdasarkan gender
             this.speechAudioManager.speak(fullText, {
                 gender: this.npcGender, // Gunakan gender NPC yang sesuai (female untuk scene 2a)
@@ -591,25 +907,157 @@ export default class AcademicScene2A {
         if (existingBubble) existingBubble.remove();
     }
 
+    showLoadingIndicator() {
+        const existingLoader = document.getElementById('scene-loading-indicator');
+        if (existingLoader) {
+            existingLoader.remove();
+        }
+
+        this.loadingIndicator = document.createElement('div');
+        this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.style.pointerEvents = 'none';
+        this.loadingIndicator.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                border: 3px solid rgba(255, 215, 0, 0.8);
+                border-radius: 20px;
+                padding: 40px;
+                text-align: center;
+                z-index: 10000001;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                pointer-events: none;
+            ">
+                <div style="
+                    color: #FFD700;
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Memuat Scene...
+                </div>
+                <div style="
+                    width: 300px;
+                    height: 8px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin: 0 auto;
+                ">
+                    <div id="loading-progress-bar" style="
+                        width: 0%;
+                        height: 100%;
+                        background: linear-gradient(90deg, #1E407C, #8B0000, #FFD700);
+                        border-radius: 10px;
+                        transition: width 0.3s ease;
+                        animation: pulse 1.5s ease-in-out infinite;
+                    "></div>
+                </div>
+                <div style="
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 14px;
+                    margin-top: 15px;
+                    font-family: 'Gilroy', Arial, sans-serif;
+                ">
+                    Mohon tunggu sebentar...
+                </div>
+            </div>
+        `;
+        
+        if (!document.getElementById('scene-loading-pulse-animation')) {
+            const style = document.createElement('style');
+            style.id = 'scene-loading-pulse-animation';
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.7; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(this.loadingIndicator);
+    }
+
+    hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.opacity = '0';
+            this.loadingIndicator.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (this.loadingIndicator && document.body.contains(this.loadingIndicator)) {
+                    this.loadingIndicator.remove();
+                }
+                this.loadingIndicator = null;
+            }, 500);
+        }
+    }
+
+    updateLoadingProgress(progress) {
+        const progressBar = document.getElementById('loading-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+    }
+
+    async loadSceneAsync() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.updateLoadingProgress(20);
+                this.setWorld();
+                this.updateLoadingProgress(40);
+                this.createNPC();
+                this.updateLoadingProgress(60);
+                
+                setTimeout(() => {
+                    this.createTeacherNPC();
+                    this.updateLoadingProgress(80);
+                    this.ensurePlayerSpawned();
+                    this.updateLoadingProgress(100);
+                    resolve();
+                }, 500);
+            } catch (error) {
+                console.error("[AcademicScene2A] Error in loadSceneAsync:", error);
+                reject(error);
+            }
+        });
+    }
+
+    ensurePlayerSpawned() {
+        if (this.experience.world && this.experience.world.player) {
+            const spawnPoint = this.experience.world.spawnPoints?.a_scene2a || new THREE.Vector3(0, 10, 0);
+            console.log("[AcademicScene2A] Setting player spawn point to:", spawnPoint);
+            this.experience.world.player.setSpawnPoint(spawnPoint);
+        }
+    }
+
     transitionToNextScene(sceneName) {
         console.log(`[AcademicScene2A] Loading scene: ${sceneName}`);
-        const fadeDiv = document.createElement('div');
-        fadeDiv.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; opacity: 0; transition: opacity 0.5s;`;
-        document.body.appendChild(fadeDiv);
-        setTimeout(() => fadeDiv.style.opacity = '1', 10);
-        setTimeout(() => {
-            this.dialogManager.hideAll();
-            this.cleanupSpeechBubble();
+        
+        // Hide dialog first
+        this.dialogManager.hideAll();
+        this.cleanupSpeechBubble();
+        
+        // Use World's switchSceneWithPosition to show loading bar
+        if (this.experience.world && this.experience.world.switchSceneWithPosition) {
+            const spawnPoint = this.experience.world.spawnPoints?.[sceneName] || new THREE.Vector3(0, 10, 0);
+            console.log(`[AcademicScene2A] Switching to ${sceneName} at position:`, spawnPoint);
+            this.experience.world.switchSceneWithPosition(sceneName, spawnPoint);
+        } else {
+            console.error("[AcademicScene2A] World.switchSceneWithPosition not available, falling back to reload");
             const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
-            console.log(`[AcademicScene2A] Navigating to: ${newUrl}`);
             window.location.href = newUrl;
-        }, 500);
+        }
     }
 
     update() {
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
         }
+        // Update teacher mixer jika ada animasi
         if (this.teacherMixer) {
             this.teacherMixer.update(this.experience.time.delta * 0.001);
         }
@@ -618,6 +1066,11 @@ export default class AcademicScene2A {
     dispose() {
         console.log("[AcademicScene2A] Disposing...");
         this.cleanupSpeechBubble();
+        
+        // Clean up loading indicator
+        if (this.loadingIndicator) {
+            this.hideLoadingIndicator();
+        }
         this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
         this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
         if (this.dialogManager) this.dialogManager.hideAll();

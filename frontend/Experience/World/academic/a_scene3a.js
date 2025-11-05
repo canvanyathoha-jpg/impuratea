@@ -3,6 +3,7 @@ import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import DialogManager from "../../Utils/DialogManager.js";
 import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
 
 export default class AcademicScene3A {
     constructor() {
@@ -322,16 +323,38 @@ export default class AcademicScene3A {
         }
         
         console.log("[AcademicScene3A] Starting story dialog manually...");
-        this.dialogManager.showDialog({ text: "Walau tugas makalah belum sepenuhnya selesai. Selanjutnya adalah ujian praktik biologi berkelompok. Kamu masuk ke laboratorium biologi yang dipenuhi mikroskop dan alat-alat percobaan.", onChoice: () => this.showDilemma1() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Walau tugas makalah belum sepenuhnya selesai. Selanjutnya adalah ujian praktik biologi berkelompok. Kamu masuk ke laboratorium biologi yang dipenuhi mikroskop dan alat-alat percobaan.",
+                en: "Although the paper assignment is not completely finished. Next is a group biology practical exam. You enter the biology laboratory filled with microscopes and experimental equipment."
+            }, 
+            onChoice: () => this.showDilemma1() 
+        });
     }
 
     showDilemma1() {
-        this.dialogManager.showDialog({ speaker: "Kamu (batin)", text: "Sekarang harus praktik biologi juga. Kurasa tidak ada waktu istirahat buatku huh?", onChoice: () => this.showChoice1() });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Kamu (batin)",
+                en: "You (inner thoughts)"
+            }, 
+            text: {
+                id: "Sekarang harus praktik biologi juga. Kurasa tidak ada waktu istirahat buatku huh?",
+                en: "Now I have to do biology practical too. I guess there's no rest for me, huh?"
+            }, 
+            onChoice: () => this.showChoice1() 
+        });
     }
 
     showChoice1() {
-        const speaker = "Teman Kelompok";
-        const text = "Eh, kamu mau ikutan praktik atau mau ngerjain tugas makalahmu? Soalnya kita butuh semua orang fokus nih.";
+        const speaker = {
+            id: "Teman Kelompok",
+            en: "Groupmate"
+        };
+        const text = {
+            id: "Eh, kamu mau ikutan praktik atau mau ngerjain tugas makalahmu? Soalnya kita butuh semua orang fokus nih.",
+            en: "Hey, do you want to join the practical or do your paper assignment? Because we need everyone to focus."
+        };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager dengan choices
         // Cleanup screen bubble jika ada, kemudian tampilkan DialogManager
@@ -344,8 +367,22 @@ export default class AcademicScene3A {
                 speaker: speaker,
                 text: text,
                 choices: [
-                { text: "Mengerjakan tugas makalah Kimia dan numpang nama di kelompok biologi.", score: 10, path: 'makalah' },
-                { text: "Ikut andil dalam kelompok biologi dan bayar joki untuk tugas makalah Kimia.", score: 5, path: 'biologi' }
+                { 
+                    text: {
+                        id: "Mengerjakan tugas makalah Kimia dan numpang nama di kelompok biologi.",
+                        en: "Work on Chemistry paper assignment and just put your name in the biology group."
+                    }, 
+                    score: 10, 
+                    path: 'makalah' 
+                },
+                { 
+                    text: {
+                        id: "Ikut andil dalam kelompok biologi dan bayar joki untuk tugas makalah Kimia.",
+                        en: "Participate in biology group and pay someone to do Chemistry paper assignment."
+                    }, 
+                    score: 5, 
+                    path: 'biologi' 
+                }
             ],
                     onChoice: (choice) => {
                         this.cleanupSpeechBubble();
@@ -365,16 +402,34 @@ export default class AcademicScene3A {
     }
 
     showMakalahPath() {
-        this.dialogManager.showDialog({ text: "Kamu memutuskan untuk duduk di pojok lab sambil mengerjakan makalah kimia. Teman-teman kelompokmu melakukan praktik sendiri. Mereka sesekali melirikmu dengan tatapan tidak puas.", onChoice: () => this.showLeakInfo() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu memutuskan untuk duduk di pojok lab sambil mengerjakan makalah kimia. Teman-teman kelompokmu melakukan praktik sendiri. Mereka sesekali melirikmu dengan tatapan tidak puas.",
+                en: "You decide to sit in the corner of the lab while working on your chemistry paper. Your groupmates do the practical on their own. They occasionally glance at you with dissatisfied looks."
+            }, 
+            onChoice: () => this.showLeakInfo() 
+        });
     }
 
     showBiologiPath() {
-        this.dialogManager.showDialog({ text: "Kamu memutuskan ikut praktik biologi. Untuk makalah kimia, kamu diam-diam kontak kakak kelas yang terkenal menerima joki tugas dengan bayaran.", onChoice: () => this.showLeakInfo() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu memutuskan ikut praktik biologi. Untuk makalah kimia, kamu diam-diam kontak kakak kelas yang terkenal menerima joki tugas dengan bayaran.",
+                en: "You decide to join biology practical. For the chemistry paper, you secretly contact an upperclassman known for accepting paid assignment completion services."
+            }, 
+            onChoice: () => this.showLeakInfo() 
+        });
     }
 
     showLeakInfo() {
-        const speaker = "Teman Kelompok";
-        const text = "Eh, aku dapat info dari kakak kelas! Soal praktik biologi kita ini SAMA persis dengan tahun lalu! Kita bisa minta bocoran jawaban dari kakak kelas!";
+        const speaker = {
+            id: "Teman Kelompok",
+            en: "Groupmate"
+        };
+        const text = {
+            id: "Eh, aku dapat info dari kakak kelas! Soal praktik biologi kita ini SAMA persis dengan tahun lalu! Kita bisa minta bocoran jawaban dari kakak kelas!",
+            en: "Hey, I got info from an upperclassman! The biology practical questions are EXACTLY the same as last year! We can ask for answer leaks from the upperclassman!"
+        };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
         this.create3DSpeechBubble(speaker, text, false);
@@ -393,8 +448,14 @@ export default class AcademicScene3A {
     }
 
     showLeakProposal() {
-        const speaker = "Teman Kelompok";
-        const text = "Kamu kan kenal sama kakak kelas itu kan? Minta tolong dong! Kalau kita pakai bocoran, praktik kita pasti sempurna!";
+        const speaker = {
+            id: "Teman Kelompok",
+            en: "Groupmate"
+        };
+        const text = {
+            id: "Kamu kan kenal sama kakak kelas itu kan? Minta tolong dong! Kalau kita pakai bocoran, praktik kita pasti sempurna!",
+            en: "You know that upperclassman, right? Please ask them! If we use the leaks, our practical will be perfect!"
+        };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
         this.create3DSpeechBubble(speaker, text, false);
@@ -414,12 +475,32 @@ export default class AcademicScene3A {
 
     showMainChoice() {
         this.dialogManager.showDialog({
-            text: "Kelompokmu memandangmu dengan penuh harap. Mereka menunggu keputusanmu...",
+            text: {
+                id: "Kelompokmu memandangmu dengan penuh harap. Mereka menunggu keputusanmu...",
+                en: "Your group looks at you with hope. They're waiting for your decision..."
+            },
             choices: [
-                { text: "Menolak meminta bocoran. Teman sekelompok marah dan mencoret namamu dari kelompok. Kamu harus praktik sendiri.", score: 0, nextScene: 'a_scene4a' },
-                { text: "Meminta bocoran kepada kakak kelas. Praktik kalian berjalan sempurna.", score: 25, nextScene: 'a_scene4b' }
+                { 
+                    text: {
+                        id: "Menolak meminta bocoran. Teman sekelompok marah dan mencoret namamu dari kelompok. Kamu harus praktik sendiri.",
+                        en: "Refuse to ask for leaks. Groupmates get angry and remove your name from the group. You must do the practical alone."
+                    }, 
+                    score: 0, 
+                    nextScene: 'a_scene4a' 
+                },
+                { 
+                    text: {
+                        id: "Meminta bocoran kepada kakak kelas. Praktik kalian berjalan sempurna.",
+                        en: "Ask upperclassman for leaks. Your practical goes perfectly."
+                    }, 
+                    score: 25, 
+                    nextScene: 'a_scene4b' 
+                }
             ],
-            sublimentMessage: "Integritas sering membuatmu sendirian, sementara janji manis jalan pintas hanya berakhir dengan kekecewaan — dan di situlah benih korupsi tumbuh.",
+            sublimentMessage: {
+                id: "Integritas sering membuatmu sendirian, sementara janji manis jalan pintas hanya berakhir dengan kekecewaan — dan di situlah benih korupsi tumbuh.",
+                en: "Integrity often leaves you alone, while the sweet promises of shortcuts only end in disappointment — and that's where the seeds of corruption grow."
+            },
             onChoice: (choice) => this.handleMainChoice(choice)
         });
     }
@@ -433,12 +514,28 @@ export default class AcademicScene3A {
     }
 
     showRefusePath() {
-        this.dialogManager.showDialog({ speaker: "Kamu", text: "Maaf, aku tidak bisa melakukan itu. Itu tidak jujur.", onChoice: () => this.showRefuseResult() });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Kamu",
+                en: "You"
+            }, 
+            text: {
+                id: "Maaf, aku tidak bisa melakukan itu. Itu tidak jujur.",
+                en: "Sorry, I can't do that. It's not honest."
+            }, 
+            onChoice: () => this.showRefuseResult() 
+        });
     }
 
     showRefuseResult() {
-        const speaker = "Teman Kelompok";
-        const text = "Serius?! Kamu terlalu idealis! Ya udah, kalau gitu namamu kami coret aja dari kelompok. Kerjain sendiri praktikmu!";
+        const speaker = {
+            id: "Teman Kelompok",
+            en: "Groupmate"
+        };
+        const text = {
+            id: "Serius?! Kamu terlalu idealis! Ya udah, kalau gitu namamu kami coret aja dari kelompok. Kerjain sendiri praktikmu!",
+            en: "Seriously?! You're too idealistic! Fine, then we'll just remove your name from the group. Do your practical alone!"
+        };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
         this.create3DSpeechBubble(speaker, text, false);
@@ -457,19 +554,47 @@ export default class AcademicScene3A {
     }
 
     showRefuseConsequence() {
-        this.dialogManager.showDialog({ text: "Kamu harus mengerjakan praktik biologi sendirian. Tanpa bantuan kelompok, hasilnya tidak maksimal. Tapi setidaknya kamu bisa tidur nyenyak malam itu, tanpa beban kebohongan.", onChoice: () => this.transitionToNextScene('a_scene4a') });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu harus mengerjakan praktik biologi sendirian. Tanpa bantuan kelompok, hasilnya tidak maksimal. Tapi setidaknya kamu bisa tidur nyenyak malam itu, tanpa beban kebohongan.",
+                en: "You have to do the biology practical alone. Without group help, the result is not optimal. But at least you can sleep soundly that night, without the burden of lies."
+            }, 
+            onChoice: () => this.transitionToNextScene('a_scene4a') 
+        });
     }
 
     showAcceptPath() {
-        this.dialogManager.showDialog({ speaker: "Kamu", text: "Oke... aku akan coba minta.", onChoice: () => this.showAcceptResult() });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Kamu",
+                en: "You"
+            }, 
+            text: {
+                id: "Oke... aku akan coba minta.",
+                en: "Okay... I'll try asking."
+            }, 
+            onChoice: () => this.showAcceptResult() 
+        });
     }
 
     showAcceptResult() {
-        this.dialogManager.showDialog({ text: "Kamu menghubungi kakak kelas. Dia mengirimkan semua jawaban praktik tahun lalu. Kelompokmu sangat senang. Praktik berjalan mulus, semua jawaban benar. Kalian mendapat nilai A.", onChoice: () => this.showAcceptConsequence() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu menghubungi kakak kelas. Dia mengirimkan semua jawaban praktik tahun lalu. Kelompokmu sangat senang. Praktik berjalan mulus, semua jawaban benar. Kalian mendapat nilai A.",
+                en: "You contact the upperclassman. They send all the answers from last year's practical. Your group is very happy. The practical goes smoothly, all answers are correct. You get an A."
+            }, 
+            onChoice: () => this.showAcceptConsequence() 
+        });
     }
 
     showAcceptConsequence() {
-        this.dialogManager.showDialog({ text: "Teman-temanmu merayakan kesuksesan ini. Tapi kamu merasa ada yang salah. Ini bukan hasil kerja kalian. Ini hanya... menyontek.", onChoice: () => this.transitionToNextScene('a_scene4b') });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Teman-temanmu merayakan kesuksesan ini. Tapi kamu merasa ada yang salah. Ini bukan hasil kerja kalian. Ini hanya... menyontek.",
+                en: "Your friends celebrate this success. But you feel something is wrong. This is not your work. This is just... cheating."
+            }, 
+            onChoice: () => this.transitionToNextScene('a_scene4b') 
+        });
     }
 
     // --- Speech Bubble Logic ---
@@ -478,6 +603,9 @@ export default class AcademicScene3A {
         // showScreenDialog: apakah harus menampilkan screen dialog otomatis
         // false jika akan ada DialogManager.showDialog yang dipanggil setelahnya
         this.cleanupSpeechBubble();
+        // Translate speaker and text
+        const translatedSpeaker = languageManager.translate(speaker);
+        const translatedText = languageManager.translate(text);
         this.speechBubbleGroup = new THREE.Group();
 
         // Create enhanced bubble with better visual design
@@ -522,7 +650,7 @@ export default class AcademicScene3A {
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
-        this.createSpeechTextTexture(speaker, text);
+        this.createSpeechTextTexture(translatedSpeaker, translatedText);
 
         const npcPosition = this.npcGroupmate.position.clone();
         this.speechBubbleGroup.position.set(npcPosition.x, npcPosition.y + 15, npcPosition.z);
@@ -533,13 +661,13 @@ export default class AcademicScene3A {
         // Jika false, biarkan DialogManager yang menampilkan (untuk avoid overlap dengan choices)
         if (showScreenDialog) {
             setTimeout(() => {
-                this.showScreenSpeechBubble(speaker, text);
+                this.showScreenSpeechBubble(translatedSpeaker, translatedText);
             }, 300);
         }
         
         // Play speech audio menggunakan Web Speech API dengan voice sesuai gender NPC
         if (this.speechAudioManager && this.speechAudioManager.isSupported) {
-            const fullText = `${speaker}: ${text}`;
+            const fullText = `${translatedSpeaker}: ${translatedText}`;
             this.speechAudioManager.speak(fullText, {
                 gender: this.npcGender, // Gunakan gender NPC yang sesuai
                 rate: 0.95,
@@ -761,17 +889,21 @@ export default class AcademicScene3A {
 
     transitionToNextScene(sceneName) {
         console.log(`[AcademicScene3A] Loading scene: ${sceneName}`);
-        const fadeDiv = document.createElement('div');
-        fadeDiv.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; opacity: 0; transition: opacity 0.5s;`;
-        document.body.appendChild(fadeDiv);
-        setTimeout(() => fadeDiv.style.opacity = '1', 10);
-        setTimeout(() => {
-            this.dialogManager.hideAll();
-            this.cleanupSpeechBubble();
+        
+        // Hide dialog first
+        this.dialogManager.hideAll();
+        this.cleanupSpeechBubble();
+        
+        // Use World's switchSceneWithPosition to show loading bar
+        if (this.experience.world && this.experience.world.switchSceneWithPosition) {
+            const spawnPoint = this.experience.world.spawnPoints?.[sceneName] || new THREE.Vector3(0, 10, 0);
+            console.log(`[AcademicScene3A] Switching to ${sceneName} at position:`, spawnPoint);
+            this.experience.world.switchSceneWithPosition(sceneName, spawnPoint);
+        } else {
+            console.error("[AcademicScene3A] World.switchSceneWithPosition not available, falling back to reload");
             const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
-            console.log(`[AcademicScene3A] Navigating to: ${newUrl}`);
             window.location.href = newUrl;
-        }, 500);
+        }
     }
 
     update() {

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import DialogManager from "../../Utils/DialogManager.js";
 import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
 
 export default class AcademicScene4A {
     constructor() {
@@ -635,17 +636,21 @@ export default class AcademicScene4A {
 
     transitionToNextScene(sceneName) {
         console.log(`[AcademicScene4A] Loading scene: ${sceneName}`);
-        const fadeDiv = document.createElement('div');
-        fadeDiv.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; opacity: 0; transition: opacity 0.5s;`;
-        document.body.appendChild(fadeDiv);
-        setTimeout(() => fadeDiv.style.opacity = '1', 10);
-        setTimeout(() => {
-            this.dialogManager.hideAll();
-            this.cleanupSpeechBubble();
+        
+        // Hide dialog first
+        this.dialogManager.hideAll();
+        this.cleanupSpeechBubble();
+        
+        // Use World's switchSceneWithPosition to show loading bar
+        if (this.experience.world && this.experience.world.switchSceneWithPosition) {
+            const spawnPoint = this.experience.world.spawnPoints?.[sceneName] || new THREE.Vector3(0, 10, 0);
+            console.log(`[AcademicScene4A] Switching to ${sceneName} at position:`, spawnPoint);
+            this.experience.world.switchSceneWithPosition(sceneName, spawnPoint);
+        } else {
+            console.error("[AcademicScene4A] World.switchSceneWithPosition not available, falling back to reload");
             const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
-            console.log(`[AcademicScene4A] Navigating to: ${newUrl}`);
             window.location.href = newUrl;
-        }, 500);
+        }
     }
 
     update() {

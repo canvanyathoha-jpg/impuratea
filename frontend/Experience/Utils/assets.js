@@ -146,9 +146,9 @@ export default [
                     path: "/models/asian_female_animated.glb",
                 },
                 {
-                    name: "teacher",
+                    name: "guru",
                     type: "glbModel",
-                    path: "/models/teacher.glb",
+                    path: "/models/guru.glb",
                 },
                 {
                     name: "collider",

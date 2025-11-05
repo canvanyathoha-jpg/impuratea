@@ -4,6 +4,8 @@
  * Score starts at 10% and increases based on player choices
  */
 
+import { languageManager } from './LanguageManager.js';
+
 export default class ScoreManager {
     constructor() {
         this.maxScore = 100;
@@ -186,25 +188,33 @@ export default class ScoreManager {
 
     // Determine ending based on score
     getEnding() {
+        const lang = languageManager.getLanguage();
+        
         if (this.score <= 50) {
             return {
                 type: 'BERSIH',
-                title: 'Ending Bersih - Integritas Sendirian',
-                description: 'Kamu memilih jalur jujur hampir di semua kesempatan. Nilai rata-rata rendah, sering dipermalukan, bahkan dicoret dari kelompok. Namun guru melihat ketekunan dan kejujuranmu, sehingga kamu mendapat apresiasi simbolis. Meski tanpa banyak teman, kamu belajar bahwa harga diri lebih berharga dari nilai.',
+                title: lang === 'id' ? 'Ending Bersih - Integritas Sendirian' : 'Clean Ending - Solitary Integrity',
+                description: lang === 'id' 
+                    ? 'Kamu memilih jalur jujur hampir di semua kesempatan. Nilai rata-rata rendah, sering dipermalukan, bahkan dicoret dari kelompok. Namun guru melihat ketekunan dan kejujuranmu, sehingga kamu mendapat apresiasi simbolis. Meski tanpa banyak teman, kamu belajar bahwa harga diri lebih berharga dari nilai.'
+                    : 'You chose the honest path in almost every opportunity. Your average grades were low, you were often embarrassed, even excluded from groups. But the teacher saw your perseverance and honesty, so you received symbolic appreciation. Even without many friends, you learned that self-worth is more valuable than grades.',
                 color: '#00ff00'
             };
         } else if (this.score <= 75) {
             return {
                 type: 'ABU_ABU',
-                title: 'Ending Abu-Abu - Kompromi Setengah-setengah',
-                description: 'Kamu kadang jujur, kadang mengambil jalan pintas. Kadang lolos, kadang kena masalah. Guru dan teman menilaimu "tidak bisa dipercaya" karena plin-plan. Kamu naik kelas dengan nilai pas-pasan, tapi tidak ada yang benar-benar menghargai usahamu. Setengah integritas = sama saja tidak punya integritas.',
+                title: lang === 'id' ? 'Ending Abu-Abu - Kompromi Setengah-setengah' : 'Gray Ending - Half-hearted Compromise',
+                description: lang === 'id'
+                    ? 'Kamu kadang jujur, kadang mengambil jalan pintas. Kadang lolos, kadang kena masalah. Guru dan teman menilaimu "tidak bisa dipercaya" karena plin-plan. Kamu naik kelas dengan nilai pas-pasan, tapi tidak ada yang benar-benar menghargai usahamu. Setengah integritas = sama saja tidak punya integritas.'
+                    : 'You were sometimes honest, sometimes taking shortcuts. Sometimes you got away with it, sometimes you got caught. Teachers and friends judged you as "untrustworthy" because you were inconsistent. You passed with average grades, but no one truly appreciated your efforts. Half integrity = no integrity at all.',
                 color: '#ffaa00'
             };
         } else {
             return {
                 type: 'BURUK',
-                title: 'Ending Buruk - Korupsi Kecil Terbongkar',
-                description: 'Kamu sering memilih jalan pintas (AI, bocoran, beli materi). Awalnya nilai bagus, tapi akhirnya ketahuan saat ada audit nilai & guru membandingkan pekerjaan. Kamu dipanggil BK, nilaimu dibatalkan, dan hampir gagal naik kelas. Reputasi rusak, teman menjauhi, orang tua kecewa. Korupsi kecil akhirnya selalu ketahuan.',
+                title: lang === 'id' ? 'Ending Buruk - Korupsi Kecil Terbongkar' : 'Bad Ending - Small Corruption Exposed',
+                description: lang === 'id'
+                    ? 'Kamu sering memilih jalan pintas (AI, bocoran, beli materi). Awalnya nilai bagus, tapi akhirnya ketahuan saat ada audit nilai & guru membandingkan pekerjaan. Kamu dipanggil BK, nilaimu dibatalkan, dan hampir gagal naik kelas. Reputasi rusak, teman menjauhi, orang tua kecewa. Korupsi kecil akhirnya selalu ketahuan.'
+                    : 'You often chose shortcuts (AI, leaks, buying materials). Initially your grades were good, but you were eventually caught during a grade audit when the teacher compared your work. You were called to guidance counseling, your grades were cancelled, and you almost failed. Reputation ruined, friends distanced themselves, parents disappointed. Small corruption is always eventually discovered.',
                 color: '#ff0000'
             };
         }

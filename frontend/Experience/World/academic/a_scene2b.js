@@ -3,6 +3,7 @@ import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import DialogManager from "../../Utils/DialogManager.js";
 import SpeechAudioManager from "../../Utils/SpeechAudioManager.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
 
 export default class AcademicScene2B {
     constructor() {
@@ -23,12 +24,23 @@ export default class AcademicScene2B {
         this.canvas.addEventListener('click', this.onMouseClick.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
 
-        this.setWorld();
-        this.createNPC();
-        
-        setTimeout(() => {
-            this.startStory();
-        }, 1000);
+        // Show loading indicator and load scene asynchronously
+        this.initWithPreloader();
+    }
+
+    initWithPreloader() {
+        console.log("[AcademicScene2B] Loading scene in background first...");
+        this.showLoadingIndicator();
+        this.loadSceneAsync().then(() => {
+            console.log("[AcademicScene2B] Scene loaded successfully!");
+            this.hideLoadingIndicator();
+            setTimeout(() => {
+                this.startStory();
+            }, 1000);
+        }).catch((error) => {
+            console.error("[AcademicScene2B] Error loading scene:", error);
+            this.hideLoadingIndicator();
+        });
     }
 
     setWorld() {
@@ -89,36 +101,100 @@ export default class AcademicScene2B {
     }
 
     startStory() {
-        this.dialogManager.showDialog({ text: "Beberapa hari setelah ujian... Kamu menerima hasilnya.", onChoice: () => setTimeout(() => this.showResult(), 50) });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Beberapa hari setelah ujian... Kamu menerima hasilnya.",
+                en: "A few days after the exam... You receive the results."
+            }, 
+            onChoice: () => setTimeout(() => this.showResult(), 50) 
+        });
     }
 
     showResult() {
-        this.dialogManager.showDialog({ text: "Nilai ujianmu: 60. Orang tuamu kecewa dan memang menyita HP-mu untuk sementara. Tapi kamu merasa lega karena mengerjakan dengan jujur. Kamu punya waktu lebih banyak untuk belajar tanpa distraksi HP.", onChoice: () => setTimeout(() => this.showMotivation(), 50) });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Nilai ujianmu: 60. Orang tuamu kecewa dan memang menyita HP-mu untuk sementara. Tapi kamu merasa lega karena mengerjakan dengan jujur. Kamu punya waktu lebih banyak untuk belajar tanpa distraksi HP.",
+                en: "Your exam score: 60. Your parents are disappointed and confiscate your phone temporarily. But you feel relieved because you worked honestly. You have more time to study without phone distractions."
+            }, 
+            onChoice: () => setTimeout(() => this.showMotivation(), 50) 
+        });
     }
 
     showMotivation() {
-        this.dialogManager.showDialog({ speaker: "Kamu (batin)", text: "Memang awalnya berat, tapi aku merasa lebih tenang. Aku harus lebih giat belajar supaya nilai berikutnya lebih baik!", onChoice: () => setTimeout(() => this.showNewAssignment(), 50) });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Kamu (batin)",
+                en: "You (inner thoughts)"
+            }, 
+            text: {
+                id: "Memang awalnya berat, tapi aku merasa lebih tenang. Aku harus lebih giat belajar supaya nilai berikutnya lebih baik!",
+                en: "It's hard at first, but I feel more at peace. I must study harder so the next score is better!"
+            }, 
+            onChoice: () => setTimeout(() => this.showNewAssignment(), 50) 
+        });
     }
 
     showNewAssignment() {
-        this.dialogManager.showDialog({ speaker: "Guru Biologi", text: "Hari ini saya akan memberi tugas kelompok. Kalian harus membuat makalah 10 halaman tentang topik biologi. Dikerjakan berpasangan dengan teman sebangku. Deadline seminggu lagi!", onChoice: () => setTimeout(() => this.showEagerness(), 50) });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru Biologi",
+                en: "Biology Teacher"
+            }, 
+            text: {
+                id: "Hari ini saya akan memberi tugas kelompok. Kalian harus membuat makalah 10 halaman tentang topik biologi. Dikerjakan berpasangan dengan teman sebangku. Deadline seminggu lagi!",
+                en: "Today I will assign a group project. You must create a 10-page paper on a biology topic. Work in pairs with your deskmate. Deadline in one week!"
+            }, 
+            onChoice: () => setTimeout(() => this.showEagerness(), 50) 
+        });
     }
 
     showEagerness() {
-        this.dialogManager.showDialog({ speaker: "Kamu (batin)", text: "Ini kesempatan untuk membuktikan bahwa aku bisa! Aku harus mendapat nilai terbaik untuk tugas ini!", onChoice: () => setTimeout(() => this.showOverwork(), 50) });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Kamu (batin)",
+                en: "You (inner thoughts)"
+            }, 
+            text: {
+                id: "Ini kesempatan untuk membuktikan bahwa aku bisa! Aku harus mendapat nilai terbaik untuk tugas ini!",
+                en: "This is a chance to prove I can do it! I must get the best score for this assignment!"
+            }, 
+            onChoice: () => setTimeout(() => this.showOverwork(), 50) 
+        });
     }
 
     showOverwork() {
-        this.dialogManager.showDialog({ text: "Pada hari pertama tugas diberikan, kamu langsung begadang untuk mengerjakan makalah sendirian. Kamu ingin membuktikan kesungguhanmu. Tapi tubuhmu tidak kuat... Keesokan harinya kamu jatuh sakit dan tidak bisa masuk sekolah selama 3 hari.", onChoice: () => setTimeout(() => this.showPanic(), 50) });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Pada hari pertama tugas diberikan, kamu langsung begadang untuk mengerjakan makalah sendirian. Kamu ingin membuktikan kesungguhanmu. Tapi tubuhmu tidak kuat... Keesokan harinya kamu jatuh sakit dan tidak bisa masuk sekolah selama 3 hari.",
+                en: "On the first day the assignment is given, you immediately stay up all night working on the paper alone. You want to prove your dedication. But your body can't handle it... The next day you fall sick and can't go to school for 3 days."
+            }, 
+            onChoice: () => setTimeout(() => this.showPanic(), 50) 
+        });
     }
 
     showPanic() {
-        this.dialogManager.showDialog({ speaker: "Kamu (batin)", text: "Sehari lagi deadline! Tapi makalahnya baru setengah jadi... Aku harus bagaimana?!", onChoice: () => this.showFriendOffer() });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Kamu (batin)",
+                en: "You (inner thoughts)"
+            }, 
+            text: {
+                id: "Sehari lagi deadline! Tapi makalahnya baru setengah jadi... Aku harus bagaimana?!",
+                en: "One day until deadline! But the paper is only half done... What should I do?!"
+            }, 
+            onChoice: () => this.showFriendOffer() 
+        });
     }
 
     showFriendOffer() {
-        const speaker = "Teman Sebangku (via chat)";
-        const text = "Eh, aku dengar kamu sakit. Makalah kita gimana? Aku liat kamu udah bikin setengah. Mau gampang? Pake AI aja buat selesain sisanya. Cepet kok!";
+        const speaker = {
+            id: "Teman Sebangku (via chat)",
+            en: "Deskmate (via chat)"
+        };
+        const text = {
+            id: "Eh, aku dengar kamu sakit. Makalah kita gimana? Aku liat kamu udah bikin setengah. Mau gampang? Pake AI aja buat selesain sisanya. Cepet kok!",
+            en: "Hey, I heard you're sick. How about our paper? I see you've done half. Want it easy? Just use AI to finish the rest. It's fast!"
+        };
 
         this.create3DSpeechBubble(speaker, text, () => {
             this.showMainChoice();
@@ -127,12 +203,32 @@ export default class AcademicScene2B {
 
     showMainChoice() {
         this.dialogManager.showDialog({
-            text: "Kamu dalam dilema besar. Waktu tinggal satu hari, kamu masih lemah karena baru sembuh, dan makalahnya baru setengah...",
+            text: {
+                id: "Kamu dalam dilema besar. Waktu tinggal satu hari, kamu masih lemah karena baru sembuh, dan makalahnya baru setengah...",
+                en: "You are in a big dilemma. Only one day left, you're still weak from just recovering, and the paper is only half done..."
+            },
             choices: [
-                { text: "Mengerjakan sendiri sampai tidak tidur. Hasilnya kurang bagus karena kondisi badan masih lemah.", score: 0, nextScene: 'a_scene3a' },
-                { text: "Menggunakan AI untuk menyelesaikan setengahnya lagi. Hasilnya bagus dan bisa istirahat.", score: 20, nextScene: 'a_scene3b' }
+                { 
+                    text: {
+                        id: "Mengerjakan sendiri sampai tidak tidur. Hasilnya kurang bagus karena kondisi badan masih lemah.",
+                        en: "Work alone until not sleeping. The result is not good because body condition is still weak."
+                    }, 
+                    score: 0, 
+                    nextScene: 'a_scene3a' 
+                },
+                { 
+                    text: {
+                        id: "Menggunakan AI untuk menyelesaikan setengahnya lagi. Hasilnya bagus dan bisa istirahat.",
+                        en: "Use AI to finish the other half. Good result and can rest."
+                    }, 
+                    score: 20, 
+                    nextScene: 'a_scene3b' 
+                }
             ],
-            sublimentMessage: "Ketika nilai jadi segalanya, integritas perlahan digadaikan.",
+            sublimentMessage: {
+                id: "Ketika nilai jadi segalanya, integritas perlahan digadaikan.",
+                en: "When grades become everything, integrity is slowly compromised."
+            },
             onChoice: (choice) => this.handleChoice(choice)
         });
     }
@@ -146,31 +242,72 @@ export default class AcademicScene2B {
     }
 
     showPathA() {
-        this.dialogManager.showDialog({ text: "Kamu memaksakan diri untuk begadang lagi meski badan masih lemah. Dengan mata berair dan kepala pusing, kamu menyelesaikan makalah. Hasilnya tidak semaksimal yang kamu inginkan, tapi ini hasil kerja kerasmu sendiri.", onChoice: () => this.showPathAResult() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu memaksakan diri untuk begadang lagi meski badan masih lemah. Dengan mata berair dan kepala pusing, kamu menyelesaikan makalah. Hasilnya tidak semaksimal yang kamu inginkan, tapi ini hasil kerja kerasmu sendiri.",
+                en: "You force yourself to stay up again even though your body is still weak. With watery eyes and a dizzy head, you finish the paper. The result isn't as perfect as you wanted, but this is the result of your own hard work."
+            }, 
+            onChoice: () => this.showPathAResult() 
+        });
     }
 
     showPathAResult() {
-        this.dialogManager.showDialog({ speaker: "Guru Biologi", text: "Makalah kalian... cukup baik. Ada beberapa bagian yang kurang detail, tapi saya bisa lihat usaha kalian. Nilai: 75. Pertahankan semangat ini!", onChoice: () => this.transitionToNextScene('a_scene3a') });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru Biologi",
+                en: "Biology Teacher"
+            }, 
+            text: {
+                id: "Makalah kalian... cukup baik. Ada beberapa bagian yang kurang detail, tapi saya bisa lihat usaha kalian. Nilai: 75. Pertahankan semangat ini!",
+                en: "Your paper... is quite good. There are some parts that lack detail, but I can see your effort. Score: 75. Keep up this spirit!"
+            }, 
+            onChoice: () => this.transitionToNextScene('a_scene3a') 
+        });
     }
 
     showPathB() {
-        this.dialogManager.showDialog({ text: "Kamu membuka AI dan menyalin separuh makalah yang sudah kamu buat, lalu meminta AI melengkapi sisanya. Dalam 1 jam, makalah selesai dengan rapi. Kamu bisa istirahat dan memulihkan kondisi.", onChoice: () => this.showPathBResult() });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu membuka AI dan menyalin separuh makalah yang sudah kamu buat, lalu meminta AI melengkapi sisanya. Dalam 1 jam, makalah selesai dengan rapi. Kamu bisa istirahat dan memulihkan kondisi.",
+                en: "You open AI and copy the half of the paper you've made, then ask AI to complete the rest. In 1 hour, the paper is finished neatly. You can rest and recover."
+            }, 
+            onChoice: () => this.showPathBResult() 
+        });
     }
 
     showPathBResult() {
-        this.dialogManager.showDialog({ speaker: "Guru Biologi", text: "Excellent! Makalah kalian sangat lengkap dan terstruktur dengan baik! Ini salah satu yang terbaik di kelas. Nilai: 95!", onChoice: () => this.showPathBConflict() });
+        this.dialogManager.showDialog({ 
+            speaker: {
+                id: "Guru Biologi",
+                en: "Biology Teacher"
+            }, 
+            text: {
+                id: "Excellent! Makalah kalian sangat lengkap dan terstruktur dengan baik! Ini salah satu yang terbaik di kelas. Nilai: 95!",
+                en: "Excellent! Your paper is very complete and well-structured! This is one of the best in class. Score: 95!"
+            }, 
+            onChoice: () => this.showPathBConflict() 
+        });
     }
 
     showPathBConflict() {
-        this.dialogManager.showDialog({ text: "Kamu seharusnya senang, tapi ada perasaan hampa. Separuh dari makalah itu bukan hasil kerjamu. Apakah ini yang dimaksud dengan 'sukses'?", onChoice: () => this.transitionToNextScene('a_scene3b') });
+        this.dialogManager.showDialog({ 
+            text: {
+                id: "Kamu seharusnya senang, tapi ada perasaan hampa. Separuh dari makalah itu bukan hasil kerjamu. Apakah ini yang dimaksud dengan 'sukses'?",
+                en: "You should be happy, but there's an empty feeling. Half of that paper is not your work. Is this what 'success' means?"
+            }, 
+            onChoice: () => this.transitionToNextScene('a_scene3b') 
+        });
     }
 
     // --- Speech Bubble Logic ---
 
     create3DSpeechBubble(speaker, text, callback) {
         this.cleanupSpeechBubble();
+        // Translate speaker and text
+        const translatedSpeaker = languageManager.translate(speaker);
+        const translatedText = languageManager.translate(text);
         this.speechBubbleGroup = new THREE.Group();
-        this.speechBubbleGroup.userData = { speaker, text, callback };
+        this.speechBubbleGroup.userData = { speaker: translatedSpeaker, text: translatedText, callback };
 
         // Create enhanced bubble with better visual design
         const bubblePlane = new THREE.Mesh(
@@ -214,7 +351,7 @@ export default class AcademicScene2B {
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
-        this.createSpeechTextTexture(speaker, text);
+        this.createSpeechTextTexture(translatedSpeaker, translatedText);
 
         const npcPosition = this.npcDeskmate.position.clone();
         this.speechBubbleGroup.position.set(npcPosition.x - 6, npcPosition.y + 15, npcPosition.z);
@@ -223,12 +360,12 @@ export default class AcademicScene2B {
         this.scene.add(this.speechBubbleGroup);
         // Dialog muncul otomatis tanpa perlu klik tombol "Baca Percakapan"
         setTimeout(() => {
-            this.showScreenSpeechBubble(speaker, text, callback);
+            this.showScreenSpeechBubble(translatedSpeaker, translatedText, callback);
         }, 300);
         
         // Play speech audio menggunakan Web Speech API dengan voice sesuai gender NPC
         if (this.speechAudioManager && this.speechAudioManager.isSupported) {
-            const fullText = `${speaker}: ${text}`;
+            const fullText = `${translatedSpeaker}: ${translatedText}`;
             // Jangan set pitch/rate secara eksplisit - biarkan SpeechAudioManager set otomatis berdasarkan gender
             this.speechAudioManager.speak(fullText, {
                 gender: this.npcGender, // Gunakan gender NPC yang sesuai (female untuk scene 2b)
@@ -466,19 +603,91 @@ export default class AcademicScene2B {
 
     // --- End Speech Bubble Logic ---
 
+    showLoadingIndicator() {
+        const existingLoader = document.getElementById('scene-loading-indicator');
+        if (existingLoader) existingLoader.remove();
+        this.loadingIndicator = document.createElement('div');
+        this.loadingIndicator.id = 'scene-loading-indicator';
+        this.loadingIndicator.style.pointerEvents = 'none';
+        this.loadingIndicator.innerHTML = `
+            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); border: 3px solid rgba(255, 215, 0, 0.8); border-radius: 20px; padding: 40px; text-align: center; z-index: 10000001; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); pointer-events: none;">
+                <div style="color: #FFD700; font-size: 24px; font-weight: bold; margin-bottom: 20px; font-family: 'Gilroy', Arial, sans-serif;">Memuat Scene...</div>
+                <div style="width: 300px; height: 8px; background: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; margin: 0 auto;">
+                    <div id="loading-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #1E407C, #8B0000, #FFD700); border-radius: 10px; transition: width 0.3s ease; animation: pulse 1.5s ease-in-out infinite;"></div>
+                </div>
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-top: 15px; font-family: 'Gilroy', Arial, sans-serif;">Mohon tunggu sebentar...</div>
+            </div>
+        `;
+        if (!document.getElementById('scene-loading-pulse-animation')) {
+            const style = document.createElement('style');
+            style.id = 'scene-loading-pulse-animation';
+            style.textContent = `@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }`;
+            document.head.appendChild(style);
+        }
+        document.body.appendChild(this.loadingIndicator);
+    }
+
+    hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.opacity = '0';
+            this.loadingIndicator.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (this.loadingIndicator && document.body.contains(this.loadingIndicator)) {
+                    this.loadingIndicator.remove();
+                }
+                this.loadingIndicator = null;
+            }, 500);
+        }
+    }
+
+    updateLoadingProgress(progress) {
+        const progressBar = document.getElementById('loading-progress-bar');
+        if (progressBar) progressBar.style.width = `${progress}%`;
+    }
+
+    async loadSceneAsync() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.updateLoadingProgress(20);
+                this.setWorld();
+                this.updateLoadingProgress(60);
+                this.createNPC();
+                this.updateLoadingProgress(80);
+                this.ensurePlayerSpawned();
+                this.updateLoadingProgress(100);
+                resolve();
+            } catch (error) {
+                console.error("[AcademicScene2B] Error in loadSceneAsync:", error);
+                reject(error);
+            }
+        });
+    }
+
+    ensurePlayerSpawned() {
+        if (this.experience.world && this.experience.world.player) {
+            const spawnPoint = this.experience.world.spawnPoints?.a_scene2b || new THREE.Vector3(0, 10, 0);
+            console.log("[AcademicScene2B] Setting player spawn point to:", spawnPoint);
+            this.experience.world.player.setSpawnPoint(spawnPoint);
+        }
+    }
+
     transitionToNextScene(sceneName) {
         console.log(`[AcademicScene2B] Loading scene: ${sceneName}`);
-        const fadeDiv = document.createElement('div');
-        fadeDiv.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; opacity: 0; transition: opacity 0.5s;`;
-        document.body.appendChild(fadeDiv);
-        setTimeout(() => fadeDiv.style.opacity = '1', 10);
-        setTimeout(() => {
-            this.dialogManager.hideAll();
-            this.cleanupSpeechBubble();
+        
+        // Hide dialog first
+        this.dialogManager.hideAll();
+        this.cleanupSpeechBubble();
+        
+        // Use World's switchSceneWithPosition to show loading bar
+        if (this.experience.world && this.experience.world.switchSceneWithPosition) {
+            const spawnPoint = this.experience.world.spawnPoints?.[sceneName] || new THREE.Vector3(0, 10, 0);
+            console.log(`[AcademicScene2B] Switching to ${sceneName} at position:`, spawnPoint);
+            this.experience.world.switchSceneWithPosition(sceneName, spawnPoint);
+        } else {
+            console.error("[AcademicScene2B] World.switchSceneWithPosition not available, falling back to reload");
             const newUrl = `${window.location.origin}${window.location.pathname}?scene=${sceneName}`;
-            console.log(`[AcademicScene2B] Navigating to: ${newUrl}`);
             window.location.href = newUrl;
-        }, 500);
+        }
     }
 
     update() {
@@ -490,6 +699,7 @@ export default class AcademicScene2B {
     dispose() {
         console.log("[AcademicScene2B] Disposing...");
         this.cleanupSpeechBubble();
+        if (this.loadingIndicator) this.hideLoadingIndicator();
         this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
         this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
 

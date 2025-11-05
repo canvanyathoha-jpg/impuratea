@@ -27,17 +27,51 @@ export default class Resources extends EventEmitter {
 
         for (const asset of this.assets[0][this.currentScene].assets) {
             if (asset.type === "glbModel") {
-                this.loaders.gltfLoader.load(asset.path, (file) => {
-                    this.singleAssetLoaded(asset, file);
-                });
+                this.loaders.gltfLoader.load(
+                    asset.path,
+                    (file) => {
+                        this.singleAssetLoaded(asset, file);
+                    },
+                    (progress) => {
+                        // Progress callback - optional
+                        console.log(`[Resources] Loading ${asset.name}: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
+                    },
+                    (error) => {
+                        // Error callback - handle missing files or loading errors
+                        console.error(`[Resources] ❌ Error loading ${asset.name} from ${asset.path}:`, error);
+                        console.error(`[Resources] Error details:`, error.message || error);
+                        // Skip this asset and continue loading others
+                        // Set a placeholder or mark as failed
+                        this.items[asset.name] = null;
+                        this.singleAssetLoaded(asset, null);
+                    }
+                );
             } else if (asset.type === "imageTexture") {
-                this.loaders.textureLoader.load(asset.path, (file) => {
-                    this.singleAssetLoaded(asset, file);
-                });
+                this.loaders.textureLoader.load(
+                    asset.path,
+                    (file) => {
+                        this.singleAssetLoaded(asset, file);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`[Resources] ❌ Error loading texture ${asset.name} from ${asset.path}:`, error);
+                        this.items[asset.name] = null;
+                        this.singleAssetLoaded(asset, null);
+                    }
+                );
             } else if (asset.type === "cubeTexture") {
-                this.loaders.cubeTextureLoader.load(asset.path, (file) => {
-                    this.singleAssetLoaded(asset, file);
-                });
+                this.loaders.cubeTextureLoader.load(
+                    asset.path,
+                    (file) => {
+                        this.singleAssetLoaded(asset, file);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`[Resources] ❌ Error loading cube texture ${asset.name} from ${asset.path}:`, error);
+                        this.items[asset.name] = null;
+                        this.singleAssetLoaded(asset, null);
+                    }
+                );
             } else if (asset.type === "videoTexture") {
                 this.video = {};
                 this.videoTexture = {};
@@ -48,7 +82,17 @@ export default class Resources extends EventEmitter {
                 this.video[asset.name].playsInline = true;
                 this.video[asset.name].autoplay = true;
                 this.video[asset.name].loop = true;
-                this.video[asset.name].play();
+                
+                // Add error handling for video
+                this.video[asset.name].addEventListener('error', (e) => {
+                    console.error(`[Resources] ❌ Error loading video ${asset.name} from ${asset.path}:`, e);
+                    this.items[asset.name] = null;
+                    this.singleAssetLoaded(asset, null);
+                });
+                
+                this.video[asset.name].play().catch((error) => {
+                    console.error(`[Resources] ❌ Error playing video ${asset.name}:`, error);
+                });
 
                 this.videoTexture[asset.name] = new THREE.VideoTexture(
                     this.video[asset.name]
@@ -148,20 +192,47 @@ export default class Resources extends EventEmitter {
             }
 
             if (asset.type === "glbModel") {
-                this.loaders.gltfLoader.load(asset.path, (file) => {
-                    this.items[asset.name] = file;
-                    checkComplete();
-                });
+                this.loaders.gltfLoader.load(
+                    asset.path,
+                    (file) => {
+                        this.items[asset.name] = file;
+                        checkComplete();
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`[Resources] ❌ Error loading ${asset.name} from ${asset.path}:`, error);
+                        this.items[asset.name] = null;
+                        checkComplete();
+                    }
+                );
             } else if (asset.type === "imageTexture") {
-                this.loaders.textureLoader.load(asset.path, (file) => {
-                    this.items[asset.name] = file;
-                    checkComplete();
-                });
+                this.loaders.textureLoader.load(
+                    asset.path,
+                    (file) => {
+                        this.items[asset.name] = file;
+                        checkComplete();
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`[Resources] ❌ Error loading texture ${asset.name} from ${asset.path}:`, error);
+                        this.items[asset.name] = null;
+                        checkComplete();
+                    }
+                );
             } else if (asset.type === "cubeTexture") {
-                this.loaders.cubeTextureLoader.load(asset.path, (file) => {
-                    this.items[asset.name] = file;
-                    checkComplete();
-                });
+                this.loaders.cubeTextureLoader.load(
+                    asset.path,
+                    (file) => {
+                        this.items[asset.name] = file;
+                        checkComplete();
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`[Resources] ❌ Error loading cube texture ${asset.name} from ${asset.path}:`, error);
+                        this.items[asset.name] = null;
+                        checkComplete();
+                    }
+                );
             } else if (asset.type === "videoTexture") {
                 if (!this.video) this.video = {};
                 if (!this.videoTexture) this.videoTexture = {};
@@ -172,7 +243,17 @@ export default class Resources extends EventEmitter {
                 this.video[asset.name].playsInline = true;
                 this.video[asset.name].autoplay = true;
                 this.video[asset.name].loop = true;
-                this.video[asset.name].play();
+                
+                // Add error handling for video
+                this.video[asset.name].addEventListener('error', (e) => {
+                    console.error(`[Resources] ❌ Error loading video ${asset.name} from ${asset.path}:`, e);
+                    this.items[asset.name] = null;
+                    checkComplete();
+                });
+                
+                this.video[asset.name].play().catch((error) => {
+                    console.error(`[Resources] ❌ Error playing video ${asset.name}:`, error);
+                });
 
                 this.videoTexture[asset.name] = new THREE.VideoTexture(
                     this.video[asset.name]

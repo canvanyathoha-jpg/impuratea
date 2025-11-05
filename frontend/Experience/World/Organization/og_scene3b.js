@@ -521,6 +521,10 @@ export default class OrganizationScene3B {
         
         const button = this.alternativeButton.querySelector('#read-speech-btn');
         button.addEventListener('click', () => {
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.showScreenSpeechBubble();
         });
     }
@@ -544,6 +548,10 @@ export default class OrganizationScene3B {
 
         document.body.appendChild(screenBubble);
         screenBubble.addEventListener('click', () => {
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             document.body.removeChild(screenBubble);
         });
     }
@@ -639,11 +647,19 @@ export default class OrganizationScene3B {
 
         document.getElementById('choice-A').addEventListener('click', () => {
             console.log("[OrgScene3B] Player chose A");
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.handleChoice('A');
         });
 
         document.getElementById('choice-B').addEventListener('click', () => {
             console.log("[OrgScene3B] Player chose B");
+            // Play click sound
+            if (this.experience && this.experience.soundManager) {
+                this.experience.soundManager.play('click', 0.6);
+            }
             this.handleChoice('B');
         });
 
