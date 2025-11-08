@@ -326,7 +326,7 @@ export default class AcademicScene3A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Walau tugas makalah belum sepenuhnya selesai. Selanjutnya adalah ujian praktik biologi berkelompok. Kamu masuk ke laboratorium biologi yang dipenuhi mikroskop dan alat-alat percobaan.",
-                en: "Although the paper assignment is not completely finished. Next is a group biology practical exam. You enter the biology laboratory filled with microscopes and experimental equipment."
+                en: "Even though the paper assignment isn't completely finished, next comes a group biology practical exam. You enter the biology laboratory filled with microscopes and experimental equipment."
             }, 
             onChoice: () => this.showDilemma1() 
         });
@@ -340,7 +340,7 @@ export default class AcademicScene3A {
             }, 
             text: {
                 id: "Sekarang harus praktik biologi juga. Kurasa tidak ada waktu istirahat buatku huh?",
-                en: "Now I have to do biology practical too. I guess there's no rest for me, huh?"
+                en: "Now I have to do the biology practical too. I guess there's no rest for me, huh?"
             }, 
             onChoice: () => this.showChoice1() 
         });
@@ -353,7 +353,7 @@ export default class AcademicScene3A {
         };
         const text = {
             id: "Eh, kamu mau ikutan praktik atau mau ngerjain tugas makalahmu? Soalnya kita butuh semua orang fokus nih.",
-            en: "Hey, do you want to join the practical or do your paper assignment? Because we need everyone to focus."
+            en: "Hey, are you joining the practical or working on your paper? We need everyone to stay focused."
         };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager dengan choices
@@ -370,7 +370,7 @@ export default class AcademicScene3A {
                 { 
                     text: {
                         id: "Mengerjakan tugas makalah Kimia dan numpang nama di kelompok biologi.",
-                        en: "Work on Chemistry paper assignment and just put your name in the biology group."
+                        en: "Work on the chemistry paper and just leave your name on the biology group project."
                     }, 
                     score: 10, 
                     path: 'makalah' 
@@ -378,7 +378,7 @@ export default class AcademicScene3A {
                 { 
                     text: {
                         id: "Ikut andil dalam kelompok biologi dan bayar joki untuk tugas makalah Kimia.",
-                        en: "Participate in biology group and pay someone to do Chemistry paper assignment."
+                        en: "Join the biology group and pay someone to finish the chemistry paper."
                     }, 
                     score: 5, 
                     path: 'biologi' 
@@ -393,6 +393,12 @@ export default class AcademicScene3A {
     }
 
     handleFirstChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene3A] Choice timer expired, defaulting to lower-risk branch without scoring.");
+            this.showBiologiPath();
+            return;
+        }
+
         if (choice.path === 'makalah') {
             this.showMakalahPath();
         }
@@ -405,7 +411,7 @@ export default class AcademicScene3A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu memutuskan untuk duduk di pojok lab sambil mengerjakan makalah kimia. Teman-teman kelompokmu melakukan praktik sendiri. Mereka sesekali melirikmu dengan tatapan tidak puas.",
-                en: "You decide to sit in the corner of the lab while working on your chemistry paper. Your groupmates do the practical on their own. They occasionally glance at you with dissatisfied looks."
+                en: "You decide to sit in the corner of the lab while working on your chemistry paper. Your groupmates do the practical on their own. They occasionally glance at you with disapproving looks."
             }, 
             onChoice: () => this.showLeakInfo() 
         });
@@ -415,7 +421,7 @@ export default class AcademicScene3A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu memutuskan ikut praktik biologi. Untuk makalah kimia, kamu diam-diam kontak kakak kelas yang terkenal menerima joki tugas dengan bayaran.",
-                en: "You decide to join biology practical. For the chemistry paper, you secretly contact an upperclassman known for accepting paid assignment completion services."
+                en: "You decide to join the biology practical. For the chemistry paper, you secretly contact an upperclassman known for taking paid assignment requests."
             }, 
             onChoice: () => this.showLeakInfo() 
         });
@@ -428,7 +434,7 @@ export default class AcademicScene3A {
         };
         const text = {
             id: "Eh, aku dapat info dari kakak kelas! Soal praktik biologi kita ini SAMA persis dengan tahun lalu! Kita bisa minta bocoran jawaban dari kakak kelas!",
-            en: "Hey, I got info from an upperclassman! The biology practical questions are EXACTLY the same as last year! We can ask for answer leaks from the upperclassman!"
+            en: "Hey, I got info from an upperclassman! The biology practical questions are EXACTLY the same as last year! We can ask that upperclassman for the leaked answers!"
         };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
@@ -454,7 +460,7 @@ export default class AcademicScene3A {
         };
         const text = {
             id: "Kamu kan kenal sama kakak kelas itu kan? Minta tolong dong! Kalau kita pakai bocoran, praktik kita pasti sempurna!",
-            en: "You know that upperclassman, right? Please ask them! If we use the leaks, our practical will be perfect!"
+            en: "You know that upperclassman, right? Please ask them! If we use the leaked answers, our practical will be perfect!"
         };
 
         // JANGAN tampilkan showScreenSpeechBubble karena akan ada DialogManager
@@ -483,7 +489,7 @@ export default class AcademicScene3A {
                 { 
                     text: {
                         id: "Menolak meminta bocoran. Teman sekelompok marah dan mencoret namamu dari kelompok. Kamu harus praktik sendiri.",
-                        en: "Refuse to ask for leaks. Groupmates get angry and remove your name from the group. You must do the practical alone."
+                        en: "Refuse to ask for the leaked answers. Your groupmates get angry and remove your name from the group. You must do the practical alone."
                     }, 
                     score: 0, 
                     nextScene: 'a_scene4a' 
@@ -491,7 +497,7 @@ export default class AcademicScene3A {
                 { 
                     text: {
                         id: "Meminta bocoran kepada kakak kelas. Praktik kalian berjalan sempurna.",
-                        en: "Ask upperclassman for leaks. Your practical goes perfectly."
+                        en: "Ask the upperclassman for the leaked answers. Your practical goes perfectly."
                     }, 
                     score: 25, 
                     nextScene: 'a_scene4b' 
@@ -499,13 +505,19 @@ export default class AcademicScene3A {
             ],
             sublimentMessage: {
                 id: "Integritas sering membuatmu sendirian, sementara janji manis jalan pintas hanya berakhir dengan kekecewaan — dan di situlah benih korupsi tumbuh.",
-                en: "Integrity often leaves you alone, while the sweet promises of shortcuts only end in disappointment — and that's where the seeds of corruption grow."
+                en: "Integrity often leaves you standing alone, while the sweet promises of shortcuts only end in disappointment — that's where the seeds of corruption grow."
             },
             onChoice: (choice) => this.handleMainChoice(choice)
         });
     }
 
     handleMainChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene3A] Choice timer expired, keeping integrity path without modifying score.");
+            this.showRefusePath();
+            return;
+        }
+
         if (choice.score === 0) {
             this.showRefusePath();
         } else {
@@ -557,7 +569,7 @@ export default class AcademicScene3A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu harus mengerjakan praktik biologi sendirian. Tanpa bantuan kelompok, hasilnya tidak maksimal. Tapi setidaknya kamu bisa tidur nyenyak malam itu, tanpa beban kebohongan.",
-                en: "You have to do the biology practical alone. Without group help, the result is not optimal. But at least you can sleep soundly that night, without the burden of lies."
+                en: "You have to do the biology practical alone. Without their help, the result isn't optimal. But at least you can sleep soundly that night, without the burden of lies."
             }, 
             onChoice: () => this.transitionToNextScene('a_scene4a') 
         });
@@ -581,7 +593,7 @@ export default class AcademicScene3A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu menghubungi kakak kelas. Dia mengirimkan semua jawaban praktik tahun lalu. Kelompokmu sangat senang. Praktik berjalan mulus, semua jawaban benar. Kalian mendapat nilai A.",
-                en: "You contact the upperclassman. They send all the answers from last year's practical. Your group is very happy. The practical goes smoothly, all answers are correct. You get an A."
+                en: "You contact the upperclassman. They send all the answers from last year's practical. Your group is thrilled. The practical runs smoothly; every answer is correct. You get an A."
             }, 
             onChoice: () => this.showAcceptConsequence() 
         });
@@ -591,7 +603,7 @@ export default class AcademicScene3A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Teman-temanmu merayakan kesuksesan ini. Tapi kamu merasa ada yang salah. Ini bukan hasil kerja kalian. Ini hanya... menyontek.",
-                en: "Your friends celebrate this success. But you feel something is wrong. This is not your work. This is just... cheating."
+                en: "Your friends celebrate this success. But you feel something is wrong. This isn't your work. This is just... cheating."
             }, 
             onChoice: () => this.transitionToNextScene('a_scene4b') 
         });

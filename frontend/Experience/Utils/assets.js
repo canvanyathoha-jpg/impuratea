@@ -10,7 +10,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -51,7 +51,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -92,7 +92,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -138,7 +138,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -184,7 +184,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -230,7 +230,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -271,7 +271,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -312,7 +312,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -358,7 +358,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -404,7 +404,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -450,7 +450,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -496,7 +496,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -537,7 +537,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -583,7 +583,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -629,7 +629,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -675,7 +675,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",
@@ -721,7 +721,7 @@ export default [
                 {
                     name: "male",
                     type: "glbModel",
-                    path: "/models/asian_male_animated.glb",
+                    path: "/models/merged-model.glb?v=20251108121711",
                 },
                 {
                     name: "female",

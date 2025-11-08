@@ -32,7 +32,9 @@ export default class LanguageManager {
                     corruptionLevel: 'Corruption Level',
                     history: 'History',
                     readConversation: 'Baca Percakapan',
-                    clickToClose: 'Klik untuk menutup'
+                    clickToClose: 'Klik untuk menutup',
+                    timeRemaining: 'Waktu Tersisa',
+                    autoAdvanceNotice: 'Jika waktunya habis, cerita akan lanjut otomatis.'
                 },
                 en: {
                     loading: 'Loading Scene...',
@@ -49,12 +51,14 @@ export default class LanguageManager {
                     beginJourney: 'Begin Your Journey',
                     welcome: 'Welcome to IMPURITEA',
                     rememberMessage: 'Remember This Message',
-                    wisdomTitle: 'Wisdom & Moral Message',
+                    wisdomTitle: 'Wisdom & Moral Lesson',
                     finalScore: 'Final Corruption Score',
                     corruptionLevel: 'Corruption Level',
                     history: 'History',
                     readConversation: 'Read Conversation',
-                    clickToClose: 'Click to close'
+                    clickToClose: 'Click to close',
+                    timeRemaining: 'Time Remaining',
+                    autoAdvanceNotice: 'If time runs out, the story will move on automatically.'
                 }
             },
             
@@ -95,13 +99,13 @@ export default class LanguageManager {
                 en: {
                     honestyFoundation: 'Honesty is the Foundation',
                     honestyFoundationDesc: 'Every dishonest act damages integrity. Honesty builds trust.',
-                    corruptionStartsSmall: 'Corruption Starts from Small Things',
-                    corruptionStartsSmallDesc: 'Cheating and buying answers are academic corruption that can grow larger.',
+                    corruptionStartsSmall: 'Corruption Starts Small',
+                    corruptionStartsSmallDesc: 'Cheating and buying answers are acts of academic corruption that can grow bigger.',
                     integrityMoreValuable: 'Integrity is More Valuable',
                     integrityMoreValuableDesc: 'Strong character is more valuable than high grades obtained through cheating.',
-                    rememberQuote: 'Choose honesty, because it is the best investment for the future.',
+                    rememberQuote: 'Choose honesty; it\'s the best investment for the future.',
                     endingTitle: {
-                        clean: 'Clean Ending - Solitary Integrity',
+                        clean: 'Clean Ending - Standing With Integrity Alone',
                         gray: 'Gray Ending - Half-hearted Compromise',
                         bad: 'Bad Ending - Small Corruption Exposed'
                     }

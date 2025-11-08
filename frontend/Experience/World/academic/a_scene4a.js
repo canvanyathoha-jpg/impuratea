@@ -227,6 +227,12 @@ export default class AcademicScene4A {
     }
 
     handleChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene4A] Choice timer expired, staying on honest ending without score changes.");
+            this.showRefusePath();
+            return;
+        }
+
         if (choice.score === 0) {
             this.showRefusePath();
         }

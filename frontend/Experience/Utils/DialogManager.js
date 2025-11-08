@@ -25,6 +25,15 @@ export default class DialogManager {
         this.autoPlaySpeed = 3000; // milliseconds per dialog (default 3 seconds)
         this.autoPlayTimer = null;
         
+        // Dialog countdown timer (20 seconds default)
+        this.dialogTimerDuration = 20000; // 20 seconds in milliseconds
+        this.dialogTimerRequest = null;
+        this.dialogTimerEnd = null;
+        this.dialogTimerActive = false;
+        this.dialogTimerRemaining = this.dialogTimerDuration;
+        this.isHandlingTimeout = false;
+        this.currentDialogHasChoices = false;
+        
         // Dialog history
         this.dialogHistory = [];
         this.maxHistorySize = 50; // Maximum number of dialogs to keep in history
@@ -119,6 +128,10 @@ export default class DialogManager {
      * @param {string} config.sublimentMessage - Optional subliminal message
      */
     showDialog(config) {
+        // Reset any pending timeout handlers before showing new dialog
+        this.clearDialogTimer();
+        this.isHandlingTimeout = false;
+
         if (this.isShowing) {
             console.log('[DialogManager] Dialog already showing, queueing...');
             this.dialogQueue.push(config);
@@ -139,6 +152,9 @@ export default class DialogManager {
 
         // Create dialog container
         this.createDialogUI(config);
+        
+        // Start countdown timer when dialog contains choices
+        this.startDialogTimer(config);
         
         // Don't show score UI during gameplay - only at ending
         // Score is still tracked in background silently
@@ -376,8 +392,49 @@ export default class DialogManager {
             `;
         }
 
+        const timerLabel = this.languageManager.t('ui.timeRemaining', 'Time Remaining');
+        const autoAdvanceNotice = this.languageManager.t(
+            'ui.autoAdvanceNotice',
+            'If time runs out, the story will move on automatically.'
+        );
+
+        const timerBlock = `
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 14px; font-weight: 700; color: #d32f2f;">
+                        ⏳ ${timerLabel}: <span id="dialog-countdown">20.0s</span>
+                    </div>
+                    <div id="dialog-timer-bar" style="
+                        flex: 1;
+                        height: 8px;
+                        margin-left: 12px;
+                        border-radius: 4px;
+                        background: linear-gradient(90deg, #43a047 0%, #fdd835 60%, #e53935 100%);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <span id="dialog-timer-progress" style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            height: 100%;
+                            width: 100%;
+                            background: rgba(255,255,255,0.65);
+                            transform-origin: left center;
+                            transition: width 0.2s ease-out;
+                        "></span>
+                    </div>
+                </div>
+                <p style="margin: 0; font-size: 12px; color: #555;">
+                    ${autoAdvanceNotice}
+                </p>
+            </div>
+        `;
+
         // Choices (if provided)
         if (config.choices && config.choices.length > 0) {
+            html += timerBlock;
+
             html += `<div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">`;
             
             config.choices.forEach((choice, index) => {
@@ -418,6 +475,7 @@ export default class DialogManager {
 
             html += `</div>`;
         } else {
+            html += timerBlock;
             // Continue button if no choices
             html += `
                 <button 
@@ -695,6 +753,130 @@ export default class DialogManager {
             });
         }
     }
+
+    /**
+     * Start the countdown timer for choice dialogs
+     * @param {Object} config - Current dialog configuration
+     * @param {number|null} overrideRemaining - Optional remaining time in ms (used when re-rendering)
+     */
+    startDialogTimer(config, overrideRemaining = null) {
+        if (!config) {
+            return;
+        }
+
+        const remainingMs =
+            typeof overrideRemaining === 'number'
+                ? Math.max(0, overrideRemaining)
+                : this.dialogTimerDuration;
+
+        this.clearDialogTimer();
+        this.dialogTimerActive = true;
+        this.dialogTimerRemaining = remainingMs;
+        this.dialogTimerEnd = performance.now() + remainingMs;
+        this.currentDialogHasChoices =
+            Array.isArray(config.choices) && config.choices.length > 0;
+
+        const countdownElement = document.getElementById('dialog-countdown');
+        const progressElement = document.getElementById('dialog-timer-progress');
+
+        const refreshUI = (remaining) => {
+            if (countdownElement) {
+                countdownElement.textContent = this.formatTimerLabel(remaining);
+            }
+            if (progressElement) {
+                const clamped = Math.max(
+                    0,
+                    Math.min(1, remaining / this.dialogTimerDuration)
+                );
+                progressElement.style.width = `${clamped * 100}%`;
+            }
+        };
+
+        refreshUI(this.dialogTimerRemaining);
+
+        const update = () => {
+            const now = performance.now();
+            const remaining = Math.max(0, this.dialogTimerEnd - now);
+            this.dialogTimerRemaining = remaining;
+            refreshUI(remaining);
+
+            if (remaining <= 0) {
+                this.clearDialogTimer();
+                this.handleDialogTimeout();
+                return;
+            }
+
+            this.dialogTimerRequest = requestAnimationFrame(update);
+        };
+
+        this.dialogTimerRequest = requestAnimationFrame(update);
+    }
+
+    /**
+     * Stop and clean up the active choice timer
+     */
+    clearDialogTimer() {
+        if (this.dialogTimerRequest) {
+            cancelAnimationFrame(this.dialogTimerRequest);
+            this.dialogTimerRequest = null;
+        }
+        this.dialogTimerActive = false;
+        this.dialogTimerEnd = null;
+        this.dialogTimerRemaining = this.dialogTimerDuration;
+    }
+
+    /**
+     * Get remaining countdown time in milliseconds
+     */
+    getDialogTimerRemaining() {
+        if (!this.dialogTimerActive || !this.dialogTimerEnd) {
+            return this.dialogTimerDuration;
+        }
+        return Math.max(0, this.dialogTimerEnd - performance.now());
+    }
+
+    /**
+     * Format countdown label (seconds with one decimal)
+     */
+    formatTimerLabel(milliseconds) {
+        const seconds = milliseconds / 1000;
+        return `${seconds.toFixed(1)}s`;
+    }
+
+    /**
+     * Handle automatic advancement when player runs out of time
+     */
+    handleDialogTimeout() {
+        if (this.isHandlingTimeout) {
+            return;
+        }
+        this.isHandlingTimeout = true;
+
+        console.warn('[DialogManager] Dialog timer expired – advancing automatically.');
+
+        if (this.currentDialogHasChoices) {
+            this.hideDialog();
+
+            setTimeout(() => {
+                this.isShowing = false;
+
+                if (this.onChoiceCallback) {
+                    try {
+                        this.onChoiceCallback(null, -1, { timedOut: true });
+                    } catch (error) {
+                        console.error('[DialogManager] Error while handling timeout callback:', error);
+                    }
+                }
+
+                if (this.dialogQueue.length > 0) {
+                    const nextDialog = this.dialogQueue.shift();
+                    setTimeout(() => this.showDialog(nextDialog), 500);
+                }
+            }, 400);
+        } else {
+            this.handleContinue({ timedOut: true, skipHide: false });
+        }
+    }
     
     /**
      * Show dialog history
@@ -840,6 +1022,9 @@ export default class DialogManager {
     handleChoice(choice, index) {
         console.log(`[DialogManager] Choice ${index} selected:`, choice);
 
+        // Stop countdown timer once player has picked an option
+        this.clearDialogTimer();
+
         // Add score silently (no visual feedback during gameplay)
         if (choice.score > 0) {
             this.scoreManager.addScore(choice.score);
@@ -866,22 +1051,25 @@ export default class DialogManager {
         }, 500);
     }
 
-    handleContinue() {
-        console.log('[DialogManager] Continue clicked');
+    handleContinue(options = {}) {
+        const { timedOut = false, skipHide = false } = options;
+        console.log('[DialogManager] Continue triggered', { timedOut, skipHide });
         console.log('[DialogManager] Current callback:', this.onChoiceCallback);
         console.log('[DialogManager] Dialog queue length:', this.dialogQueue.length);
         
-        this.hideDialog();
+        this.clearDialogTimer();
+
+        if (!skipHide) {
+            this.hideDialog();
+        }
 
         setTimeout(() => {
-            // CRITICAL FIX: Set isShowing to false BEFORE calling callback
-            // This allows the callback to immediately show the next dialog
             this.isShowing = false;
             
             if (this.onChoiceCallback) {
                 console.log('[DialogManager] Calling callback...');
                 try {
-                    this.onChoiceCallback(null, -1);
+                    this.onChoiceCallback(null, -1, { timedOut });
                     console.log('[DialogManager] ✅ Callback executed successfully');
                 } catch (error) {
                     console.error('[DialogManager] ❌ Error in callback:', error);
@@ -890,7 +1078,6 @@ export default class DialogManager {
                 console.warn('[DialogManager] ⚠️ No callback set!');
             }
 
-            // Process queued dialogs if any
             if (this.dialogQueue.length > 0) {
                 const nextDialog = this.dialogQueue.shift();
                 console.log('[DialogManager] Showing next dialog from queue');
@@ -908,6 +1095,9 @@ export default class DialogManager {
     }
 
     hideDialog() {
+        // Ensure countdown timer stops when dialog is dismissed
+        this.clearDialogTimer();
+
         const dialog = document.getElementById('story-dialog');
         if (dialog) {
             dialog.style.animation = 'fadeOut 0.3s ease-out';
@@ -928,6 +1118,7 @@ export default class DialogManager {
 
     // Hide all UI elements
     hideAll() {
+        this.clearDialogTimer();
         this.hideDialog();
         this.scoreManager.hideScoreUI();
         this.isShowing = false;
@@ -950,12 +1141,18 @@ export default class DialogManager {
         
         // Update current dialog if showing
         if (this.isShowing && this.currentDialog) {
+            let remainingForTimer = null;
+            if (this.dialogTimerActive) {
+                remainingForTimer = this.getDialogTimerRemaining();
+            }
+
             // Recreate dialog UI with new language
             const existing = document.getElementById('story-dialog');
             if (existing) {
                 existing.remove();
             }
             this.createDialogUI(this.currentDialog);
+            this.startDialogTimer(this.currentDialog, remainingForTimer);
         }
         
         // Update history if showing

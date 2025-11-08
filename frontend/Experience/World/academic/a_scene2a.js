@@ -515,7 +515,7 @@ export default class AcademicScene2A {
                 { 
                     text: {
                         id: "Mengerjakan sendiri sampai tidak tidur. Hasilnya kurang bagus karena terburu-buru dan kelelahan.",
-                        en: "Work alone until not sleeping. The result is not good because of rushing and exhaustion."
+                        en: "Work alone through the night without sleep. The result isn't good because you're rushing and exhausted."
                     }, 
                     score: 0, 
                     nextScene: 'a_scene3a' 
@@ -523,7 +523,7 @@ export default class AcademicScene2A {
                 { 
                     text: {
                         id: "Menggunakan AI untuk membuat makalah. Hasilnya bagus dan selesai cepat.",
-                        en: "Use AI to create the paper. Good result and finished quickly."
+                        en: "Use an AI tool to create the paper. The result looks great and it's finished quickly."
                     }, 
                     score: 20, 
                     nextScene: 'a_scene3b' 
@@ -531,13 +531,19 @@ export default class AcademicScene2A {
             ],
             sublimentMessage: {
                 id: "Korupsi sering dimulai dari rasa putus asa mencari jalan mudah.",
-                en: "Corruption often starts from desperation to find an easy way out."
+                en: "Corruption often starts with desperation for an easy way out."
             },
             onChoice: (choice) => this.handleChoice(choice)
         });
     }
 
     handleChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene2A] Choice timer expired, moving to honest branch without altering score.");
+            this.showPathA();
+            return;
+        }
+
         if (choice.nextScene === 'a_scene3a') {
             this.showPathA();
         } else {
@@ -549,7 +555,7 @@ export default class AcademicScene2A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu memutuskan untuk mengerjakan sendiri. Semalam suntuk kamu begadang, mengetik dengan mata yang hampir terpejam. Paginya, kamu selesai... tapi makalahnya terlihat berantakan dan penuh kesalahan.",
-                en: "You decide to work alone. You stay up all night, typing with eyes almost closed. In the morning, you're done... but the paper looks messy and full of errors."
+                en: "You decide to work alone. You stay up all night, typing with eyes barely open. By morning you're done, but the paper looks messy and full of errors."
             }, 
             onChoice: () => this.showPathAResult() 
         });
@@ -562,8 +568,8 @@ export default class AcademicScene2A {
                 en: "Biology Teacher"
             }, 
             text: {
-                id: "Hmm... makalah kalian kurang rapi dan ada beberapa kesalahan konsep. Tapi saya menghargai usaha kalian. Nilai: 70.",
-                en: "Hmm... your paper is not very neat and has some conceptual errors. But I appreciate your effort. Score: 70."
+                id: "Hmm... your paper isn't very neat and has some conceptual errors. But I appreciate your effort. Score: 70.",
+                en: "Hmm... your paper isn't very neat and has some conceptual errors. But I appreciate your effort. Score: 70."
             }, 
             onChoice: () => this.transitionToNextScene('a_scene3a') 
         });
@@ -573,7 +579,7 @@ export default class AcademicScene2A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu membuka AI dan mengetikkan topik makalah. Dalam 30 menit, makalah 10 halaman siap. Kamu edit sedikit agar terlihat natural. Besoknya kamu kumpulkan dengan percaya diri.",
-                en: "You open AI and type the paper topic. In 30 minutes, a 10-page paper is ready. You edit it a bit to make it look natural. The next day you submit it confidently."
+                en: "You open an AI tool and type in the paper topic. In 30 minutes, a 10-page paper is ready. You edit it a bit to make it look natural. The next day you submit it confidently."
             }, 
             onChoice: () => this.showPathBResult() 
         });
@@ -586,8 +592,8 @@ export default class AcademicScene2A {
                 en: "Biology Teacher"
             }, 
             text: {
-                id: "Wow, makalah kalian sangat bagus! Rapi, lengkap, dan mendalam. Ini contoh yang sempurna! Nilai: 95!",
-                en: "Wow, your paper is very good! Neat, complete, and in-depth. This is a perfect example! Score: 95!"
+                id: "Wow, your paper is excellent! Neat, complete, and in-depth. This is a perfect example! Score: 95!",
+                en: "Wow, your paper is excellent! Neat, complete, and in-depth. This is a perfect example! Score: 95!"
             }, 
             onChoice: () => this.showPathBTwist() 
         });
@@ -597,7 +603,7 @@ export default class AcademicScene2A {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu merasa lega... untuk sementara. Tapi perasaan bersalah mulai menumpuk. Dan yang tidak kamu sadari, guru mulai curiga karena gaya penulisan makalahmu sangat berbeda dari tulisan biasamu...",
-                en: "You feel relieved... temporarily. But guilt starts to build up. And what you don't realize, the teacher starts to suspect because your paper's writing style is very different from your usual writing..."
+                en: "You feel relieved... temporarily. But guilt starts to build up. What you don't notice is that the teacher starts to suspect you because this paper's writing style is very different from your usual work..."
             }, 
             onChoice: () => this.transitionToNextScene('a_scene3b') 
         });

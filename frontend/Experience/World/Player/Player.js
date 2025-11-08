@@ -104,7 +104,11 @@ export default class Player {
         // Force update camera and avatar position
         if (this.avatar && this.avatar.avatar) {
             this.avatar.avatar.position.copy(this.player.collider.end);
-            this.avatar.avatar.position.y -= 6.2;
+            const groundOffset =
+                this.avatar.groundOffset !== undefined
+                    ? this.avatar.groundOffset
+                    : 6.2;
+            this.avatar.avatar.position.y -= groundOffset;
             console.log(`[Player] Avatar position set to:`, this.avatar.avatar.position);
         }
     }
@@ -524,8 +528,11 @@ export default class Player {
 
     updateAvatarPosition() {
         this.avatar.avatar.position.copy(this.player.collider.end);
-        // MODIFIED: Sesuaikan offset dengan scale avatar 3.96
-        this.avatar.avatar.position.y -= 6.2; // -1.56 * 3.96 ≈ -6.2
+        const groundOffset =
+            this.avatar.groundOffset !== undefined
+                ? this.avatar.groundOffset
+                : 6.2;
+        this.avatar.avatar.position.y -= groundOffset;
 
         this.avatar.animation.update(this.time.delta);
     }

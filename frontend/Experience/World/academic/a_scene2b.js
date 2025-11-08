@@ -205,13 +205,13 @@ export default class AcademicScene2B {
         this.dialogManager.showDialog({
             text: {
                 id: "Kamu dalam dilema besar. Waktu tinggal satu hari, kamu masih lemah karena baru sembuh, dan makalahnya baru setengah...",
-                en: "You are in a big dilemma. Only one day left, you're still weak from just recovering, and the paper is only half done..."
+                en: "You're in a tough dilemma. Only one day left, you're still weak after recovering, and the paper is only half done..."
             },
             choices: [
                 { 
                     text: {
                         id: "Mengerjakan sendiri sampai tidak tidur. Hasilnya kurang bagus karena kondisi badan masih lemah.",
-                        en: "Work alone until not sleeping. The result is not good because body condition is still weak."
+                        en: "Work alone through the night without sleep. The result isn't good because you're still physically weak."
                     }, 
                     score: 0, 
                     nextScene: 'a_scene3a' 
@@ -219,7 +219,7 @@ export default class AcademicScene2B {
                 { 
                     text: {
                         id: "Menggunakan AI untuk menyelesaikan setengahnya lagi. Hasilnya bagus dan bisa istirahat.",
-                        en: "Use AI to finish the other half. Good result and can rest."
+                        en: "Use an AI tool to finish the other half. The result looks great and you can rest."
                     }, 
                     score: 20, 
                     nextScene: 'a_scene3b' 
@@ -227,13 +227,19 @@ export default class AcademicScene2B {
             ],
             sublimentMessage: {
                 id: "Ketika nilai jadi segalanya, integritas perlahan digadaikan.",
-                en: "When grades become everything, integrity is slowly compromised."
+                en: "When grades become everything, integrity slowly gets compromised."
             },
             onChoice: (choice) => this.handleChoice(choice)
         });
     }
 
     handleChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene2B] Choice timer expired, defaulting to honest branch without changing score.");
+            this.showPathA();
+            return;
+        }
+
         if (choice.nextScene === 'a_scene3a') {
             this.showPathA();
         } else {
@@ -245,7 +251,7 @@ export default class AcademicScene2B {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu memaksakan diri untuk begadang lagi meski badan masih lemah. Dengan mata berair dan kepala pusing, kamu menyelesaikan makalah. Hasilnya tidak semaksimal yang kamu inginkan, tapi ini hasil kerja kerasmu sendiri.",
-                en: "You force yourself to stay up again even though your body is still weak. With watery eyes and a dizzy head, you finish the paper. The result isn't as perfect as you wanted, but this is the result of your own hard work."
+                en: "You force yourself to stay up again even though your body is still weak. With bleary eyes and a spinning head, you finish the paper. The result isn't as perfect as you wanted, but it's still the product of your own hard work."
             }, 
             onChoice: () => this.showPathAResult() 
         });
@@ -259,7 +265,7 @@ export default class AcademicScene2B {
             }, 
             text: {
                 id: "Makalah kalian... cukup baik. Ada beberapa bagian yang kurang detail, tapi saya bisa lihat usaha kalian. Nilai: 75. Pertahankan semangat ini!",
-                en: "Your paper... is quite good. There are some parts that lack detail, but I can see your effort. Score: 75. Keep up this spirit!"
+                en: "Your paper... is quite good. Some parts lack detail, but I can see your effort. Score: 75. Keep up the spirit!"
             }, 
             onChoice: () => this.transitionToNextScene('a_scene3a') 
         });
@@ -269,7 +275,7 @@ export default class AcademicScene2B {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu membuka AI dan menyalin separuh makalah yang sudah kamu buat, lalu meminta AI melengkapi sisanya. Dalam 1 jam, makalah selesai dengan rapi. Kamu bisa istirahat dan memulihkan kondisi.",
-                en: "You open AI and copy the half of the paper you've made, then ask AI to complete the rest. In 1 hour, the paper is finished neatly. You can rest and recover."
+                en: "You open an AI tool and copy the half you've already written, then ask it to complete the rest. In one hour, the paper is neatly finished. You can rest and recover."
             }, 
             onChoice: () => this.showPathBResult() 
         });
@@ -283,7 +289,7 @@ export default class AcademicScene2B {
             }, 
             text: {
                 id: "Excellent! Makalah kalian sangat lengkap dan terstruktur dengan baik! Ini salah satu yang terbaik di kelas. Nilai: 95!",
-                en: "Excellent! Your paper is very complete and well-structured! This is one of the best in class. Score: 95!"
+                en: "Excellent! Your paper is extremely complete and well-structured! This is one of the best in class. Score: 95!"
             }, 
             onChoice: () => this.showPathBConflict() 
         });
@@ -293,7 +299,7 @@ export default class AcademicScene2B {
         this.dialogManager.showDialog({ 
             text: {
                 id: "Kamu seharusnya senang, tapi ada perasaan hampa. Separuh dari makalah itu bukan hasil kerjamu. Apakah ini yang dimaksud dengan 'sukses'?",
-                en: "You should be happy, but there's an empty feeling. Half of that paper is not your work. Is this what 'success' means?"
+                en: "You should be happy, but you feel empty. Half of that paper isn't your work. Is this what 'success' means?"
             }, 
             onChoice: () => this.transitionToNextScene('a_scene3b') 
         });

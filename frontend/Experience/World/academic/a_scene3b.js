@@ -410,6 +410,12 @@ export default class AcademicScene3B {
     }
 
     handleFirstChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene3B] Choice timer expired, choosing involvement path without affecting score.");
+            this.showTryHelpPath();
+            return;
+        }
+
         if (choice.path === 'try_help') {
             this.showTryHelpPath();
         } else {
@@ -462,6 +468,12 @@ export default class AcademicScene3B {
     }
 
     handleMainChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene3B] Choice timer expired, keeping honest branch without scoring.");
+            this.showRefusePath();
+            return;
+        }
+
         if (choice.score === 0) {
             this.showRefusePath();
         } else {

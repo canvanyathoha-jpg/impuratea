@@ -280,6 +280,12 @@ export default class AcademicScene1 {
     }
 
     handleChoice(choice) {
+        if (!choice) {
+            console.warn("[AcademicScene1] Choice timer expired, defaulting to honest path without changing score.");
+            this.transitionToNextScene('a_scene2b');
+            return;
+        }
+
         console.log("[AcademicScene1] Player choice:", choice);
         if (choice.nextScene === 'a_scene2b') {
             this.showPathA();
