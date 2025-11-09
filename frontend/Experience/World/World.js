@@ -45,7 +45,7 @@ export default class World extends EventEmitter {
             a_scene3b: new THREE.Vector3(0, 10, 0), // Spawn inside the science room scene 3b
             a_scene4a: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4a
             a_scene4b: new THREE.Vector3(0, 10, 0), // Spawn inside the class room scene 4b
-            og_scene1: new THREE.Vector3(7, 5, 17), // Adjusted spawn point for 7x map scale
+            og_scene1: new THREE.Vector3(7, 10, 17), // Adjusted spawn point for 7x map scale
             og_scene2a: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2a
             og_scene2b: new THREE.Vector3(0, 10, 10), // Spawn inside the organization room scene 2b
             og_scene3a: new THREE.Vector3(-5, 10, 20), // Spawn inside the caffe room (shifted left and back)

@@ -1,4 +1,3 @@
-
 import Experience from "../../Experience.js";
 import * as THREE from "three";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
@@ -6,6 +5,9 @@ import Portal from "../Portal.js";
 import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
 import AIVoice from "../../Utils/AIVoice.js";
+import SceneLoadingIndicator from "../../Utils/SceneLoadingIndicator.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
+import { ORG_TEXTS } from "./OrganizationTexts.js";
 
 export default class Organization {
     constructor() {
@@ -30,6 +32,14 @@ export default class Organization {
 
         // Track AI voice timeout to clear on dispose
         this.aiVoiceTimeout = null;
+        // Keep references to resource loading callbacks so we can detach them later.
+        this.resourceLoadingHandler = null;
+        this.resourceReadyHandler = null;
+        // Track whether we already executed the heavy world setup callback to avoid duplicate calls.
+        this.worldSetupResolved = false;
+        // Track AI voice dialogue state
+        this.pendingDialogue = null;
+        this.hasSpokenDialogue = false;
         
         // Raycasting for speech bubble interaction
         this.raycaster = new THREE.Raycaster();
@@ -43,8 +53,10 @@ export default class Organization {
 
         // Add event listeners for speech bubble interaction
         this.canvas = this.experience.canvas;
-        this.canvas.addEventListener('click', this.onMouseClick.bind(this));
-        this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+        this.onMouseClick = this.onMouseClick.bind(this);
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.canvas.addEventListener('click', this.onMouseClick);
+        this.canvas.addEventListener('mousemove', this.onMouseMove);
         
         // Show opening story first
         this.initWithOpening();
@@ -52,36 +64,98 @@ export default class Organization {
 
     initWithOpening() {
         console.log("[OrgScene1] Loading scene in background first...");
-        
-        // Show loading indicator
-        this.showLoadingIndicator();
-        
-        // Load scene models asynchronously (non-blocking)
-        this.loadSceneAsync().then(() => {
-            console.log("[OrgScene1] Scene loaded successfully!");
-            
-            // Hide loading indicator
-            this.hideLoadingIndicator();
-            
-            // Show opening story overlay immediately (no delay)
-            console.log("[OrgScene1] Scene loaded, now showing opening story overlay...");
-            
-            try {
-                this.openingStory = new OpeningStory(SCENE_DATA.og_scene1);
-                
-                // Show opening story overlay (blocks screen with z-index 10000)
-                this.openingStory.show().then(() => {
-                    console.log("[OrgScene1] Opening story dismissed - scene is now fully visible");
+
+        // Show modern loading indicator
+        this.loadingIndicator = SceneLoadingIndicator.show();
+        // Hook resource loading events so the indicator reflects real progress and never finishes too early.
+        this.attachResourceLoadingEvents();
+
+        // CRITICAL: Wait for resources to be ready first!
+        const waitForResources = () => {
+            if (this.resources.isReady) {
+                console.log("[OrgScene1] ✅ Resources ready, starting scene load...");
+                // Resources ready, proceed with scene loading
+                this.loadSceneAsync().then(() => {
+                    console.log("[OrgScene1] ✅ Scene loaded successfully!");
+
+                    // Hide loading indicator
+                    SceneLoadingIndicator.hide();
+
+                    // Show opening story overlay immediately (no delay)
+                    console.log("[OrgScene1] Scene loaded, now showing opening story overlay...");
+
+                    try {
+                        this.openingStory = new OpeningStory(SCENE_DATA.og_scene1);
+
+                        // Show opening story overlay (blocks screen with z-index 10000)
+                        this.openingStory.show().then(() => {
+                            console.log("[OrgScene1] Opening story dismissed - scene is now fully visible");
+                        }).catch((error) => {
+                            console.error("[OrgScene1] Error in opening story:", error);
+                        });
+                    } catch (error) {
+                        console.error("[OrgScene1] Error creating opening story:", error);
+                    }
                 }).catch((error) => {
-                    console.error("[OrgScene1] Error in opening story:", error);
+                    console.error("[OrgScene1] Error loading scene:", error);
+                    SceneLoadingIndicator.hide();
                 });
-            } catch (error) {
-                console.error("[OrgScene1] Error creating opening story:", error);
+            } else {
+                // Resources not ready yet, wait for 'ready' event
+                console.log("[OrgScene1] ⏳ Waiting for resources to be ready...");
+                this.resources.once('ready', () => {
+                    console.log("[OrgScene1] ✅ Resources ready event fired!");
+                    waitForResources();
+                });
             }
-        }).catch((error) => {
-            console.error("[OrgScene1] Error loading scene:", error);
-            this.hideLoadingIndicator();
-        });
+        };
+
+        // Start waiting for resources
+        waitForResources();
+    }
+
+    attachResourceLoadingEvents() {
+        // Avoid registering listeners if resources are missing for some reason.
+        if (!this.resources || typeof this.resources.on !== 'function') {
+            console.warn("[OrgScene1] Resources not available, cannot attach loading events.");
+            return;
+        }
+
+        // If assets already loaded we simply push the progress bar to 100% and exit early.
+        if (this.resources.isReady) {
+            this.updateLoadingProgress(100);
+            return;
+        }
+
+        // Memoise the handlers so we can remove them during dispose().
+        if (!this.resourceLoadingHandler) {
+            this.resourceLoadingHandler = (loaded, total) => {
+                // Guard against division by zero and cap progress at 95% so the bar stays visible until cleanup finishes.
+                const cappedTotal = total || 1;
+                const percentage = Math.round((loaded / cappedTotal) * 100);
+                this.updateLoadingProgress(Math.min(percentage, 95));
+            };
+        }
+
+        if (!this.resourceReadyHandler) {
+            this.resourceReadyHandler = () => {
+                this.updateLoadingProgress(100);
+                if (typeof this.resources.removeListener === 'function' && this.resourceLoadingHandler) {
+                    this.resources.removeListener('loading', this.resourceLoadingHandler);
+                }
+                this.resourceLoadingHandler = null;
+                this.resourceReadyHandler = null;
+            };
+        }
+
+        // Ensure we never double-register handlers when the scene is constructed multiple times.
+        if (typeof this.resources.removeListener === 'function') {
+            this.resources.removeListener('loading', this.resourceLoadingHandler);
+            this.resources.removeListener('ready', this.resourceReadyHandler);
+        }
+
+        this.resources.on('loading', this.resourceLoadingHandler);
+        this.resources.once('ready', this.resourceReadyHandler);
     }
 
     // Old method - replaced by initWithOpening()
@@ -172,69 +246,210 @@ export default class Organization {
 
         this.loadingIndicator = document.createElement('div');
         this.loadingIndicator.id = 'scene-loading-indicator';
-        this.loadingIndicator.style.pointerEvents = 'none'; // Jangan halangi input canvas
+        this.loadingIndicator.style.pointerEvents = 'none';
         this.loadingIndicator.innerHTML = `
             <div style="
                 position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.9);
-                border: 3px solid rgba(255, 215, 0, 0.8);
-                border-radius: 20px;
-                padding: 40px;
-                text-align: center;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1729 100%);
                 z-index: 10000001;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
                 pointer-events: none;
+                opacity: 0;
+                animation: fadeIn 0.3s ease forwards;
             ">
                 <div style="
-                    color: #FFD700;
-                    font-size: 24px;
-                    font-weight: bold;
-                    margin-bottom: 20px;
-                    font-family: 'Gilroy', Arial, sans-serif;
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 35px;
+                    padding: 50px 70px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border-radius: 30px;
+                    backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 60px rgba(255, 255, 255, 0.02);
                 ">
-                    Memuat Scene...
-                </div>
-                <div style="
-                    width: 300px;
-                    height: 8px;
-                    background: rgba(255, 255, 255, 0.2);
-                    border-radius: 10px;
-                    overflow: hidden;
-                    margin: 0 auto;
-                ">
-                    <div id="loading-progress-bar" style="
-                        width: 0%;
-                        height: 100%;
-                        background: linear-gradient(90deg, #1E407C, #8B0000, #FFD700);
+                    <!-- Spinning Logo -->
+                    <div style="
+                        width: 80px;
+                        height: 80px;
+                        background: linear-gradient(135deg, rgba(139, 0, 0, 0.3), rgba(30, 64, 124, 0.3));
+                        border-radius: 50%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        box-shadow:
+                            0 0 30px rgba(139, 0, 0, 0.4),
+                            0 0 60px rgba(30, 64, 124, 0.3),
+                            inset 0 0 20px rgba(255, 255, 255, 0.1);
+                        animation: pulse 2s ease-in-out infinite;
+                    ">
+                        <div style="
+                            width: 40px;
+                            height: 40px;
+                            border: 3px solid transparent;
+                            border-top-color: rgba(255, 255, 255, 0.9);
+                            border-right-color: rgba(139, 0, 0, 0.7);
+                            border-radius: 50%;
+                            animation: spin 1.2s linear infinite;
+                        "></div>
+                    </div>
+
+                    <!-- Loading Text -->
+                    <div style="
+                        color: rgba(255, 255, 255, 0.95);
+                        font-size: 26px;
+                        font-weight: 300;
+                        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, sans-serif;
+                        letter-spacing: 4px;
+                        text-transform: uppercase;
+                        text-shadow:
+                            0 0 20px rgba(139, 0, 0, 0.6),
+                            0 0 40px rgba(30, 64, 124, 0.4),
+                            0 4px 20px rgba(0, 0, 0, 0.5);
+                        animation: textGlow 2s ease-in-out infinite;
+                    ">
+                        Memuat Scene
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="
+                        width: 320px;
+                        height: 4px;
+                        background: rgba(255, 255, 255, 0.05);
                         border-radius: 10px;
-                        transition: width 0.3s ease;
-                        animation: pulse 1.5s ease-in-out infinite;
-                    "></div>
+                        overflow: hidden;
+                        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+                    ">
+                        <div id="loading-progress-bar" style="
+                            width: 100%;
+                            height: 100%;
+                            background: linear-gradient(90deg,
+                                rgba(139, 0, 0, 0.8) 0%,
+                                rgba(30, 64, 124, 0.8) 50%,
+                                rgba(255, 215, 0, 0.8) 100%
+                            );
+                            border-radius: 10px;
+                            animation: progressSlide 1.5s ease-in-out infinite;
+                            box-shadow: 0 0 15px rgba(139, 0, 0, 0.6);
+                        "></div>
+                    </div>
+
+                    <!-- Subtitle -->
+                    <div style="
+                        color: rgba(255, 255, 255, 0.5);
+                        font-size: 13px;
+                        font-weight: 400;
+                        letter-spacing: 2px;
+                        text-transform: uppercase;
+                        font-family: 'Gilroy', sans-serif;
+                        animation: fadeInOut 2s ease-in-out infinite;
+                    ">
+                        Mohon tunggu sebentar...
+                    </div>
                 </div>
+
+                <!-- Background Orbs -->
                 <div style="
-                    color: rgba(255, 255, 255, 0.8);
-                    font-size: 14px;
-                    margin-top: 15px;
-                    font-family: 'Gilroy', Arial, sans-serif;
-                ">
-                    Mohon tunggu sebentar...
-                </div>
+                    position: absolute;
+                    top: -20%;
+                    right: -10%;
+                    width: 400px;
+                    height: 400px;
+                    background: radial-gradient(circle, rgba(139, 0, 0, 0.15) 0%, transparent 70%);
+                    border-radius: 50%;
+                    filter: blur(60px);
+                    animation: floatOrb 8s ease-in-out infinite;
+                "></div>
+                <div style="
+                    position: absolute;
+                    bottom: -20%;
+                    left: -10%;
+                    width: 350px;
+                    height: 350px;
+                    background: radial-gradient(circle, rgba(30, 64, 124, 0.15) 0%, transparent 70%);
+                    border-radius: 50%;
+                    filter: blur(60px);
+                    animation: floatOrb 10s ease-in-out infinite reverse;
+                "></div>
             </div>
         `;
-        
-        // Add pulse animation
+
+        // Add animations
         const style = document.createElement('style');
         style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
             @keyframes pulse {
-                0%, 100% { opacity: 1; }
+                0%, 100% {
+                    transform: scale(1);
+                    box-shadow:
+                        0 0 30px rgba(139, 0, 0, 0.4),
+                        0 0 60px rgba(30, 64, 124, 0.3),
+                        inset 0 0 20px rgba(255, 255, 255, 0.1);
+                }
+                50% {
+                    transform: scale(1.05);
+                    box-shadow:
+                        0 0 40px rgba(139, 0, 0, 0.6),
+                        0 0 80px rgba(30, 64, 124, 0.5),
+                        inset 0 0 30px rgba(255, 255, 255, 0.15);
+                }
+            }
+            @keyframes textGlow {
+                0%, 100% {
+                    opacity: 0.9;
+                    text-shadow:
+                        0 0 20px rgba(139, 0, 0, 0.6),
+                        0 0 40px rgba(30, 64, 124, 0.4),
+                        0 4px 20px rgba(0, 0, 0, 0.5);
+                }
+                50% {
+                    opacity: 1;
+                    text-shadow:
+                        0 0 30px rgba(139, 0, 0, 0.8),
+                        0 0 60px rgba(30, 64, 124, 0.6),
+                        0 4px 20px rgba(0, 0, 0, 0.5);
+                }
+            }
+            @keyframes progressSlide {
+                0% {
+                    transform: translateX(-100%);
+                }
+                100% {
+                    transform: translateX(100%);
+                }
+            }
+            @keyframes fadeInOut {
+                0%, 100% { opacity: 0.3; }
                 50% { opacity: 0.7; }
+            }
+            @keyframes floatOrb {
+                0%, 100% {
+                    transform: translate(0, 0) scale(1);
+                    opacity: 0.3;
+                }
+                50% {
+                    transform: translate(-50px, -50px) scale(1.1);
+                    opacity: 0.5;
+                }
             }
         `;
         document.head.appendChild(style);
-        
+
         document.body.appendChild(this.loadingIndicator);
     }
 
@@ -254,36 +469,46 @@ export default class Organization {
     updateLoadingProgress(progress) {
         const progressBar = document.getElementById('loading-progress-bar');
         if (progressBar) {
+            // Disable the infinite animation so the bar reflects the numeric progress we set below.
+            progressBar.style.animation = 'none';
             progressBar.style.width = `${progress}%`;
         }
     }
 
     async loadSceneAsync() {
+        console.log("[OrgScene1] 🚀 loadSceneAsync() started");
         return new Promise((resolve, reject) => {
             try {
                 // Step 1: Load basic scene structure (non-blocking)
+                console.log("[OrgScene1] Step 1: Setting up world...");
                 this.updateLoadingProgress(20);
                 this.setWorldAsync(() => {
+                    console.log("[OrgScene1] ✅ setWorldAsync callback fired!");
                     this.updateLoadingProgress(60);
-                    
+
                     // Step 2: Create portals (lightweight)
+                    console.log("[OrgScene1] Step 2: Creating portals...");
                     this.createPortals();
                     this.updateLoadingProgress(70);
-                    
+
                     // Step 3: Create NPC (lightweight)
+                    console.log("[OrgScene1] Step 3: Creating NPC...");
                     this.createNPC();
                     this.updateLoadingProgress(90);
-                    
+
                     // Step 4: Ensure player is spawned correctly
+                    console.log("[OrgScene1] Step 4: Ensuring player spawned...");
                     this.ensurePlayerSpawned();
-                    
+
                     // Step 5: Finalize
                     this.updateLoadingProgress(100);
-                    
+                    console.log("[OrgScene1] 🎉 All steps complete, resolving Promise...");
+
                     // Resolve immediately - no delay needed
                     resolve();
                 });
             } catch (error) {
+                console.error("[OrgScene1] ❌ Error in loadSceneAsync:", error);
                 reject(error);
             }
         });
@@ -296,7 +521,7 @@ export default class Organization {
         requestAnimationFrame(() => {
             if (this.experience.world && this.experience.world.player) {
                 // Get spawn point for this scene
-                const spawnPoint = this.experience.world.spawnPoints?.og_scene1 || new THREE.Vector3(-5, 10, 20);
+                const spawnPoint = this.experience.world.spawnPoints?.og_scene1 || new THREE.Vector3(0, 0, 10);
                 console.log("[OrgScene1] Setting player spawn point to:", spawnPoint);
                 
                 // Set spawn point (single call, let Player.js handle it)
@@ -383,6 +608,11 @@ export default class Organization {
             // Add the group to the scene
             this.scene.add(this.collidableGroup);
 
+            // NOTE:
+            // Resolve the world setup callback right away so the rest of the scene keeps loading
+            // while the octree is still being prepared in the background.
+            this.resolveWorldSetupCallback(callback);
+
             // Build octree asynchronously to avoid blocking main thread
             // This is the heavy operation - do it in chunks using setTimeout
             console.log("[OrgScene1] Building octree asynchronously...");
@@ -403,17 +633,26 @@ export default class Organization {
                             }
                             
                             console.log("Organization scene loaded with full collision enabled.");
-                            
-                            // Call callback when done
-                            if (callback) callback();
                         } catch (error) {
                             console.error("[OrgScene1] Error building octree:", error);
-                            if (callback) callback();
                         }
                     }, 100); // Small delay
                 });
             }, 100); // Initial delay
         });
+    }
+
+    resolveWorldSetupCallback(callback) {
+        // Guard against multiple executions: we only want to resolve once.
+        if (this.worldSetupResolved) {
+            return;
+        }
+        this.worldSetupResolved = true;
+
+        if (callback) {
+            console.log("[OrgScene1] World setup callback resolved, continuing scene initialization...");
+            callback();
+        }
     }
 
     createPortals() {
@@ -431,7 +670,7 @@ export default class Organization {
         console.log("[OrgScene1] Resources in createNPC:", Object.keys(this.resources.items));
 
         // Load proper male avatar model (same as player avatars)
-        const maleModel = this.resources.items.male;
+        const maleModel = this.resources.items.npc;
         console.log("[OrgScene1] Male model found:", !!maleModel);
         if (!maleModel) {
             console.error("[OrgScene1] Male avatar model not found!");
@@ -441,32 +680,68 @@ export default class Organization {
 
         // Clone the male avatar model using SkeletonUtils for proper skeleton handling
         this.npcSenior = SkeletonUtils.clone(maleModel.scene);
-        this.npcSenior.position.set(8, -2, 21); // Moved left from 14 to 8 for easier access
+
+        // Ensure the cloned model is fully visible
+        this.npcSenior.visible = true;
+        this.npcSenior.traverse((child) => {
+            if (child.isMesh) {
+                child.visible = true;
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+        this.npcSenior.position.set(4, 8, 21); // Y=8 to match player height at floor level
         this.npcSenior.rotation.y = Math.PI; // Menghadap player
         // Scale 9x makes NPC same size as player - equal proportions
         this.npcSenior.scale.set(9, 9, 9);
+        this.npcSenior.frustumCulled = false; // Disable frustum culling to ensure always rendered
         console.log("[OrgScene1] Adding NPC to scene...");
         this.scene.add(this.npcSenior);
         console.log("[OrgScene1] NPC added to scene successfully");
+        console.log("[OrgScene1] NPC Position:", this.npcSenior.position);
+        console.log("[OrgScene1] NPC Visible:", this.npcSenior.visible);
 
         // Clone animations for proper animation handling
         this.npcAnimations = maleModel.animations.map((clip) => clip.clone());
-        
-        // Setup animation mixer and idle animation
-        this.npcMixer = new THREE.AnimationMixer(this.npcSenior);
-        this.npcActions = {};
-        
-        // Map animations (same as NPC.js)
-        this.npcActions.dancing = this.npcMixer.clipAction(this.npcAnimations[0]);
-        this.npcActions.idle = this.npcMixer.clipAction(this.npcAnimations[1]);
-        this.npcActions.jumping = this.npcMixer.clipAction(this.npcAnimations[2]);
-        this.npcActions.running = this.npcMixer.clipAction(this.npcAnimations[3]);
-        this.npcActions.walking = this.npcMixer.clipAction(this.npcAnimations[4]);
-        this.npcActions.waving = this.npcMixer.clipAction(this.npcAnimations[5]);
 
-        // Start with idle animation
-        this.npcCurrentAction = this.npcActions.idle;
-        this.npcCurrentAction.play();
+        if (!this.npcAnimations.length) {
+            console.warn("[OrgScene1] Male model does not contain animation clips. Senior NPC will stay static.");
+        } else {
+            const availableNames = this.npcAnimations.map((clip) => clip.name || "(unnamed)");
+            console.log("[OrgScene1] Available male animations:", availableNames);
+
+            const findClip = (keywords) => {
+                return this.npcAnimations.find((clip) => {
+                    const lower = (clip.name || "").toLowerCase();
+                    return keywords.some((keyword) => lower.includes(keyword));
+                });
+            };
+
+            const fallbackClip = this.npcAnimations[0];
+            const ensureClip = (label, keywords) => {
+                const clip = findClip(keywords);
+                if (clip) {
+                    return clip;
+                }
+                console.warn(`[OrgScene1] Animation for "${label}" not found. Using fallback "${fallbackClip.name}".`);
+                return fallbackClip;
+            };
+
+            // Setup animation mixer dan daftar aksi hanya memakai clip valid.
+            this.npcMixer = new THREE.AnimationMixer(this.npcSenior);
+            this.npcActions = {};
+            const idleClip = ensureClip("idle", ["idle", "stand", "pose"]);
+            this.npcActions.idle = this.npcMixer.clipAction(idleClip);
+
+            const wavingClip = findClip(["wave", "greet"]);
+            if (wavingClip) {
+                this.npcActions.waving = this.npcMixer.clipAction(wavingClip);
+            }
+
+            // Start with idle animation
+            this.npcCurrentAction = this.npcActions.idle;
+            this.npcCurrentAction.play();
+        }
 
         console.log("[OrgScene1] NPC Senior loaded with proper avatar model and animations:");
         console.log(this.npcSenior);
@@ -560,13 +835,20 @@ export default class Organization {
             clearTimeout(this.aiVoiceTimeout);
         }
 
+        const dialogue = languageManager.translate(ORG_TEXTS.scene1.dialogue);
+        this.pendingDialogue = dialogue;
+        this.hasSpokenDialogue = false;
+
+        const userCanAutoPlay = !!(navigator.userActivation && (navigator.userActivation.isActive || navigator.userActivation.hasBeenActive));
+
         // Speak the dialogue with AI voice after a delay (give time for opening story to finish and user to see the bubble)
-        this.aiVoiceTimeout = setTimeout(() => {
-            if (this.aiVoice) { // Check if AI voice still exists (scene not disposed)
-                const dialogue = "Dengar, dana acara kita mepet. Saya butuh kamu serahkan sebagian uang kas yang kamu pegang untuk dana taktis. Nanti laporannya gampang, kita manipulasi saja agar semuanya terlihat pas.";
-                this.aiVoice.speak(dialogue);
-            }
-        }, 1000); // 1 second delay after speech bubble appears
+        if (userCanAutoPlay) {
+            this.aiVoiceTimeout = setTimeout(() => {
+                this.playPendingDialogue();
+            }, 1000); // 1 second delay after speech bubble appears
+        } else {
+            console.warn("[OrgScene1] Skipping auto speech (browser requires user interaction). Click the bubble or alternative button to play audio.");
+        }
     }
 
     create3DSpeechBubble() {
@@ -620,8 +902,15 @@ export default class Organization {
         // Create text texture for the speech bubble
         this.createSpeechTextTexture();
         
-        // Position above NPC (moved left)
-        this.speechBubbleGroup.position.set(4, 16, 21); // Moved left from 8 to 4
+        // Position bubble directly above the senior NPC (follow NPC position)
+        if (this.npcSenior) {
+            const npcPos = this.npcSenior.position.clone();
+            npcPos.y += 18; // Raise bubble above head
+            this.speechBubbleGroup.position.copy(npcPos);
+        } else {
+            // Fallback position if NPC not yet available
+            this.speechBubbleGroup.position.set(4, 18, 21); // Updated from 16 to 18 (y=0+18)
+        }
         
         // Rotate speech bubble 180 degrees (fixed rotation, no lookAt)
         this.speechBubbleGroup.rotation.y = Math.PI;
@@ -639,6 +928,14 @@ export default class Organization {
         
         // No text overlay needed - 3D bubble is enough
         // this.createSpeechText();
+    }
+
+    playPendingDialogue() {
+        if (!this.aiVoice || !this.pendingDialogue || this.hasSpokenDialogue) {
+            return;
+        }
+        this.aiVoice.speak(this.pendingDialogue);
+        this.hasSpokenDialogue = true;
     }
 
     createSpeechTextTexture() {
@@ -672,16 +969,21 @@ export default class Organization {
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         
-        // Draw title with outline (much larger and clearer)
-        context.strokeText('Senior Bendahara:', canvas.width / 2, 120);
-        context.fillText('Senior Bendahara:', canvas.width / 2, 120);
-        
+        // Draw title with outline (much larger and clearer) - Bilingual
+        const speakerName = languageManager.translate(ORG_TEXTS.scene1.speaker) + ':';
+        context.strokeText(speakerName, canvas.width / 2, 120);
+        context.fillText(speakerName, canvas.width / 2, 120);
+
         // Set dialogue font (much larger and clearer with outline)
         context.font = 'bold 36px Arial';
-        
-        // Draw dialogue text with outline (much clearer)
-        const dialogue = "Dengar, dana acara kita mepet.\nSaya butuh kamu serahkan sebagian uang kas\n yang kamu pegang untuk 'dana taktis'.\n\nNanti laporannya gampang,\n kita manipulasi saja agar semuanya terlihat pas.";
-        
+
+        // Draw dialogue text with outline (much clearer) - Bilingual
+        const dialogueText = languageManager.translate(ORG_TEXTS.scene1.dialogue);
+        // Format for multi-line display
+        const dialogue = languageManager.getLanguage() === 'id' ?
+            "Dengar, dana acara kita mepet.\nSaya butuh kamu serahkan sebagian uang kas\n yang kamu pegang untuk 'dana taktis'.\n\nNanti laporannya gampang,\n kita manipulasi saja agar semuanya terlihat pas." :
+            "Listen, our event funds are tight.\nI need you to hand over part of the cash\nyou're holding for tactical funds.\n\nThe report will be easy,\nwe'll just manipulate it so everything looks right.";
+
         const lines = dialogue.split('\n');
         let y = 180;
         lines.forEach(line => {
@@ -766,7 +1068,12 @@ export default class Organization {
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         // Update raycaster with camera and mouse position
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        const activeCamera = this.experience.camera?.perspectiveCamera || this.experience.camera?.instance;
+        if (!activeCamera) {
+            console.warn("[OrgScene1] Active camera not found while handling mouse move.");
+            return;
+        }
+        this.raycaster.setFromCamera(this.mouse, activeCamera);
 
         // Check for intersection with speech bubble
         const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
@@ -808,7 +1115,12 @@ export default class Organization {
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         // Update raycaster with camera and mouse position
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        const activeCamera = this.experience.camera?.perspectiveCamera || this.experience.camera?.instance;
+        if (!activeCamera) {
+            console.warn("[OrgScene1] Active camera not found while handling mouse click.");
+            return;
+        }
+        this.raycaster.setFromCamera(this.mouse, activeCamera);
 
         // Check for intersection with speech bubble
         const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
@@ -822,6 +1134,7 @@ export default class Organization {
                 this.speechBubbleGroup.scale.set(1.05, 1.05, 1.05);
             }, 100);
             
+            this.playPendingDialogue();
             this.showScreenSpeechBubble();
         } else {
             console.log("[OrgScene1] Clicked outside speech bubble");
@@ -858,7 +1171,7 @@ export default class Organization {
                     font-family: 'Arial', sans-serif;
                 " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
                     <span style="font-size: 20px;">💬</span>
-                    <span>Baca Percakapan</span>
+                    <span>${languageManager.translate(ORG_TEXTS.ui.readConversation)}</span>
                 </button>
             </div>
         `;
@@ -874,6 +1187,7 @@ export default class Organization {
             if (this.experience && this.experience.soundManager) {
                 this.experience.soundManager.play('click', 0.6);
             }
+            this.playPendingDialogue();
             this.showScreenSpeechBubble();
             
             // Add click animation
@@ -933,23 +1247,20 @@ export default class Organization {
         screenBubble.innerHTML = `
             <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
                 <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
-                    Senior Bendahara:
+                    ${languageManager.translate(ORG_TEXTS.scene1.speaker)}:
                 </div>
                 <div style="font-size: 18px; color: #000; line-height: 1.6; text-align: center;">
-                    Dengar, dana acara kita mepet.<br>
-                    Saya butuh kamu serahkan sebagian uang kas<br>
-                    yang kamu pegang untuk 'dana taktis'.<br><br>
-                    Nanti laporannya gampang,<br>
-                    kita manipulasi saja agar semuanya terlihat pas.
+                    ${languageManager.translate(ORG_TEXTS.scene1.dialogue).replace(/\n/g, '<br>')}
                 </div>
                 <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-                    Klik untuk menutup
+                    ${languageManager.translate(ORG_TEXTS.ui.clickToClose)}
                 </div>
             </div>
         `;
 
         // Add to document
         document.body.appendChild(screenBubble);
+        this.playPendingDialogue();
         
         // Add click event to close
         screenBubble.addEventListener('click', () => {
@@ -982,15 +1293,15 @@ export default class Organization {
                     <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">Menolak menyerahkan uang</div>
-                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Jujur meski dapat tugas berat</div>
+                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene1.choices.a)}</div>
+                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">${languageManager.translate({id: "Jujur meski dapat tugas berat", en: "Honest despite the heavy task"})}</div>
                         </div>
                     </button>
                     <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">Menyerahkan uang & memanipulasi anggaran</div>
-                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Ikut serta korupsi</div>
+                            <div style="font-weight: 600; font-size: 17px; margin-bottom: 5px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene1.choices.b)}</div>
+                            <div style="font-size: 13px; opacity: 0.7; line-height: 1.4;">${languageManager.translate({id: "Ikut serta korupsi", en: "Participate in corruption"})}</div>
                         </div>
                     </button>
                 </div>
@@ -1138,6 +1449,12 @@ export default class Organization {
             this.npcMixer.update(this.experience.time.delta * 0.001);
         }
 
+        // Keep speech bubble floating above the NPC if both exist
+        if (this.npcSenior && this.speechBubbleGroup) {
+            const npcPos = this.npcSenior.position;
+            this.speechBubbleGroup.position.set(npcPos.x, npcPos.y + 18, npcPos.z);
+        }
+
         // Debug: Check player avatar periodically (reduced frequency)
         if (this.experience.world.player && this.experience.world.player.avatar) {
             const playerPos = this.experience.world.player.avatar.avatar.position;
@@ -1161,6 +1478,18 @@ export default class Organization {
     dispose() {
         console.log("[Organization] Disposing Organization scene...");
 
+        // Detach resource listeners so the loading bar does not keep updating after the scene is gone.
+        if (this.resources && typeof this.resources.removeListener === 'function') {
+            if (this.resourceLoadingHandler) {
+                this.resources.removeListener('loading', this.resourceLoadingHandler);
+            }
+            if (this.resourceReadyHandler) {
+                this.resources.removeListener('ready', this.resourceReadyHandler);
+            }
+        }
+        this.resourceLoadingHandler = null;
+        this.resourceReadyHandler = null;
+
         // Clear AI voice timeout to prevent delayed speech in next scene
         if (this.aiVoiceTimeout) {
             clearTimeout(this.aiVoiceTimeout);
@@ -1172,11 +1501,13 @@ export default class Organization {
             this.aiVoice.dispose();
             this.aiVoice = null;
         }
+        this.pendingDialogue = null;
+        this.hasSpokenDialogue = false;
 
         // Clean up event listeners
-        if (this.canvas) {
-            this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
-            this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
+        if (this.canvas && this.onMouseClick && this.onMouseMove) {
+            this.canvas.removeEventListener('click', this.onMouseClick);
+            this.canvas.removeEventListener('mousemove', this.onMouseMove);
         }
 
         // Clean up alternative button

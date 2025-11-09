@@ -34,18 +34,12 @@ export default class Westgate {
     initWithPreload() {
         console.log("[Westgate] Loading scene in background first...");
         
-        // Show loading indicator
-        this.showLoadingIndicator();
-        
         // Load scene models asynchronously (non-blocking)
         this.loadSceneAsync().then(() => {
             console.log("[Westgate] Scene loaded successfully!");
             
-            // Hide loading indicator
-            this.hideLoadingIndicator();
         }).catch((error) => {
             console.error("[Westgate] Error loading scene:", error);
-            this.hideLoadingIndicator();
         });
     }
 
