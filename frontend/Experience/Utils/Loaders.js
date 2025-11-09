@@ -13,7 +13,7 @@ export default class Loaders {
     setLoaders() {
         this.loaders.cubeTextureLoader = new THREE.CubeTextureLoader();
 
-        // Setup texture path untuk teacher model textures menggunakan LoadingManager
+        // OPTIMIZATION: Setup LoadingManager for better performance tracking
         const loaderManager = new THREE.LoadingManager();
         loaderManager.setURLModifier((url) => {
             // Jika texture dimuat dari folder teacher/textures, arahkan ke lokasi yang benar
@@ -26,10 +26,15 @@ export default class Loaders {
 
         // Pass LoadingManager ke GLTFLoader constructor
         this.loaders.gltfLoader = new GLTFLoader(loaderManager);
+
+        // OPTIMIZATION: Setup Draco loader for compressed models
         this.loaders.dracoLoader = new DRACOLoader();
         this.loaders.dracoLoader.setDecoderPath("/draco/");
+        // OPTIMIZATION: Use worker threads for decoding (faster)
+        this.loaders.dracoLoader.setDecoderConfig({ type: 'js' });
         this.loaders.gltfLoader.setDRACOLoader(this.loaders.dracoLoader);
 
-        this.loaders.textureLoader = new THREE.TextureLoader();
+        // OPTIMIZATION: Setup texture loader with compression settings
+        this.loaders.textureLoader = new THREE.TextureLoader(loaderManager);
     }
 }

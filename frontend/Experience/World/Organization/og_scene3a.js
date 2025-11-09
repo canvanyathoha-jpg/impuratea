@@ -5,6 +5,9 @@ import Portal from "../Portal.js";
 import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
 import AIVoice from "../../Utils/AIVoice.js";
+import SceneLoadingIndicator from "../../Utils/SceneLoadingIndicator.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
+import { ORG_TEXTS } from "./OrganizationTexts.js";
 
 export default class OrganizationScene3A {
     constructor() {
@@ -43,43 +46,44 @@ export default class OrganizationScene3A {
     }
 
     initWithOpening() {
-        console.log("[OrgScene3A] Loading scene in background first...");
-        
-        // Show loading indicator
-        this.showLoadingIndicator();
-        
-        // Load scene models asynchronously (non-blocking)
-        this.loadSceneAsync().then(() => {
-            console.log("[OrgScene3A] Scene loaded successfully!");
-            
-            // Hide loading indicator
-            this.hideLoadingIndicator();
-            
-            // Show opening story overlay immediately (no delay)
-            console.log("[OrgScene3A] Scene loaded, now showing opening story overlay...");
-            
-            try {
-                this.openingStory = new OpeningStory(SCENE_DATA.og_scene3a);
-                
-                // Show opening story overlay (blocks screen with z-index 10000000)
-                this.openingStory.show().then(() => {
-                    console.log("[OrgScene3A] Opening story dismissed - scene is now fully visible");
-                    
-                    // Auto-start conversation after opening story (no proximity needed)
-                    setTimeout(() => {
-                        console.log("[OrgScene3A] Auto-starting conversation...");
-                        this.startConversation();
-                    }, 2000);
+        console.log("[OrgScene3A] Initializing with opening story...");
+        this.loadingIndicator = SceneLoadingIndicator.show();
+
+        // Wait for resources to be ready before loading scene
+        const waitForResources = () => {
+            if (this.resources.isReady) {
+                console.log("[OrgScene3A] ✅ Resources ready, starting scene load...");
+                this.loadSceneAsync().then(() => {
+                    console.log("[OrgScene3A] ✅ Scene loaded successfully!");
+                    SceneLoadingIndicator.hide();
+
+                    // Show opening story
+                    this.openingStory = new OpeningStory(SCENE_DATA.og_scene3a);
+                    this.openingStory.show().then(() => {
+                        console.log("[OrgScene3A] Opening story dismissed");
+
+                        // Auto-start conversation after opening story
+                        setTimeout(() => {
+                            console.log("[OrgScene3A] Auto-starting conversation...");
+                            this.startConversation();
+                        }, 2000);
+                    }).catch((error) => {
+                        console.error("[OrgScene3A] Error in opening story:", error);
+                    });
                 }).catch((error) => {
-                    console.error("[OrgScene3A] Error in opening story:", error);
+                    console.error("[OrgScene3A] ❌ Error loading scene:", error);
+                    SceneLoadingIndicator.hide();
                 });
-            } catch (error) {
-                console.error("[OrgScene3A] Error creating opening story:", error);
+            } else {
+                console.log("[OrgScene3A] ⏳ Waiting for resources to be ready...");
+                this.resources.once('ready', () => {
+                    console.log("[OrgScene3A] ✅ Resources ready event fired!");
+                    waitForResources();
+                });
             }
-        }).catch((error) => {
-            console.error("[OrgScene3A] Error loading scene:", error);
-            this.hideLoadingIndicator();
-        });
+        };
+
+        waitForResources();
     }
 
     showLoadingIndicator() {
@@ -454,7 +458,7 @@ export default class OrganizationScene3A {
 
         this.aiVoiceTimeout = setTimeout(() => {
             if (this.aiVoice) { // Check if AI voice still exists (scene not disposed)
-                const dialogue = "Saya bisa jadi vendor kalian, tapi pakai sistem khusus: tandatangan tanpa laporan resmi. Dana bonus untuk kalian.";
+                const dialogue = languageManager.translate(ORG_TEXTS.scene3a.dialogue);
                 this.aiVoice.speak(dialogue);
             }
         }, 1000); // 1 second delay after speech bubble appears
@@ -531,15 +535,18 @@ export default class OrganizationScene3A {
         context.font = 'bold 48px Arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        
-        context.strokeText('Vendor:', canvas.width / 2, 100);
-        context.fillText('Vendor:', canvas.width / 2, 100);
-        
+
+        const speakerName = languageManager.translate(ORG_TEXTS.scene3a.speaker) + ':';
+        context.strokeText(speakerName, canvas.width / 2, 100);
+        context.fillText(speakerName, canvas.width / 2, 100);
+
         context.font = 'bold 36px Arial';
-        
-        // Dialog dari vendor
-        const dialogue = "Saya bisa jadi vendor kalian,\ntapi pakai sistem khusus:\ntandatangan tanpa laporan resmi.\nDana bonus untuk kalian.";
-        
+
+        // Dialog dari vendor - Bilingual
+        const dialogue = languageManager.getLanguage() === 'id' ?
+            "Saya bisa jadi vendor kalian,\ntapi pakai sistem khusus:\ntandatangan tanpa laporan resmi.\nDana bonus untuk kalian." :
+            "I can be your vendor,\nbut with a special system:\nsignature without official reports.\nBonus funds for you all.";
+
         const lines = dialogue.split('\n');
         let y = 180;
         lines.forEach(line => {
@@ -583,7 +590,7 @@ export default class OrganizationScene3A {
                     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
                     transition: all 0.3s ease;
                 ">
-                    💬 Baca Percakapan
+                    💬 ${languageManager.translate(ORG_TEXTS.ui.readConversation)}
                 </button>
             </div>
         `;
@@ -606,13 +613,13 @@ export default class OrganizationScene3A {
         screenBubble.innerHTML = `
             <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
                 <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
-                    Vendor:
+                    ${languageManager.translate(ORG_TEXTS.scene3a.speaker)}:
                 </div>
                 <div style="font-size: 18px; color: #000; line-height: 1.6; text-align: center;">
-                    Saya bisa jadi vendor kalian, tapi pakai sistem khusus: tandatangan tanpa laporan resmi. Dana bonus untuk kalian.
+                    ${languageManager.translate(ORG_TEXTS.scene3a.dialogue)}
                 </div>
                 <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-                    Klik untuk menutup
+                    ${languageManager.translate(ORG_TEXTS.ui.clickToClose)}
                 </div>
             </div>
         `;
@@ -687,13 +694,13 @@ export default class OrganizationScene3A {
                     <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Menolak dan di non-aktifkan Pembina</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene3a.choices.a)}</div>
                         </div>
                     </button>
                     <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Menerima dan acara berjalan lancar</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene3a.choices.b)}</div>
                         </div>
                     </button>
                 </div>
@@ -810,10 +817,10 @@ export default class OrganizationScene3A {
         message.innerHTML = `
             <div style="background: linear-gradient(135deg, rgba(255,152,0,0.95), rgba(255,193,7,0.95)); border: 3px solid rgba(255,255,255,0.5); border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); text-align: center;">
                 <div style="font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 15px;">
-                    💭 Pesan
+                    💭 ${languageManager.translate(ORG_TEXTS.ui.supplementTitle)}
                 </div>
                 <div style="font-size: 18px; color: #fff; line-height: 1.6; font-style: italic;">
-                    "Menolak godaan berarti kehilangan kesempatan cepat — tapi menyelamatkan masa depan yang lebih berat."
+                    "${languageManager.translate(ORG_TEXTS.scene3a.supplementMessage)}"
                 </div>
             </div>
         `;
@@ -972,7 +979,7 @@ export default class OrganizationScene3A {
 
         // Clean up loading indicator
         if (this.loadingIndicator) {
-            this.hideLoadingIndicator();
+            SceneLoadingIndicator.hide();
         }
 
         console.log("[OrganizationScene3A] Disposed");

@@ -419,6 +419,19 @@ export default class SpeechAudioManager {
     speak(text, options = {}) {
         // Stop any current speech
         this.stop();
+
+        // Skip speaking for specific texts that should stay silent (e.g. psychology quiz intro)
+        const sanitizedText = (text || "").trim();
+        const mutedPhrases = [
+            "Bayangkan kamu punya waktu luang satu hari penuh. Apa yang paling ingin kamu lakukan?"
+        ];
+        if (mutedPhrases.includes(sanitizedText)) {
+            console.log("[SpeechAudioManager] 🔇 Skipping speech for muted phrase.");
+            if (options.onEnd) {
+                options.onEnd();
+            }
+            return;
+        }
         
         const gender = options.gender || 'female';
         const isFemale = gender.toLowerCase() === 'female';

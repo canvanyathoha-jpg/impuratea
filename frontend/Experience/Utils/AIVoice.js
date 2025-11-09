@@ -121,13 +121,23 @@ export default class AIVoice {
         };
 
         this.utterance.onerror = (event) => {
-            console.error("[AIVoice] Speech error:", event.error);
+            if (event.error === "not-allowed") {
+                console.warn("[AIVoice] Browser blocked speech synthesis (user interaction required).");
+            } else {
+                console.error("[AIVoice] Speech error:", event.error);
+            }
             this.isSpeaking = false;
             this.updateVoiceControls();
         };
 
         // Speak the text
-        this.synthesis.speak(this.utterance);
+        try {
+            this.synthesis.speak(this.utterance);
+        } catch (error) {
+            console.warn("[AIVoice] Unable to start speech synthesis:", error.message || error);
+            this.isSpeaking = false;
+            this.updateVoiceControls();
+        }
     }
 
     /**

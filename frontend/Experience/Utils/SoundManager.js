@@ -28,12 +28,12 @@ export default class SoundManager {
      */
     loadSounds() {
         // Map of sound names to file paths
+        // OPTIMIZATION: Removed ambientClassroom - file doesn't exist
         const soundFiles = {
             hover: '/media/sounds/hover.mp3',      // Hover sound
             click: '/media/sounds/click.mp3',       // Click sound
             dialogOpen: '/media/sounds/dialog_open.mp3', // Dialog open
             dialogClose: '/media/sounds/dialog_close.mp3', // Dialog close
-            ambientClassroom: '/media/sounds/ambient_classroom.mp3', // Ambient classroom sound
         };
         
         // Ambient sounds (loopable)
@@ -58,15 +58,9 @@ export default class SoundManager {
                 
                 // Try to load the audio
                 audio.load();
-                
-                // Handle ambient sounds differently (loopable)
-                if (soundName === 'ambientClassroom') {
-                    audio.loop = true;
-                    audio.volume = 0.3; // Lower volume for ambient
-                    this.ambientSounds[soundName] = audio;
-                } else {
-                    this.sounds[soundName] = audio;
-                }
+
+                // All sounds are normal (non-loopable) for now
+                this.sounds[soundName] = audio;
             } catch (error) {
                 console.warn(`[SoundManager] Error creating audio for ${soundName}:`, error);
                 this.sounds[soundName] = null;

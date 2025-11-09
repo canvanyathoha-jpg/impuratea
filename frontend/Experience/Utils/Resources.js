@@ -10,101 +10,171 @@ export default class Resources extends EventEmitter {
         this.items = {};
         this.assets = assets;
         this.isReady = false;
+
         // Get scene from URL parameter or default to westgate
         this.currentScene = SceneManager.getSceneFromURL();
 
         console.log(`[Resources] Current scene: ${this.currentScene}`);
-        console.log(`[Resources] Assets to load:`, this.assets[0][this.currentScene]);
 
         this.loaders = new Loaders().loaders;
 
+        // OPTIMIZATION: Combine shared and scene-specific assets
         this.startLoading();
     }
 
     startLoading() {
+        const sharedAssets = this.assets[0]._shared?.assets || [];
+        const sceneAssets = this.assets[0][this.currentScene]?.assets || [];
+
+        // OPTIMIZATION: Combine all assets to load (shared + scene-specific)
+        const allAssets = [...sharedAssets, ...sceneAssets];
+
+        console.log(`[Resources] 🚀 Starting to load ${allAssets.length} assets (${sharedAssets.length} shared + ${sceneAssets.length} scene-specific)`);
+        console.log(`[Resources] Asset list:`, allAssets.map(a => `${a.name} (${a.type})`));
+
         this.loaded = 0;
-        this.queue = this.assets[0][this.currentScene].assets.length;
+        this.queue = allAssets.length;
 
-        for (const asset of this.assets[0][this.currentScene].assets) {
-            if (asset.type === "glbModel") {
-                this.loaders.gltfLoader.load(
-                    asset.path,
-                    (file) => {
-                        this.singleAssetLoaded(asset, file);
-                    },
-                    (progress) => {
-                        // Progress callback - optional
-                        console.log(`[Resources] Loading ${asset.name}: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
-                    },
-                    (error) => {
-                        // Error callback - handle missing files or loading errors
-                        console.error(`[Resources] ❌ Error loading ${asset.name} from ${asset.path}:`, error);
-                        console.error(`[Resources] Error details:`, error.message || error);
-                        // Skip this asset and continue loading others
-                        // Set a placeholder or mark as failed
-                        this.items[asset.name] = null;
-                        this.singleAssetLoaded(asset, null);
-                    }
-                );
-            } else if (asset.type === "imageTexture") {
-                this.loaders.textureLoader.load(
-                    asset.path,
-                    (file) => {
-                        this.singleAssetLoaded(asset, file);
-                    },
-                    undefined,
-                    (error) => {
-                        console.error(`[Resources] ❌ Error loading texture ${asset.name} from ${asset.path}:`, error);
-                        this.items[asset.name] = null;
-                        this.singleAssetLoaded(asset, null);
-                    }
-                );
-            } else if (asset.type === "cubeTexture") {
-                this.loaders.cubeTextureLoader.load(
-                    asset.path,
-                    (file) => {
-                        this.singleAssetLoaded(asset, file);
-                    },
-                    undefined,
-                    (error) => {
-                        console.error(`[Resources] ❌ Error loading cube texture ${asset.name} from ${asset.path}:`, error);
-                        this.items[asset.name] = null;
-                        this.singleAssetLoaded(asset, null);
-                    }
-                );
-            } else if (asset.type === "videoTexture") {
-                this.video = {};
-                this.videoTexture = {};
+        if (this.queue === 0) {
+            console.log(`[Resources] No assets to load`);
+            this.isReady = true;
+            this.emit("ready");
+            return;
+        }
 
-                this.video[asset.name] = document.createElement("video");
-                this.video[asset.name].src = asset.path;
-                this.video[asset.name].muted = true;
-                this.video[asset.name].playsInline = true;
-                this.video[asset.name].autoplay = true;
-                this.video[asset.name].loop = true;
-                
-                // Add error handling for video
-                this.video[asset.name].addEventListener('error', (e) => {
-                    console.error(`[Resources] ❌ Error loading video ${asset.name} from ${asset.path}:`, e);
-                    this.items[asset.name] = null;
-                    this.singleAssetLoaded(asset, null);
-                });
-                
-                this.video[asset.name].play().catch((error) => {
-                    console.error(`[Resources] ❌ Error playing video ${asset.name}:`, error);
-                });
+        // Track which assets are still loading (for debugging)
+        const loadingStatus = {};
+        allAssets.forEach(asset => {
+            loadingStatus[asset.name] = 'pending';
+        });
 
-                this.videoTexture[asset.name] = new THREE.VideoTexture(
-                    this.video[asset.name]
-                );
-                this.videoTexture[asset.name].flipY = false;
-                this.videoTexture[asset.name].minFilter = THREE.NearestFilter;
-                this.videoTexture[asset.name].magFilter = THREE.NearestFilter;
-                this.videoTexture[asset.name].generateMipmaps = false;
-                this.videoTexture[asset.name].ColorSpace = THREE.SRGBColorSpace; //changed
-
-                this.singleAssetLoaded(asset, this.videoTexture[asset.name]);
+        // Debug: Log loading status every 5 seconds
+        const statusInterval = setInterval(() => {
+            const pending = Object.keys(loadingStatus).filter(name => loadingStatus[name] === 'pending');
+            if (pending.length > 0) {
+                console.log(`[Resources] ⏳ Still loading ${pending.length} assets:`, pending);
             }
+        }, 5000);
+
+        // OPTIMIZATION: Load all assets in parallel
+        allAssets.forEach((asset) => {
+            console.log(`[Resources] 📦 Starting to load: ${asset.name} (${asset.type})`);
+            loadingStatus[asset.name] = 'loading';
+
+            this.loadSingleAsset(asset, (loadedAsset, file) => {
+                this.items[loadedAsset.name] = file;
+                this.loaded++;
+                loadingStatus[loadedAsset.name] = file ? 'loaded' : 'failed';
+
+                const percentage = Math.round((this.loaded / this.queue) * 100);
+                console.log(`[Resources] ✅ Loaded ${this.loaded}/${this.queue} (${percentage}%): ${loadedAsset.name}`);
+                this.emit("loading", this.loaded, this.queue);
+
+                // Check if all loaded
+                if (this.loaded === this.queue) {
+                    clearInterval(statusInterval);
+                    console.log(`[Resources] 🎉 All assets loaded! Emitting 'ready' event.`);
+                    this.isReady = true;
+                    this.emit("ready");
+                }
+            });
+        });
+    }
+
+    // OPTIMIZATION: Helper method to load a single asset (supports parallel loading)
+    loadSingleAsset(asset, callback) {
+        if (asset.type === "glbModel") {
+            this.loaders.gltfLoader.load(
+                asset.path,
+                (file) => {
+                    callback(asset, file);
+                },
+                (progress) => {
+                    // OPTIMIZATION: Only log progress every 10% to reduce console spam
+                    const percentage = (progress.loaded / progress.total * 100).toFixed(1);
+                    if (percentage % 10 < 1 || percentage > 99) {
+                        console.log(`[Resources] Loading ${asset.name}: ${percentage}%`);
+                    }
+                },
+                (error) => {
+                    console.error(`[Resources] ❌ Error loading ${asset.name} from ${asset.path}:`, error);
+                    this.items[asset.name] = null;
+                    callback(asset, null);
+                }
+            );
+        } else if (asset.type === "imageTexture") {
+            this.loaders.textureLoader.load(
+                asset.path,
+                (file) => {
+                    callback(asset, file);
+                },
+                undefined,
+                (error) => {
+                    console.error(`[Resources] ❌ Error loading texture ${asset.name} from ${asset.path}:`, error);
+                    this.items[asset.name] = null;
+                    callback(asset, null);
+                }
+            );
+        } else if (asset.type === "cubeTexture") {
+            this.loaders.cubeTextureLoader.load(
+                asset.path,
+                (file) => {
+                    callback(asset, file);
+                },
+                undefined,
+                (error) => {
+                    console.error(`[Resources] ❌ Error loading cube texture ${asset.name} from ${asset.path}:`, error);
+                    this.items[asset.name] = null;
+                    callback(asset, null);
+                }
+            );
+        } else if (asset.type === "videoTexture") {
+            if (!this.video) this.video = {};
+            if (!this.videoTexture) this.videoTexture = {};
+
+            // FIX: Ensure callback is only called once
+            let callbackCalled = false;
+            const safeCallback = (file) => {
+                if (!callbackCalled) {
+                    callbackCalled = true;
+                    callback(asset, file);
+                }
+            };
+
+            this.video[asset.name] = document.createElement("video");
+            this.video[asset.name].src = asset.path;
+            this.video[asset.name].muted = true;
+            this.video[asset.name].playsInline = true;
+            this.video[asset.name].autoplay = true;
+            this.video[asset.name].loop = true;
+
+            // Add error handling for video
+            this.video[asset.name].addEventListener('error', (e) => {
+                console.error(`[Resources] ❌ Error loading video ${asset.name} from ${asset.path}:`, e);
+                this.items[asset.name] = null;
+                safeCallback(null);
+            });
+
+            // Wait a bit to ensure video is ready
+            this.video[asset.name].addEventListener('loadeddata', () => {
+                console.log(`[Resources] Video ready: ${asset.name}`);
+            });
+
+            this.video[asset.name].play().catch((error) => {
+                console.warn(`[Resources] ⚠️ Video autoplay blocked (this is normal): ${asset.name}`, error);
+            });
+
+            this.videoTexture[asset.name] = new THREE.VideoTexture(
+                this.video[asset.name]
+            );
+            this.videoTexture[asset.name].flipY = false;
+            this.videoTexture[asset.name].minFilter = THREE.NearestFilter;
+            this.videoTexture[asset.name].magFilter = THREE.NearestFilter;
+            this.videoTexture[asset.name].generateMipmaps = false;
+            this.videoTexture[asset.name].ColorSpace = THREE.SRGBColorSpace;
+
+            // Call callback immediately for video (it will play when ready)
+            safeCallback(this.videoTexture[asset.name]);
         }
     }
 
@@ -121,8 +191,8 @@ export default class Resources extends EventEmitter {
         }
     }
 
+    // OPTIMIZATION: Load scene assets with shared asset support
     loadSceneAssets(sceneName, callback, progressCallback = null) {
-        // progressCallback: function(loaded, total, percentage) - untuk update progress bar
         console.log(`[Resources] Loading assets for scene: ${sceneName}`);
 
         if (!this.assets[0][sceneName]) {
@@ -130,10 +200,14 @@ export default class Resources extends EventEmitter {
             return;
         }
 
-        // Check if assets already loaded
+        // OPTIMIZATION: Combine scene-specific assets with shared assets
         const sceneAssets = this.assets[0][sceneName].assets;
+        const sharedAssets = this.assets[0]._shared?.assets || [];
+        const allAssets = [...sharedAssets, ...sceneAssets];
+
+        // Check if assets already loaded
         let allLoaded = true;
-        for (const asset of sceneAssets) {
+        for (const asset of allAssets) {
             if (!this.items[asset.name]) {
                 allLoaded = false;
                 break;
@@ -141,44 +215,34 @@ export default class Resources extends EventEmitter {
         }
 
         if (allLoaded) {
-            console.log(`[Resources] Assets for "${sceneName}" already loaded`);
-            // Jika sudah loaded, tetap tampilkan progress bar sedikit untuk UX
+            console.log(`[Resources] Assets for "${sceneName}" already loaded (using cache)`);
             if (progressCallback) {
-                // Animate dari 0% ke 100% dengan delay kecil
                 setTimeout(() => {
-                    progressCallback(sceneAssets.length, sceneAssets.length, 100);
+                    progressCallback(allAssets.length, allAssets.length, 100);
                 }, 200);
             }
-            // Delay callback sedikit agar preloader terlihat
             setTimeout(() => {
                 if (callback) callback();
             }, 300);
             return;
         }
 
-        // Load missing assets
-        let toLoad = 0;
+        // OPTIMIZATION: Only load missing assets
+        const assetsToLoad = allAssets.filter(asset => !this.items[asset.name]);
+        const toLoad = assetsToLoad.length;
         let loadedCount = 0;
 
-        for (const asset of sceneAssets) {
-            if (!this.items[asset.name]) {
-                toLoad++;
-            }
-        }
-
-        console.log(`[Resources] Need to load ${toLoad} assets for "${sceneName}"`);
+        console.log(`[Resources] Loading ${toLoad} new assets for "${sceneName}" (${allAssets.length - toLoad} cached)`);
 
         const checkComplete = () => {
             loadedCount++;
-            const totalAssets = sceneAssets.length;
             const percentage = Math.round((loadedCount / toLoad) * 100);
             console.log(`[Resources] Scene assets: ${loadedCount}/${toLoad} loaded (${percentage}%)`);
-            
-            // Update progress callback jika ada
+
             if (progressCallback) {
                 progressCallback(loadedCount, toLoad, percentage);
             }
-            
+
             if (loadedCount === toLoad) {
                 console.log(`[Resources] All assets for "${sceneName}" loaded!`);
                 this.currentScene = sceneName;
@@ -186,87 +250,12 @@ export default class Resources extends EventEmitter {
             }
         };
 
-        for (const asset of sceneAssets) {
-            if (this.items[asset.name]) {
-                continue; // Skip already loaded
-            }
-
-            if (asset.type === "glbModel") {
-                this.loaders.gltfLoader.load(
-                    asset.path,
-                    (file) => {
-                        this.items[asset.name] = file;
-                        checkComplete();
-                    },
-                    undefined,
-                    (error) => {
-                        console.error(`[Resources] ❌ Error loading ${asset.name} from ${asset.path}:`, error);
-                        this.items[asset.name] = null;
-                        checkComplete();
-                    }
-                );
-            } else if (asset.type === "imageTexture") {
-                this.loaders.textureLoader.load(
-                    asset.path,
-                    (file) => {
-                        this.items[asset.name] = file;
-                        checkComplete();
-                    },
-                    undefined,
-                    (error) => {
-                        console.error(`[Resources] ❌ Error loading texture ${asset.name} from ${asset.path}:`, error);
-                        this.items[asset.name] = null;
-                        checkComplete();
-                    }
-                );
-            } else if (asset.type === "cubeTexture") {
-                this.loaders.cubeTextureLoader.load(
-                    asset.path,
-                    (file) => {
-                        this.items[asset.name] = file;
-                        checkComplete();
-                    },
-                    undefined,
-                    (error) => {
-                        console.error(`[Resources] ❌ Error loading cube texture ${asset.name} from ${asset.path}:`, error);
-                        this.items[asset.name] = null;
-                        checkComplete();
-                    }
-                );
-            } else if (asset.type === "videoTexture") {
-                if (!this.video) this.video = {};
-                if (!this.videoTexture) this.videoTexture = {};
-
-                this.video[asset.name] = document.createElement("video");
-                this.video[asset.name].src = asset.path;
-                this.video[asset.name].muted = true;
-                this.video[asset.name].playsInline = true;
-                this.video[asset.name].autoplay = true;
-                this.video[asset.name].loop = true;
-                
-                // Add error handling for video
-                this.video[asset.name].addEventListener('error', (e) => {
-                    console.error(`[Resources] ❌ Error loading video ${asset.name} from ${asset.path}:`, e);
-                    this.items[asset.name] = null;
-                    checkComplete();
-                });
-                
-                this.video[asset.name].play().catch((error) => {
-                    console.error(`[Resources] ❌ Error playing video ${asset.name}:`, error);
-                });
-
-                this.videoTexture[asset.name] = new THREE.VideoTexture(
-                    this.video[asset.name]
-                );
-                this.videoTexture[asset.name].flipY = false;
-                this.videoTexture[asset.name].minFilter = THREE.NearestFilter;
-                this.videoTexture[asset.name].magFilter = THREE.NearestFilter;
-                this.videoTexture[asset.name].generateMipmaps = false;
-                this.videoTexture[asset.name].ColorSpace = THREE.SRGBColorSpace;
-
-                this.items[asset.name] = this.videoTexture[asset.name];
+        // OPTIMIZATION: Load all missing assets in parallel
+        assetsToLoad.forEach(asset => {
+            this.loadSingleAsset(asset, (loadedAsset, file) => {
+                this.items[loadedAsset.name] = file;
                 checkComplete();
-            }
-        }
+            });
+        });
     }
 }

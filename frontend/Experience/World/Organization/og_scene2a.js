@@ -6,6 +6,9 @@ import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
 import Ending from "../../Utils/Ending.js";
 import AIVoice from "../../Utils/AIVoice.js";
+import SceneLoadingIndicator from "../../Utils/SceneLoadingIndicator.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
+import { ORG_TEXTS } from "./OrganizationTexts.js";
 
 export default class OrganizationScene2A {
     constructor() {
@@ -30,6 +33,8 @@ export default class OrganizationScene2A {
 
         // Track AI voice timeout to clear on dispose
         this.aiVoiceTimeout = null;
+        this.pendingDialogue = null;
+        this.hasSpokenDialogue = false;
 
         // Raycasting for speech bubble interaction
         this.raycaster = new THREE.Raycaster();
@@ -37,45 +42,48 @@ export default class OrganizationScene2A {
 
         // Add event listeners for speech bubble interaction
         this.canvas = this.experience.canvas;
-        this.canvas.addEventListener('click', this.onMouseClick.bind(this));
-        this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+        this.onMouseClick = this.onMouseClick.bind(this);
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.canvas.addEventListener('click', this.onMouseClick);
+        this.canvas.addEventListener('mousemove', this.onMouseMove);
         
         // Show opening story first
         this.initWithOpening();
     }
 
     initWithOpening() {
-        console.log("[OrgScene2A] Loading scene in background first...");
-        
-        // Show loading indicator
-        this.showLoadingIndicator();
-        
-        // Load scene models asynchronously (non-blocking)
-        this.loadSceneAsync().then(() => {
-            console.log("[OrgScene2A] Scene loaded successfully!");
-            
-            // Hide loading indicator
-            this.hideLoadingIndicator();
-            
-            // Show opening story overlay immediately (no delay)
-            console.log("[OrgScene2A] Scene loaded, now showing opening story overlay...");
-            
-            try {
-                this.openingStory = new OpeningStory(SCENE_DATA.og_scene2a);
-                
-                // Show opening story overlay (blocks screen with z-index 10000000)
-                this.openingStory.show().then(() => {
-                    console.log("[OrgScene2A] Opening story dismissed - scene is now fully visible");
+        console.log("[OrgScene2A] Initializing with opening story...");
+        this.loadingIndicator = SceneLoadingIndicator.show();
+
+        // Wait for resources to be ready before loading scene
+        const waitForResources = () => {
+            if (this.resources.isReady) {
+                console.log("[OrgScene2A] ✅ Resources ready, starting scene load...");
+                this.loadSceneAsync().then(() => {
+                    console.log("[OrgScene2A] ✅ Scene loaded successfully!");
+                    SceneLoadingIndicator.hide();
+
+                    // Show opening story
+                    this.openingStory = new OpeningStory(SCENE_DATA.og_scene2a);
+                    this.openingStory.show().then(() => {
+                        console.log("[OrgScene2A] Opening story dismissed");
+                    }).catch((error) => {
+                        console.error("[OrgScene2A] Error in opening story:", error);
+                    });
                 }).catch((error) => {
-                    console.error("[OrgScene2A] Error in opening story:", error);
+                    console.error("[OrgScene2A] ❌ Error loading scene:", error);
+                    SceneLoadingIndicator.hide();
                 });
-            } catch (error) {
-                console.error("[OrgScene2A] Error creating opening story:", error);
+            } else {
+                console.log("[OrgScene2A] ⏳ Waiting for resources to be ready...");
+                this.resources.once('ready', () => {
+                    console.log("[OrgScene2A] ✅ Resources ready event fired!");
+                    waitForResources();
+                });
             }
-        }).catch((error) => {
-            console.error("[OrgScene2A] Error loading scene:", error);
-            this.hideLoadingIndicator();
-        });
+        };
+
+        waitForResources();
     }
 
     showLoadingIndicator() {
@@ -206,13 +214,14 @@ export default class OrganizationScene2A {
 
     ensurePlayerSpawned() {
         console.log("[OrgScene2A] Ensuring player is spawned...");
-        
+
         // Use requestAnimationFrame untuk non-blocking - no delay needed
         requestAnimationFrame(() => {
             if (this.experience.world && this.experience.world.player) {
-                // Get spawn point for this scene
-                const spawnPoint = this.experience.world.spawnPoints?.og_scene2a || new THREE.Vector3(-5, 10, 20);
-                console.log("[OrgScene2A] Setting player spawn point to:", spawnPoint);
+                // Get spawn point for this scene - Y=0 means at floor level
+                const spawnPoint = this.experience.world.spawnPoints?.og_scene2a || new THREE.Vector3(-5, 0, 20);
+                console.log("[OrgScene2A] [FIXED-V2] Setting player spawn point to:", spawnPoint);
+                console.log("[OrgScene2A] Expected spawn Y coordinate: 0 (at floor level)");
                 
                 // Set spawn point (single call, let Player.js handle it)
                 this.experience.world.player.setSpawnPoint(spawnPoint);
@@ -347,20 +356,53 @@ export default class OrganizationScene2A {
             console.error("[OrgScene2A] Male avatar model not found!");
             return;
         }
+        console.log("[OrgScene2A] Male model found:", !!maleModel);
 
         // Create Senior NPC
+        console.log("[OrgScene2A] Creating Senior NPC...");
         this.npcSenior = SkeletonUtils.clone(maleModel.scene);
-        this.npcSenior.position.set(8, -2, 21);
+
+        // Ensure the cloned model is fully visible
+        this.npcSenior.visible = true;
+        this.npcSenior.traverse((child) => {
+            if (child.isMesh) {
+                child.visible = true;
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+
+        this.npcSenior.position.set(8, 8, 21); // Y=8 to match player height at floor level
         this.npcSenior.rotation.y = Math.PI;
         this.npcSenior.scale.set(9, 9, 9);
+        this.npcSenior.frustumCulled = false; // Disable frustum culling to ensure always rendered
+        console.log("[OrgScene2A] Adding Senior NPC to scene...");
         this.scene.add(this.npcSenior);
+        console.log("[OrgScene2A] Senior NPC added. Position:", this.npcSenior.position);
+        console.log("[OrgScene2A] Senior NPC visible:", this.npcSenior.visible);
 
         // Create Ketua OSIS NPC (positioned next to Senior)
+        console.log("[OrgScene2A] Creating Ketua NPC...");
         this.npcKetua = SkeletonUtils.clone(maleModel.scene);
-        this.npcKetua.position.set(12, -2, 21);
+
+        // Ensure the cloned model is fully visible
+        this.npcKetua.visible = true;
+        this.npcKetua.traverse((child) => {
+            if (child.isMesh) {
+                child.visible = true;
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+
+        this.npcKetua.position.set(12, 8, 21); // Y=8 to match player height at floor level
         this.npcKetua.rotation.y = Math.PI;
         this.npcKetua.scale.set(9, 9, 9);
+        this.npcKetua.frustumCulled = false; // Disable frustum culling to ensure always rendered
+        console.log("[OrgScene2A] Adding Ketua NPC to scene...");
         this.scene.add(this.npcKetua);
+        console.log("[OrgScene2A] Ketua NPC added. Position:", this.npcKetua.position);
+        console.log("[OrgScene2A] Ketua NPC visible:", this.npcKetua.visible);
 
         // Setup animations for both NPCs
         this.setupNPCAnimations();
@@ -372,30 +414,56 @@ export default class OrganizationScene2A {
     }
 
     setupNPCAnimations() {
-        // Get animations from male model
+        // Clone semua clip animasi dari model male agar tidak mengotori cache Resources.
         this.npcAnimations = this.resources.items.male.animations.map((clip) => clip.clone());
-        
-        // Setup Senior animation mixer
+
+        if (!this.npcAnimations.length) {
+            console.warn("[OrgScene2A] Male model does not contain animation clips. NPCs will remain static.");
+            return;
+        }
+
+        const availableNames = this.npcAnimations.map((clip) => clip.name || "(unnamed)");
+        console.log("[OrgScene2A] Available male animations:", availableNames);
+
+        const findClip = (keywords) => {
+            return this.npcAnimations.find((clip) => {
+                const lower = (clip.name || "").toLowerCase();
+                return keywords.some((keyword) => lower.includes(keyword));
+            });
+        };
+
+        const fallbackClip = this.npcAnimations[0];
+        const ensureClip = (label, keywords) => {
+            const clip = findClip(keywords);
+            if (clip) {
+                return clip;
+            }
+            console.warn(`[OrgScene2A] Animation for "${label}" not found. Using fallback "${fallbackClip.name}".`);
+            return fallbackClip;
+        };
+
+        // Setup Senior animation mixer dengan clip yang dipastikan ada.
         this.npcMixerSenior = new THREE.AnimationMixer(this.npcSenior);
         this.npcActionsSenior = {};
-        this.npcActionsSenior.dancing = this.npcMixerSenior.clipAction(this.npcAnimations[0]);
-        this.npcActionsSenior.idle = this.npcMixerSenior.clipAction(this.npcAnimations[1]);
-        this.npcActionsSenior.jumping = this.npcMixerSenior.clipAction(this.npcAnimations[2]);
-        this.npcActionsSenior.running = this.npcMixerSenior.clipAction(this.npcAnimations[3]);
-        this.npcActionsSenior.walking = this.npcMixerSenior.clipAction(this.npcAnimations[4]);
-        this.npcActionsSenior.waving = this.npcMixerSenior.clipAction(this.npcAnimations[5]);
+        const seniorIdleClip = ensureClip("idle", ["idle", "stand", "pose"]);
+        this.npcActionsSenior.idle = this.npcMixerSenior.clipAction(seniorIdleClip);
+
+        const seniorWaveClip = findClip(["wave", "greet"]);
+        if (seniorWaveClip) {
+            this.npcActionsSenior.waving = this.npcMixerSenior.clipAction(seniorWaveClip);
+        }
         this.npcCurrentActionSenior = this.npcActionsSenior.idle;
         this.npcCurrentActionSenior.play();
 
-        // Setup Ketua animation mixer
+        // Setup Ketua OSIS animation mixer (gunakan clip yang sama agar seragam).
         this.npcMixerKetua = new THREE.AnimationMixer(this.npcKetua);
         this.npcActionsKetua = {};
-        this.npcActionsKetua.dancing = this.npcMixerKetua.clipAction(this.npcAnimations[0]);
-        this.npcActionsKetua.idle = this.npcMixerKetua.clipAction(this.npcAnimations[1]);
-        this.npcActionsKetua.jumping = this.npcMixerKetua.clipAction(this.npcAnimations[2]);
-        this.npcActionsKetua.running = this.npcMixerKetua.clipAction(this.npcAnimations[3]);
-        this.npcActionsKetua.walking = this.npcMixerKetua.clipAction(this.npcAnimations[4]);
-        this.npcActionsKetua.waving = this.npcMixerKetua.clipAction(this.npcAnimations[5]);
+        const ketuaIdleClip = ensureClip("idle", ["idle", "stand", "pose"]);
+        this.npcActionsKetua.idle = this.npcMixerKetua.clipAction(ketuaIdleClip);
+
+        if (seniorWaveClip) {
+            this.npcActionsKetua.waving = this.npcMixerKetua.clipAction(seniorWaveClip);
+        }
         this.npcCurrentActionKetua = this.npcActionsKetua.idle;
         this.npcCurrentActionKetua.play();
     }
@@ -453,10 +521,17 @@ export default class OrganizationScene2A {
             clearTimeout(this.aiVoiceTimeout);
         }
 
+        const dialogue = languageManager.translate(ORG_TEXTS.scene2a.dialogue);
+        this.pendingDialogue = dialogue;
+        this.hasSpokenDialogue = false;
+
+        const userCanAutoPlay = !!(navigator.userActivation && (navigator.userActivation.isActive || navigator.userActivation.hasBeenActive));
+
         this.aiVoiceTimeout = setTimeout(() => {
-            if (this.aiVoice) { // Check if AI voice still exists (scene not disposed)
-                const dialogue = "Uang ini akan saya berikan ke Ketua OSIS. Dia yang akan menyiapkan acaranya, jadi tugas kamu lebih ringan.";
-                this.aiVoice.speak(dialogue);
+            if (userCanAutoPlay) {
+                this.playPendingDialogue();
+            } else {
+                console.warn("[OrgScene2A] Skipping auto speech (browser requires user interaction).");
             }
         }, 1000); // 1 second delay after speech bubble appears
     }
@@ -519,6 +594,14 @@ export default class OrganizationScene2A {
         this.createAlternativeButton();
     }
 
+    playPendingDialogue() {
+        if (!this.aiVoice || !this.pendingDialogue || this.hasSpokenDialogue) {
+            return;
+        }
+        this.aiVoice.speak(this.pendingDialogue);
+        this.hasSpokenDialogue = true;
+    }
+
     createSpeechTextTexture() {
         // Create canvas for text
         const canvas = document.createElement('canvas');
@@ -544,14 +627,17 @@ export default class OrganizationScene2A {
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         
-        // Draw title
-        context.strokeText('Senior Bendahara:', canvas.width / 2, 100);
-        context.fillText('Senior Bendahara:', canvas.width / 2, 100);
-        
+        // Draw title - Bilingual
+        const speakerName = languageManager.translate(ORG_TEXTS.scene2a.speaker) + ':';
+        context.strokeText(speakerName, canvas.width / 2, 100);
+        context.fillText(speakerName, canvas.width / 2, 100);
+
         context.font = 'bold 36px Arial';
-        
-        // Draw dialogue text (diperbaiki agar lebih mudah dipahami)
-        const dialogue = "Uang ini akan saya berikan ke Ketua OSIS.\nDia yang akan menyiapkan acaranya,\njadi tugas kamu lebih ringan.";
+
+        // Draw dialogue text - Bilingual
+        const dialogue = languageManager.getLanguage() === 'id' ?
+            "Uang ini akan saya berikan ke Ketua OSIS.\nDia yang akan menyiapkan acaranya,\njadi tugas kamu lebih ringan." :
+            "I will give this money to the Student Council President.\nHe will prepare the event,\nso your task will be lighter.";
         
         const lines = dialogue.split('\n');
         let y = 180;
@@ -621,6 +707,7 @@ export default class OrganizationScene2A {
             if (this.experience && this.experience.soundManager) {
                 this.experience.soundManager.play('click', 0.6);
             }
+            this.playPendingDialogue();
             this.showScreenSpeechBubble();
         });
     }
@@ -631,18 +718,19 @@ export default class OrganizationScene2A {
         screenBubble.innerHTML = `
             <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
                 <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
-                    Senior Bendahara:
+                    ${languageManager.translate(ORG_TEXTS.scene2a.speaker)}:
                 </div>
                 <div style="font-size: 18px; color: #000; line-height: 1.6; text-align: center;">
-                    Uang ini akan saya berikan ke Ketua OSIS. Dia yang akan menyiapkan acaranya, jadi tugas kamu lebih ringan.
+                    ${languageManager.translate(ORG_TEXTS.scene2a.dialogue)}
                 </div>
                 <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-                    Klik untuk menutup
+                    ${languageManager.translate(ORG_TEXTS.ui.clickToClose)}
                 </div>
             </div>
         `;
 
         document.body.appendChild(screenBubble);
+        this.playPendingDialogue();
         
         screenBubble.addEventListener('click', () => {
             // Play click sound
@@ -660,7 +748,13 @@ export default class OrganizationScene2A {
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        const activeCamera = this.experience.camera?.perspectiveCamera || this.experience.camera?.instance;
+        if (!activeCamera) {
+            console.warn("[OrgScene2A] Active camera not found while handling mouse move.");
+            return;
+        }
+
+        this.raycaster.setFromCamera(this.mouse, activeCamera);
         const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
         
         if (intersects.length > 0) {
@@ -685,10 +779,17 @@ export default class OrganizationScene2A {
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        const activeCamera = this.experience.camera?.perspectiveCamera || this.experience.camera?.instance;
+        if (!activeCamera) {
+            console.warn("[OrgScene2A] Active camera not found while handling mouse click.");
+            return;
+        }
+
+        this.raycaster.setFromCamera(this.mouse, activeCamera);
         const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
         
         if (intersects.length > 0) {
+            this.playPendingDialogue();
             this.speechBubbleGroup.scale.set(0.95, 0.95, 0.95);
             setTimeout(() => {
                 this.speechBubbleGroup.scale.set(1.05, 1.05, 1.05);
@@ -713,13 +814,13 @@ export default class OrganizationScene2A {
                     <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Tetap menolak dan tidak memberikan uang</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene2a.choices.a)}</div>
                         </div>
                     </button>
                     <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Memberikan uang dan memanipulasi laporan</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene2a.choices.b)}</div>
                         </div>
                     </button>
                 </div>
@@ -866,10 +967,10 @@ export default class OrganizationScene2A {
         message.innerHTML = `
             <div style="background: linear-gradient(135deg, rgba(255,152,0,0.95), rgba(255,193,7,0.95)); border: 3px solid rgba(255,255,255,0.5); border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); text-align: center;">
                 <div style="font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 15px;">
-                    💭 Pesan
+                    💭 ${languageManager.translate(ORG_TEXTS.ui.supplementTitle)}
                 </div>
                 <div style="font-size: 18px; color: #fff; line-height: 1.6; font-style: italic;">
-                    "Tekanan dari atasan sering menguji batas. Bukan tentang berani melawan, tapi berani tetap jujur walau semua mendesak agar melakukan sebaliknya."
+                    "${languageManager.translate(ORG_TEXTS.scene2a.supplementMessage)}"
                 </div>
             </div>
         `;
@@ -952,11 +1053,13 @@ export default class OrganizationScene2A {
             this.aiVoice.dispose();
             this.aiVoice = null;
         }
+        this.pendingDialogue = null;
+        this.hasSpokenDialogue = false;
 
         // Clean up event listeners
-        if (this.canvas) {
-            this.canvas.removeEventListener('click', this.onMouseClick.bind(this));
-            this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
+        if (this.canvas && this.onMouseClick && this.onMouseMove) {
+            this.canvas.removeEventListener('click', this.onMouseClick);
+            this.canvas.removeEventListener('mousemove', this.onMouseMove);
         }
 
         // Clean up alternative button
@@ -1036,7 +1139,7 @@ export default class OrganizationScene2A {
 
         // Clean up loading indicator
         if (this.loadingIndicator) {
-            this.hideLoadingIndicator();
+            SceneLoadingIndicator.hide();
         }
 
         console.log("[OrganizationScene2A] Organization Scene 2A disposed");

@@ -1,27 +1,32 @@
+import { languageManager } from './LanguageManager.js';
+
 export default class OpeningStory {
     constructor(sceneData) {
         this.sceneData = sceneData;
         this.overlay = null;
+        this.languageManager = languageManager;
     }
 
     show() {
-        console.log(`[OpeningStory] Showing opening for: ${this.sceneData.title}`);
-        
+        console.log(`[OpeningStory] Showing opening for:`, this.sceneData.title);
+
         // Create opening story overlay with dark background
         this.overlay = document.createElement('div');
         this.overlay.id = 'opening-story-overlay';
-        // Ambil data dari sceneData (jika kosong, gunakan undefined agar tidak muncul)
-        const title = this.sceneData.title; // Kosong = tidak akan ditampilkan
-        const story = this.sceneData.story || [
-            "Kamu adalah seorang siswa yang baru saja bergabung dengan organisasi siswa di sekolah. Sebagai bendahara junior, kamu bertanggung jawab mengelola dana organisasi.",
-            "Hari ini, Senior Bendahara memanggilmu untuk membicarakan sesuatu yang penting..."
-        ];
-        const quote = this.sceneData.quote || "Ada hal yang perlu kita diskusikan tentang dana acara kita.";
-        
+
+        // Translate title, story, and quote using languageManager
+        const title = this.languageManager.translate(this.sceneData.title);
+        const story = this.sceneData.story ?
+            (Array.isArray(this.sceneData.story) ?
+                this.sceneData.story.map(p => this.languageManager.translate(p)) :
+                [this.languageManager.translate(this.sceneData.story)]
+            ) : [];
+        const quote = this.languageManager.translate(this.sceneData.quote);
+
         console.log(`[OpeningStory] Using title: ${title}`);
         console.log(`[OpeningStory] Using story: ${story.length} paragraphs`);
         console.log(`[OpeningStory] Using quote: ${quote}`);
-        
+
         // Hanya tampilkan judul jika title tidak kosong
         const titleHTML = title ? `<h1 style="font-size: 48px; margin-bottom: 30px; color: #ff6b6b; text-shadow: 0 0 20px rgba(255,107,107,0.8); font-weight: bold;">${title}</h1>` : '';
         
@@ -36,7 +41,10 @@ export default class OpeningStory {
                         <p style="font-style: italic; color: #4ecdc4; font-size: 22px; margin-top: 20px;">"${quote}"</p>
                     </div>
                     <div style="font-size: 16px; color: rgba(255,255,255,0.8); margin-top: 30px; font-style: italic;">
-                        Klik di mana saja untuk melanjutkan...
+                        ${this.languageManager.translate({
+                            id: "Klik di mana saja untuk melanjutkan...",
+                            en: "Click anywhere to continue..."
+                        })}
                     </div>
                 </div>
             </div>
@@ -103,91 +111,193 @@ export default class OpeningStory {
     }
 }
 
-// Predefined scene data
+// Predefined scene data (Bilingual: Indonesian & English)
 export const SCENE_DATA = {
     og_scene1: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Kamu adalah seorang siswa yang baru saja bergabung dengan organisasi siswa di sekolah. Sebagai bendahara junior, kamu bertanggung jawab mengelola dana organisasi.",
-            "Hari ini, Senior Bendahara memanggilmu untuk membicarakan sesuatu yang penting...",
+            {
+                id: "Kamu adalah seorang siswa yang baru saja bergabung dengan organisasi siswa di sekolah. Sebagai bendahara junior, kamu bertanggung jawab mengelola dana organisasi.",
+                en: "You are a student who just joined the student organization at school. As a junior treasurer, you are responsible for managing the organization's funds."
+            },
+            {
+                id: "Hari ini, Senior Bendahara memanggilmu untuk membicarakan sesuatu yang penting...",
+                en: "Today, the Senior Treasurer calls you to discuss something important..."
+            }
         ],
-        quote: "Ada hal yang perlu kita diskusikan tentang dana acara kita."
+        quote: {
+            id: "Ada hal yang perlu kita diskusikan tentang dana acara kita.",
+            en: "There's something we need to discuss about our event funds."
+        }
     },
-    
+
     og_scene2: {
-        title: "Scene 2: Ruang Kelas",
+        title: {
+            id: "Scene 2: Ruang Kelas",
+            en: "Scene 2: Classroom"
+        },
         story: [
-            "Setelah pertemuan dengan Senior Bendahara, kamu merasa tidak nyaman dengan permintaannya.",
-            "Di ruang kelas, kamu bertemu dengan teman sekelas yang juga anggota organisasi yang sama.",
+            {
+                id: "Setelah pertemuan dengan Senior Bendahara, kamu merasa tidak nyaman dengan permintaannya.",
+                en: "After the meeting with the Senior Treasurer, you feel uncomfortable with their request."
+            },
+            {
+                id: "Di ruang kelas, kamu bertemu dengan teman sekelas yang juga anggota organisasi yang sama.",
+                en: "In the classroom, you meet a classmate who is also a member of the same organization."
+            }
         ],
-        quote: "Kamu terlihat tidak enak badan, ada apa?"
+        quote: {
+            id: "Kamu terlihat tidak enak badan, ada apa?",
+            en: "You look troubled. What's wrong?"
+        }
     },
-    
+
     og_scene2a: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Mendengar jawabanmu, Ketua OSIS terlihat panik dan Senior terlihat marah.",
-            "Kemudian Senior memanggilmu untuk berbicara sesuatu yang penting.",
+            {
+                id: "Mendengar jawabanmu, Ketua OSIS terlihat panik dan Senior terlihat marah.",
+                en: "Hearing your answer, the Student Council President looks panicked and the Senior looks angry."
+            },
+            {
+                id: "Kemudian Senior memanggilmu untuk berbicara tentang sesuatu yang penting.",
+                en: "Then the Senior calls you to discuss something important."
+            }
         ],
-        quote: "Uang ini akan saya berikan ke Ketua OSIS. Dia yang akan menyiapkan acaranya, jadi tugas kamu lebih ringan."
+        quote: {
+            id: "Uang ini akan saya berikan ke Ketua OSIS. Dia yang akan menyiapkan acaranya, jadi tugas kamu lebih ringan.",
+            en: "I will give this money to the Student Council President. He will prepare the event, so your task will be lighter."
+        }
     },
-    
+
     og_scene2b: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Kamu telah memberikan uang dan memanipulasi laporan anggaran.",
-            "Ketua OSIS lega dan Senior tersenyum lebar. Uang diberikan dan kamu mendapat kepercayaan senior.",
-            "Setelah selesai bertemu, kamu bertemu dengan Pembina OSIS yang menanyakan apa yang terjadi dan kenapa bendahara memberikan uang ke Ketua OSIS dan Senior.",
+            {
+                id: "Kamu telah memberikan uang dan memanipulasi laporan anggaran.",
+                en: "You have given the money and manipulated the budget report."
+            },
+            {
+                id: "Ketua OSIS lega dan Senior tersenyum lebar. Uang diberikan dan kamu mendapat kepercayaan senior.",
+                en: "The Student Council President is relieved and the Senior smiles widely. The money is handed over and you gain the senior's trust."
+            },
+            {
+                id: "Setelah selesai bertemu, kamu bertemu dengan Pembina OSIS yang menanyakan apa yang terjadi dan mengapa bendahara memberikan uang ke Ketua OSIS dan Senior.",
+                en: "After the meeting, you encounter the Student Council Advisor who asks what happened and why the treasurer gave money to the President and Senior."
+            }
         ],
-        quote: "Kenapa bendahara memberikan uang ke Ketua OSIS dan Senior?"
+        quote: {
+            id: "Mengapa bendahara memberikan uang ke Ketua OSIS dan Senior?",
+            en: "Why did the treasurer give money to the Student Council President and Senior?"
+        }
     },
-    
+
     og_scene3a: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Kamu jujur dan hampir dihukum pembina, tapi pembina tahu apa yang ketua osis dan senior lakukan.",
-            "Sekarang kamu harus mencari vendor untuk backup dana karena senior tidak support vendor lagi.",
-            "Kamu menemukan vendor yang mau bekerjasama dengan syarat khusus.",
+            {
+                id: "Kamu jujur dan hampir dihukum pembina, tapi pembina tahu apa yang dilakukan ketua OSIS dan senior.",
+                en: "You are honest and almost punished by the advisor, but the advisor knows what the President and Senior did."
+            },
+            {
+                id: "Sekarang kamu harus mencari vendor untuk mendukung dana karena senior tidak mendukung vendor lagi.",
+                en: "Now you have to find a vendor to support the funds because the senior no longer supports any vendor."
+            },
+            {
+                id: "Kamu menemukan vendor yang mau bekerja sama dengan syarat khusus.",
+                en: "You find a vendor willing to cooperate with special conditions."
+            }
         ],
-        quote: "Saya bisa jadi vendor, tapi pakai sistem khusus: tandatangan tanpa laporan resmi."
+        quote: {
+            id: "Saya bisa jadi vendor kalian, tapi pakai sistem khusus: tandatangan tanpa laporan resmi.",
+            en: "I can be your vendor, but with a special system: signatures without official reports."
+        }
     },
-    
+
     og_scene3b: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Kamu bekerja sama dengan ketua osis dan senior, dan dapat kepercayaan dari senior.",
-            "Senior memberikan kamu tugas untuk mencari vendor kegiatan mereka.",
-            "Kamu menemukan vendor yang mau bekerjasama dengan syarat khusus.",
+            {
+                id: "Kamu bekerja sama dengan ketua OSIS dan senior, serta mendapat kepercayaan dari senior.",
+                en: "You cooperate with the Student Council President and senior, and gain their trust."
+            },
+            {
+                id: "Senior memberikanmu tugas untuk mencari vendor kegiatan mereka.",
+                en: "The Senior assigns you the task of finding a vendor for their activities."
+            },
+            {
+                id: "Kamu menemukan vendor yang mau bekerja sama dengan syarat khusus.",
+                en: "You find a vendor willing to cooperate with special conditions."
+            }
         ],
-        quote: "Saya bisa jadi vendor, tapi pakai sistem khusus: tandatangan tanpa laporan resmi."
+        quote: {
+            id: "Saya bisa jadi vendor kalian, tapi pakai sistem khusus: tandatangan tanpa laporan resmi.",
+            en: "I can be your vendor, but with a special system: signatures without official reports."
+        }
     },
-    
+
     og_scene4a: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Setelah kejadian vendor tersebut, kamu tidak bekerja sama.",
-            "Pembina OSIS marah karena kamu tidak bisa menemukan vendor.",
-            "Pembina meminta laporan keuangan untuk melihat keberlangsungan acara ke depannya.",
+            {
+                id: "Setelah kejadian vendor tersebut, kamu tidak bekerja sama.",
+                en: "After the vendor incident, you don't cooperate."
+            },
+            {
+                id: "Pembina OSIS marah karena kamu tidak bisa menemukan vendor.",
+                en: "The Student Council Advisor is angry because you couldn't find a vendor."
+            },
+            {
+                id: "Pembina meminta laporan keuangan untuk melihat keberlangsungan acara ke depannya.",
+                en: "The advisor requests financial reports to assess the event's sustainability going forward."
+            }
         ],
-        quote: "Saya perlu laporan keuangan untuk memastikan acara bisa berjalan."
+        quote: {
+            id: "Saya perlu laporan keuangan untuk memastikan acara bisa berjalan.",
+            en: "I need financial reports to ensure the event can proceed."
+        }
     },
-    
+
     og_scene4b: {
-        title: "", // Judul tidak ditampilkan
+        title: "", // No title
         story: [
-            "Setelah kejadian vendor tersebut, kamu mau bekerja sama dan mendapat dana pribadi.",
-            "Persiapan event berjalan, vendor membantu printkan spanduk dan menyiapkan perlengkapan.",
-            "Ada beberapa perlengkapan yang tidak sesuai. Pembina meminta laporan keuangan sementara.",
+            {
+                id: "Setelah kejadian vendor tersebut, kamu mau bekerja sama dan mendapat dana pribadi.",
+                en: "After the vendor incident, you agree to cooperate and receive private funds."
+            },
+            {
+                id: "Persiapan acara berjalan, vendor membantu mencetak spanduk dan menyiapkan perlengkapan.",
+                en: "Event preparations proceed, the vendor helps print banners and prepare equipment."
+            },
+            {
+                id: "Ada beberapa perlengkapan yang tidak sesuai. Pembina meminta laporan keuangan sementara.",
+                en: "Some equipment doesn't match specifications. The advisor requests an interim financial report."
+            }
         ],
-        quote: "Saya perlu laporan keuangan sementara untuk melihat kondisi dana."
+        quote: {
+            id: "Saya perlu laporan keuangan sementara untuk melihat kondisi dana.",
+            en: "I need an interim financial report to review the fund's condition."
+        }
     },
-    
+
     og_scene3: {
-        title: "Scene 3: Kantin Kampus",
+        title: {
+            id: "Scene 3: Kantin Kampus",
+            en: "Scene 3: Campus Cafeteria"
+        },
         story: [
-            "Di kantin kampus, kamu bertemu dengan senior lain yang mungkin bisa memberikan nasihat.",
-            "Situasi semakin rumit dan kamu perlu memutuskan langkah selanjutnya.",
+            {
+                id: "Di kantin kampus, kamu bertemu dengan senior lain yang mungkin bisa memberikan nasihat.",
+                en: "In the campus cafeteria, you meet another senior who might be able to offer advice."
+            },
+            {
+                id: "Situasi semakin rumit dan kamu perlu memutuskan langkah selanjutnya.",
+                en: "The situation grows more complicated and you need to decide your next steps."
+            }
         ],
-        quote: "Kadang kita harus memilih antara yang benar dan yang mudah."
+        quote: {
+            id: "Kadang kita harus memilih antara yang benar dan yang mudah.",
+            en: "Sometimes we must choose between what is right and what is easy."
+        }
     }
 };

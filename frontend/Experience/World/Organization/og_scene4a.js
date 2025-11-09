@@ -6,6 +6,9 @@ import UIManager from "../../Utils/UIManager.js";
 import OpeningStory, { SCENE_DATA } from "../../Utils/OpeningStory.js";
 import Ending from "../../Utils/Ending.js";
 import AIVoice from "../../Utils/AIVoice.js";
+import SceneLoadingIndicator from "../../Utils/SceneLoadingIndicator.js";
+import { languageManager } from "../../Utils/LanguageManager.js";
+import { ORG_TEXTS } from "./OrganizationTexts.js";
 
 export default class OrganizationScene4A {
     constructor() {
@@ -44,43 +47,44 @@ export default class OrganizationScene4A {
     }
 
     initWithOpening() {
-        console.log("[OrgScene4A] Loading scene in background first...");
-        
-        // Show loading indicator
-        this.showLoadingIndicator();
-        
-        // Load scene models asynchronously (non-blocking)
-        this.loadSceneAsync().then(() => {
-            console.log("[OrgScene4A] Scene loaded successfully!");
-            
-            // Hide loading indicator
-            this.hideLoadingIndicator();
-            
-            // Show opening story overlay immediately (no delay)
-            console.log("[OrgScene4A] Scene loaded, now showing opening story overlay...");
-            
-            try {
-                this.openingStory = new OpeningStory(SCENE_DATA.og_scene4a);
-                
-                // Show opening story overlay (blocks screen with z-index 10000000)
-                this.openingStory.show().then(() => {
-                    console.log("[OrgScene4A] Opening story dismissed - scene is now fully visible");
-                    
-                    // Auto-start conversation after opening story (no proximity needed)
-                    setTimeout(() => {
-                        console.log("[OrgScene4A] Auto-starting conversation...");
-                        this.startConversation();
-                    }, 2000);
+        console.log("[OrgScene4A] Initializing with opening story...");
+        this.loadingIndicator = SceneLoadingIndicator.show();
+
+        // Wait for resources to be ready before loading scene
+        const waitForResources = () => {
+            if (this.resources.isReady) {
+                console.log("[OrgScene4A] ✅ Resources ready, starting scene load...");
+                this.loadSceneAsync().then(() => {
+                    console.log("[OrgScene4A] ✅ Scene loaded successfully!");
+                    SceneLoadingIndicator.hide();
+
+                    // Show opening story
+                    this.openingStory = new OpeningStory(SCENE_DATA.og_scene4a);
+                    this.openingStory.show().then(() => {
+                        console.log("[OrgScene4A] Opening story dismissed");
+
+                        // Auto-start conversation after opening story
+                        setTimeout(() => {
+                            console.log("[OrgScene4A] Auto-starting conversation...");
+                            this.startConversation();
+                        }, 2000);
+                    }).catch((error) => {
+                        console.error("[OrgScene4A] Error in opening story:", error);
+                    });
                 }).catch((error) => {
-                    console.error("[OrgScene4A] Error in opening story:", error);
+                    console.error("[OrgScene4A] ❌ Error loading scene:", error);
+                    SceneLoadingIndicator.hide();
                 });
-            } catch (error) {
-                console.error("[OrgScene4A] Error creating opening story:", error);
+            } else {
+                console.log("[OrgScene4A] ⏳ Waiting for resources to be ready...");
+                this.resources.once('ready', () => {
+                    console.log("[OrgScene4A] ✅ Resources ready event fired!");
+                    waitForResources();
+                });
             }
-        }).catch((error) => {
-            console.error("[OrgScene4A] Error loading scene:", error);
-            this.hideLoadingIndicator();
-        });
+        };
+
+        waitForResources();
     }
 
     showLoadingIndicator() {
@@ -454,7 +458,7 @@ export default class OrganizationScene4A {
 
         this.aiVoiceTimeout = setTimeout(() => {
             if (this.aiVoice) { // Check if AI voice still exists (scene not disposed)
-                const dialogue = "Kamu tidak bisa menemukan vendor! Saya perlu laporan keuangan untuk melihat keberlangsungan acara ke depannya.";
+                const dialogue = languageManager.translate(ORG_TEXTS.scene4a.dialogue);
                 this.aiVoice.speak(dialogue);
             }
         }, 1000); // 1 second delay after speech bubble appears
@@ -532,14 +536,17 @@ export default class OrganizationScene4A {
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         
-        context.strokeText('Pembina OSIS:', canvas.width / 2, 100);
-        context.fillText('Pembina OSIS:', canvas.width / 2, 100);
-        
+        const speakerName = languageManager.translate(ORG_TEXTS.scene4a.speaker) + ':';
+        context.strokeText(speakerName, canvas.width / 2, 100);
+        context.fillText(speakerName, canvas.width / 2, 100);
+
         context.font = 'bold 36px Arial';
-        
-        // Dialog dari pembina - marah karena tidak ada vendor
-        const dialogue = "Kamu tidak bisa menemukan vendor!\nSaya perlu laporan keuangan\nuntuk melihat keberlangsungan\nacara ke depannya.";
-        
+
+        // Dialog dari pembina - marah karena tidak ada vendor - Bilingual
+        const dialogue = languageManager.getLanguage() === 'id' ?
+            "Kamu tidak bisa menemukan vendor!\nSaya perlu laporan keuangan\nuntuk melihat keberlangsungan\nacara ke depannya." :
+            "You couldn't find a vendor!\nI need the financial report\nto see the sustainability\nof the event going forward.";
+
         const lines = dialogue.split('\n');
         let y = 180;
         lines.forEach(line => {
@@ -589,7 +596,7 @@ export default class OrganizationScene4A {
                     font-family: 'Arial', sans-serif;
                 " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
                     <span style="font-size: 20px;">💬</span>
-                    <span>Baca Percakapan</span>
+                    <span>${languageManager.translate(ORG_TEXTS.ui.readConversation)}</span>
                 </button>
             </div>
         `;
@@ -613,13 +620,13 @@ export default class OrganizationScene4A {
         screenBubble.innerHTML = `
             <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
                 <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
-                    Pembina OSIS:
+                    ${languageManager.translate(ORG_TEXTS.scene4a.speaker)}:
                 </div>
                 <div style="font-size: 18px; color: #000; line-height: 1.6; text-align: center;">
-                    Kamu tidak bisa menemukan vendor! Saya perlu laporan keuangan untuk melihat keberlangsungan acara ke depannya.
+                    ${languageManager.translate(ORG_TEXTS.scene4a.dialogue)}
                 </div>
                 <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-                    Klik untuk menutup
+                    ${languageManager.translate(ORG_TEXTS.ui.clickToClose)}
                 </div>
             </div>
         `;
@@ -714,13 +721,13 @@ export default class OrganizationScene4A {
                     <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Memberikan laporan dana secara transparan dan dimarahi pembina</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene4a.choices.a)}</div>
                         </div>
                     </button>
                     <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
                         <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">Manipulasi laporan dana dan pembina memberikan kesempatan</div>
+                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene4a.choices.b)}</div>
                         </div>
                     </button>
                 </div>
@@ -817,10 +824,10 @@ export default class OrganizationScene4A {
         message.innerHTML = `
             <div style="background: linear-gradient(135deg, rgba(255,152,0,0.95), rgba(255,193,7,0.95)); border: 3px solid rgba(255,255,255,0.5); border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); text-align: center;">
                 <div style="font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 15px;">
-                    💭 Pesan
+                    💭 ${languageManager.translate(ORG_TEXTS.ui.supplementTitle)}
                 </div>
                 <div style="font-size: 18px; color: #fff; line-height: 1.6; font-style: italic;">
-                    "Kebenaran sering dimarahi sebelum akhirnya dipercaya."
+                    "${languageManager.translate(ORG_TEXTS.scene4a.supplementMessage)}"
                 </div>
             </div>
         `;
@@ -956,7 +963,7 @@ export default class OrganizationScene4A {
 
         // Clean up loading indicator
         if (this.loadingIndicator) {
-            this.hideLoadingIndicator();
+            SceneLoadingIndicator.hide();
         }
 
         // Clean up model from scene
