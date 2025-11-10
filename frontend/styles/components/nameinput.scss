@@ -3,7 +3,7 @@
     @extend %center;
     font-size: 56px;
     opacity: 0;
-    color: #ffffff;
+    color: #1e293b;
     font-weight: 800;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     position: absolute;
@@ -14,25 +14,25 @@
     transform: translate(-50%, -50%);
     letter-spacing: 2px;
     text-align: center;
-    text-shadow: 
-        0 0 20px rgba(30, 64, 124, 0.8),
-        0 0 40px rgba(139, 0, 0, 0.6),
-        0 0 60px rgba(255, 215, 0, 0.4);
-    background: linear-gradient(135deg, #1E407C 0%, #8B0000 50%, #FFD700 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: titleGlowPulse 3s ease-in-out infinite;
-    z-index: 99999999999999; // Must be above preloader (9999999999999)
-    margin-bottom: 10px;
-    pointer-events: auto; // Ensure it can receive interactions
-    visibility: visible; // Ensure it's visible
+    z-index: 99999999999999;
+    margin-bottom: 0;
+    pointer-events: auto;
+    visibility: visible;
 
     @include media("<=phone") {
         font-size: 36px;
-        letter-spacing: 1px;
-        top: 20%;
-        max-width: 350px;
+        letter-spacing: 1.5px;
+        top: 22%;
+        max-width: 360px;
+    }
+}
+
+@keyframes gradientFlow {
+    0%, 100% {
+        background-position: 0% center;
+    }
+    50% {
+        background-position: 100% center;
     }
 }
 
@@ -90,14 +90,13 @@
 
 // Label untuk input nama
 .name-input-label {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
-    color: #ffffff;
+    color: #475569;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     text-align: center;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     letter-spacing: 0.5px;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 
     @include media("<=phone") {
         font-size: 16px;
@@ -137,46 +136,69 @@
 
 #name-input {
     width: 100%;
-    max-width: 450px;
-    height: 60px;
-    font-size: 18px;
+    max-width: 480px;
+    height: 65px;
+    font-size: 19px;
     font-weight: 500;
-    color: #2d3748;
+    color: #1a202c;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    border: 2px solid transparent;
-    border-radius: 15px;
+    border: 3px solid transparent;
+    border-radius: 18px;
     outline: none;
-    background: 
-        linear-gradient(white, white) padding-box,
+    background:
+        linear-gradient(to bottom, #ffffff, #f7fafc) padding-box,
         linear-gradient(135deg, #1E407C, #8B0000, #FFD700) border-box;
-    padding: 0 20px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 
-        0 6px 25px rgba(30, 64, 124, 0.15),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    padding: 0 24px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+        0 8px 30px rgba(30, 64, 124, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(15px);
     z-index: 1;
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #1E407C, #8B0000, #FFD700);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: -1;
+        filter: blur(8px);
+    }
 
     &:focus {
-        transform: translateY(-2px) scale(1.01);
-        box-shadow: 
-            0 10px 35px rgba(30, 64, 124, 0.25),
-            0 0 0 2px rgba(30, 64, 124, 0.2),
-            0 0 20px rgba(255, 215, 0, 0.15);
+        transform: translateY(-3px) scale(1.015);
+        box-shadow:
+            0 15px 45px rgba(30, 64, 124, 0.3),
+            0 0 0 3px rgba(30, 64, 124, 0.25),
+            0 0 30px rgba(255, 215, 0, 0.2),
+            inset 0 1px 2px rgba(0, 0, 0, 0.05);
+
+        &::before {
+            opacity: 0.6;
+        }
     }
 
     &:hover {
-        transform: translateY(-1px) scale(1.005);
-        box-shadow: 
-            0 8px 30px rgba(30, 64, 124, 0.2),
-            0 0 0 1px rgba(30, 64, 124, 0.15);
+        transform: translateY(-2px) scale(1.008);
+        box-shadow:
+            0 12px 35px rgba(30, 64, 124, 0.25),
+            0 0 0 2px rgba(30, 64, 124, 0.2),
+            inset 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     @include media("<=phone") {
-        height: 55px;
-        font-size: 16px;
-        max-width: 320px;
-        padding: 0 18px;
+        height: 58px;
+        font-size: 17px;
+        max-width: 340px;
+        padding: 0 20px;
     }
 }
 
@@ -190,35 +212,44 @@
 
 #name-input-button,
 .name-submit-btn {
-    width: 200px;
-    height: 55px;
-    font-size: 16px;
-    font-weight: 600;
+    width: 220px;
+    height: 60px;
+    font-size: 17px;
+    font-weight: 700;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     color: white;
     background: linear-gradient(135deg, #1E407C 0%, #8B0000 50%, #FFD700 100%);
+    background-size: 200% auto;
     border: none;
-    border-radius: 30px;
+    border-radius: 35px;
     cursor: pointer;
     opacity: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 
-        0 8px 25px rgba(30, 64, 124, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+        0 10px 30px rgba(30, 64, 124, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     overflow: hidden;
-    z-index: 99999999999999; // Must be above preloader
+    z-index: 99999999999999;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
+    position: relative;
 
     span {
+        position: relative;
+        z-index: 1;
         transition: transform 0.3s ease;
     }
 
     svg {
+        position: relative;
+        z-index: 1;
         transition: transform 0.3s ease;
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
     }
 
     &::before {
@@ -228,39 +259,70 @@
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s ease;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.6s ease;
+        z-index: 0;
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        animation: buttonPulse 3s ease-in-out infinite;
     }
 
     &:hover {
-        transform: translateY(-3px) scale(1.03);
-        box-shadow: 
-            0 12px 35px rgba(30, 64, 124, 0.4),
-            0 0 0 2px rgba(255, 255, 255, 0.2),
-            0 0 25px rgba(255, 215, 0, 0.2);
+        transform: translateY(-4px) scale(1.05);
+        box-shadow:
+            0 15px 45px rgba(30, 64, 124, 0.5),
+            0 0 0 3px rgba(255, 255, 255, 0.25),
+            0 0 35px rgba(255, 215, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        background-position: right center;
 
         span {
-            transform: translateX(-3px);
+            transform: translateX(-4px);
         }
 
         svg {
-            transform: translateX(3px);
+            transform: translateX(4px) scale(1.1);
         }
 
         &::before {
             left: 100%;
         }
+
+        &::after {
+            opacity: 1;
+        }
     }
 
     &:active {
-        transform: translateY(-1px) scale(1.01);
+        transform: translateY(-2px) scale(1.02);
     }
 
     @include media("<=phone") {
-        width: 180px;
-        height: 50px;
-        font-size: 14px;
-        gap: 8px;
+        width: 190px;
+        height: 54px;
+        font-size: 15px;
+        gap: 10px;
+    }
+}
+
+@keyframes buttonPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0.3;
     }
 }
 
@@ -290,40 +352,31 @@
 
 .character-select-title {
     font-size: 48px;
-    color: #ffffff;
+    color: #1e293b;
     font-weight: 800;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     letter-spacing: 2px;
     text-align: center;
-    text-shadow: 
-        0 0 20px rgba(30, 64, 124, 0.8),
-        0 0 40px rgba(139, 0, 0, 0.6),
-        0 0 60px rgba(255, 215, 0, 0.4);
-    background: linear-gradient(135deg, #1E407C 0%, #8B0000 50%, #FFD700 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: titleGlowPulse 3s ease-in-out infinite;
     margin: 0;
 
     @include media("<=phone") {
         font-size: 32px;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
     }
 }
 
 .character-select-subtitle {
     font-size: 18px;
-    color: rgba(255, 255, 255, 0.9);
+    color: #64748b;
     font-weight: 500;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     text-align: center;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     margin: 0;
-    margin-top: -10px;
+    margin-top: -5px;
+    letter-spacing: 0.5px;
 
     @include media("<=phone") {
-        font-size: 14px;
+        font-size: 15px;
     }
 }
 
@@ -358,16 +411,17 @@
 
 .avatar-label {
     font-size: 18px;
-    font-weight: 600;
-    color: #ffffff;
+    font-weight: 700;
+    color: #1e293b;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     text-align: center;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     letter-spacing: 1px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 
     @include media("<=phone") {
-        font-size: 14px;
+        font-size: 15px;
+        letter-spacing: 0.8px;
     }
 }
 
@@ -375,22 +429,17 @@
     width: auto;
     height: 200px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 3px solid transparent;
-    padding: 18px;
-    border-radius: 25px;
+    transition: all 0.3s ease;
+    border: 3px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 24px;
     position: relative;
-    background: 
-        linear-gradient(white, white) padding-box,
-        linear-gradient(135deg, #1E407C, #8B0000, #FFD700) border-box;
-    backdrop-filter: blur(10px);
-    box-shadow: 
-        0 10px 35px rgba(30, 64, 124, 0.15),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(30, 64, 124, 0.1);
 
     @include media("<=phone") {
         height: 150px;
-        padding: 15px;
+        padding: 16px;
         border-radius: 20px;
     }
 }
@@ -398,29 +447,19 @@
 // Avatar option hover effect
 .avatar-option:hover {
     .avatar-img {
-        transform: scale(1.1) translateY(-10px);
-        box-shadow: 
-            0 20px 60px rgba(30, 64, 124, 0.3),
-            0 0 0 3px rgba(255, 255, 255, 0.3),
-            0 0 40px rgba(255, 215, 0, 0.2);
+        transform: scale(1.05) translateY(-8px);
+        box-shadow: 0 15px 40px rgba(30, 64, 124, 0.2);
+        border-color: #1E407C;
     }
 
     .avatar-label {
-        color: #FFD700;
-        transform: translateY(-3px);
-        text-shadow: 
-            0 2px 10px rgba(255, 215, 0, 0.5),
-            0 0 20px rgba(255, 215, 0, 0.3);
+        color: #1E407C;
     }
 }
 
 .avatar-option:active {
     .avatar-img {
-        transform: scale(1.06) translateY(-5px);
-    }
-
-    .avatar-label {
-        transform: translateY(-1px);
+        transform: scale(1.02) translateY(-4px);
     }
 }
 
@@ -428,39 +467,33 @@
 .controls-info {
     width: 100%;
     max-width: 600px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 2px solid transparent;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
     border-radius: 20px;
-    padding: 25px 30px;
-    backdrop-filter: blur(10px);
-    box-shadow: 
-        0 10px 35px rgba(30, 64, 124, 0.2),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-    background: 
-        linear-gradient(white, white) padding-box,
-        linear-gradient(135deg, #1E407C, #8B0000, #FFD700) border-box;
+    padding: 28px 32px;
+    box-shadow: 0 10px 30px rgba(30, 64, 124, 0.08);
     opacity: 0;
     transition: all 0.3s ease;
     margin-top: 10px;
 
     @include media("<=phone") {
-        padding: 20px 25px;
-        max-width: 350px;
+        padding: 22px 24px;
+        max-width: 360px;
     }
 }
 
 .controls-info-title {
     font-size: 20px;
     font-weight: 700;
-    color: #1E407C;
+    color: #1e293b;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 18px;
     letter-spacing: 0.5px;
 
     @include media("<=phone") {
-        font-size: 16px;
-        margin-bottom: 12px;
+        font-size: 17px;
+        margin-bottom: 15px;
     }
 }
 
@@ -478,27 +511,28 @@
 .control-item {
     font-size: 14px;
     font-weight: 500;
-    color: #2d3748;
+    color: #475569;
     font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     text-align: center;
-    padding: 8px 12px;
-    background: rgba(30, 64, 124, 0.05);
+    padding: 10px 14px;
+    background: #f8fafc;
     border-radius: 10px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
 
     strong {
-        color: #1E407C;
+        color: #1e293b;
         font-weight: 700;
     }
 
     &:hover {
-        background: rgba(30, 64, 124, 0.1);
-        transform: translateY(-2px);
+        background: #f1f5f9;
+        border-color: #cbd5e1;
     }
 
     @include media("<=phone") {
-        font-size: 12px;
-        padding: 6px 10px;
+        font-size: 13px;
+        padding: 9px 12px;
     }
 }
 
