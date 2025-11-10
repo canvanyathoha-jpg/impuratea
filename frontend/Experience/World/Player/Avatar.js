@@ -3,12 +3,13 @@ import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import Nametag from "./Nametag.js";
 
 export default class Avatar {
-    constructor(avatar, scene, name = "Anonymous", id) {
+    constructor(avatar, scene, name = "Anonymous", id, avatarType = null) {
         this.scene = scene;
         this.name = new Nametag();
         this.nametag = this.name.createNametag(16, 150, name);
         this.avatar = SkeletonUtils.clone(avatar.scene);
         this.avatar.userData.id = id;
+        this.avatarType = avatarType;
 
         this.avatar.animations = avatar.animations.map((clip) => {
             return clip.clone();
@@ -23,8 +24,13 @@ export default class Avatar {
         const initialBox = new THREE.Box3().setFromObject(this.avatar);
         const initialSize = initialBox.getSize(new THREE.Vector3());
 
-        // Scale the avatar to match legacy height (~9 units)
-        const targetHeight = 3.3;
+        // Scale the avatar to match legacy height
+        // Female character needs bigger scale to match male size
+        let targetHeight = 3.3;
+        if (this.avatarType === "female") {
+            targetHeight = 4.2; // Increased from 3.3 to 4.2 to match male size
+        }
+
         const scaleFactor = targetHeight / (initialSize.y || 1);
         this.avatar.scale.setScalar(scaleFactor);
 
@@ -44,14 +50,19 @@ export default class Avatar {
         this.depth = scaledSize.z;
         this.groundOffset = 6.2; // Legacy offset used throughout Player.js
 
-        // Capture root bones to lock root motion later
-        this.rootBones = [];
+        // Capture ONLY the main Hip/Hips bone to lock root motion
+        // Other bones (arms, legs, etc.) should animate freely
+        this.rootBone = null;
         this.avatar.traverse((child) => {
-            if (child.isBone && (!child.parent || !child.parent.isBone)) {
-                this.rootBones.push({
-                    bone: child,
-                    initialPosition: child.position.clone(),
-                });
+            if (child.isBone && !this.rootBone) {
+                const boneName = child.name.toLowerCase();
+                // Look for the main hip/root bone
+                if (boneName.includes('hip') || boneName.includes('root') || boneName === 'mixamorig:hips') {
+                    this.rootBone = {
+                        bone: child,
+                        initialPosition: child.position.clone(),
+                    };
+                }
             }
         });
 
@@ -176,11 +187,12 @@ export default class Avatar {
                 this.animation.mixer.update(time * this.speedAdjustment);
             }
 
-            // Lock root bone translation to prevent locomotion double-transform
-            if (this.rootBones && this.rootBones.length > 0) {
-                this.rootBones.forEach(({ bone, initialPosition }) => {
-                    bone.position.copy(initialPosition);
-                });
+            // Lock ONLY the main root bone X/Z translation to prevent locomotion
+            // Allow Y movement for jumping and all other bone movements
+            if (this.rootBone) {
+                this.rootBone.bone.position.x = this.rootBone.initialPosition.x;
+                this.rootBone.bone.position.z = this.rootBone.initialPosition.z;
+                // Don't lock Y to allow vertical animations like jumping
             }
         };
     }

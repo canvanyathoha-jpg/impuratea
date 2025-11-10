@@ -4,13 +4,13 @@ const SHARED_ASSETS = [
     {
         name: "male",
         type: "glbModel",
-        path: "/models/asian_male_animated.glb",
+        path: "/models/asian_male_animated.glb?v=" + Date.now(),
         shared: true,
     },
     {
         name: "female",
         type: "glbModel",
-        path: "/models/asian_female_animated.glb",
+        path: "/models/asian_female_animated.glb?v=" + Date.now(),
         shared: true,
     },
     {

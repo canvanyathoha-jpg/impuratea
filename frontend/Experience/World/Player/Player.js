@@ -174,7 +174,10 @@ export default class Player {
                 this.player.avatarSkin = avatarSkin;
                 this.avatar = new Avatar(
                     this.resources.items[avatarSkin],
-                    this.scene
+                    this.scene,
+                    undefined,
+                    undefined,
+                    avatarSkin // Pass avatarType ("male" or "female")
                 );
                 this.updatePlayerSocket();
             }
@@ -201,7 +204,8 @@ export default class Player {
                                     this.resources.items[player.avatarSkin],
                                     this.scene,
                                     name,
-                                    player.id
+                                    player.id,
+                                    player.avatarSkin // Pass avatarType for other players too
                                 );
 
                                 player.model = newAvatar;
