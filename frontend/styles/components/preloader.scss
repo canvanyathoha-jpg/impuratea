@@ -210,6 +210,56 @@
     }
 }
 
+// Dedicated wrapper around the academy logo to keep the image and glass card aligned.
+.preloader-logo {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 60px;
+    width: 180px;
+}
+
+.preloader-logo-card {
+    position: relative;
+    z-index: 2;
+    width: 132px;
+    height: 132px;
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.04));
+    border: 1.5px solid rgba(255, 255, 255, 0.45);
+    box-shadow:
+        0 20px 48px rgba(12, 24, 48, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -12px 18px rgba(10, 18, 42, 0.35);
+    backdrop-filter: blur(18px);
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 14px;
+        border-radius: 22px;
+        background: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05));
+        opacity: 0.65;
+    }
+}
+
+// Logo image styling keeps the icon centered while retaining the subtle breathing animation.
+.preloader-logo-image {
+    position: relative;
+    z-index: 3;
+    width: 74%;
+    height: auto;
+    display: block;
+    filter:
+        drop-shadow(0 0 12px rgba(139, 0, 0, 0.55))
+        drop-shadow(0 0 24px rgba(30, 64, 124, 0.45))
+        drop-shadow(0 0 36px rgba(255, 215, 0, 0.35));
+}
+
 @keyframes modernSpinRing {
     0% {
         transform: translate(-50%, -50%) rotate(0deg);
@@ -285,7 +335,8 @@
 }
 
 .preloader-wrapper {
-    padding-bottom: 120px;
+    width: clamp(260px, 28vw, 320px);
+    padding: 48px 36px 96px;
     position: relative;
 }
 
@@ -388,13 +439,15 @@
 }
 
 .progress-bar-container {
-    width: 450px;
+    width: clamp(220px, 60%, 280px);
     height: 8px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     position: absolute;
     top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     box-shadow:
         inset 0 2px 12px rgba(0, 0, 0, 0.4),
         0 0 20px rgba(0, 0, 0, 0.2);
@@ -536,30 +589,9 @@
 }
 
 .svgLogo {
-    position: absolute;
-    top: -100%;
-    filter:
-        drop-shadow(0 0 20px rgba(139, 0, 0, 0.6))
-        drop-shadow(0 0 40px rgba(30, 64, 124, 0.5))
-        drop-shadow(0 0 60px rgba(255, 215, 0, 0.3));
     animation: modernLogoFloat 6s ease-in-out infinite;
     transform-origin: center;
-
-    path {
-        transition: fill 0.5s ease;
-        animation: modernLogoGlow 4s ease-in-out infinite alternate;
-    }
-
-    path:nth-child(1) {
-        fill: rgba(30, 64, 124, 0.95);
-    }
-
-    path:nth-child(2),
-    path:nth-child(3),
-    path:nth-child(4) {
-        fill: rgba(255, 255, 255, 0.95);
-        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-    }
+    pointer-events: none;
 }
 
 @keyframes modernLogoFloat {
@@ -687,16 +719,17 @@
 .landing-container {
     width: 100%;
     height: 100%;
+    min-height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
     position: absolute;
-    pointer-events: auto !important; // Ensure container can receive clicks
+    pointer-events: auto !important;
     top: 0;
     left: 0;
     opacity: 0;
-    padding: 60px 0;
+    padding: 0 0 60px;
     background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
-    z-index: 99999999999998; // Just below button but above everything else
+    z-index: 99999999999998;
 
     // Custom scrollbar
     &::-webkit-scrollbar {
@@ -717,10 +750,9 @@
     }
 }
 
-// Hero Section
 .hero-section {
     text-align: center;
-    padding: 80px 20px 60px;
+    padding: 60px 20px 60px;
     position: relative;
 
     &::before {

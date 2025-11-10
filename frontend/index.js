@@ -379,7 +379,7 @@ const landingPageTranslations = {
         en: "IMPURITEA was created with the support and collaboration of leading educational institutions in Malang. We thank all partners who have supported this project."
     },
     madeWithLove: {
-        id: "Dibuat Dengan ❤️ Oleh",
+        id: "Dibuat Dengan ❤️ Oleh SMA Taruna Nusantara",
         en: "Made With ❤️ By"
     },
     madeByText: {

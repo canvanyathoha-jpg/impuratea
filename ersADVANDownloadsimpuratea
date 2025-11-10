@@ -24,7 +24,7 @@ export default class Avatar {
         const initialSize = initialBox.getSize(new THREE.Vector3());
 
         // Scale the avatar to match legacy height (~9 units)
-        const targetHeight = 3.3;
+        const targetHeight = 17;
         const scaleFactor = targetHeight / (initialSize.y || 1);
         this.avatar.scale.setScalar(scaleFactor);
 
@@ -114,6 +114,7 @@ export default class Avatar {
                 return availableClips[fallbackIndex];
             }
 
+            return availableClips[0];
         };
 
         const registerAction = (key, preferredNames, fallbackIndex) => {
