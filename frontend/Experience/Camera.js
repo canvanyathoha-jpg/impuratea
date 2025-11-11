@@ -167,11 +167,29 @@ export default class Camera {
                 }, 100);
             }
         } else {
+            // TPP mode: Enable OrbitControls and adjust camera spawn position
             if (this.controls) {
                 this.controls.enabled = true;
                 this.controls.enableZoom = true;
                 this.controls.enableRotate = true;
                 this.controls.enablePan = true;
+                
+                // If switching from FPP to TPP, raise the camera target height
+                // This gives a better initial view when switching to TPP
+                if (this.experience && this.experience.world && this.experience.world.player) {
+                    const player = this.experience.world.player;
+                    if (player.player && player.player.collider) {
+                        // Get player's current position
+                        const playerPos = player.player.collider.end.clone();
+                        // Add height offset for better TPP spawn position
+                        const tppSpawnHeightOffset = 5; // Increase this value to raise camera spawn higher
+                        playerPos.y += tppSpawnHeightOffset;
+                        
+                        // Set camera target to raised position
+                        this.controls.target.copy(playerPos);
+                        console.log(`[Camera] TPP spawn position raised by ${tppSpawnHeightOffset} units. Target:`, this.controls.target);
+                    }
+                }
             }
             // Exit pointer lock
             if (this.isPointerLocked) {
