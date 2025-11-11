@@ -20,18 +20,26 @@ export default class Avatar {
         this.avatar.rotation.set(0, 0, 0);
         this.avatar.scale.set(1, 1, 1);
 
-        // Compute initial bounds
+        // Compute initial bounds to get model's natural size
         const initialBox = new THREE.Box3().setFromObject(this.avatar);
         const initialSize = initialBox.getSize(new THREE.Vector3());
 
-        // Scale the avatar to match legacy height
-        // Female character needs bigger scale to match male size
-        let targetHeight = 3.3;
+        // Scale the avatar based on character type
+        // Different scaling approach for female vs male characters
+        let scaleFactor;
+        
         if (this.avatarType === "female") {
-            targetHeight = 4.2; // Increased from 3.3 to 4.2 to match male size
+            // Female character: Use very small target height to make character much smaller
+            // This ensures female character is proportionally smaller than male
+            const femaleTargetHeight = 0.1; // Very small target height for female character
+            scaleFactor = femaleTargetHeight / (initialSize.y || 1);
+        } else {
+            // Male/default character: Use standard targetHeight approach
+            const targetHeight = 1;
+            scaleFactor = targetHeight / (initialSize.y || 1);
         }
-
-        const scaleFactor = targetHeight / (initialSize.y || 1);
+        
+        // Apply the calculated scale
         this.avatar.scale.setScalar(scaleFactor);
 
         // Recompute bounds after scaling
