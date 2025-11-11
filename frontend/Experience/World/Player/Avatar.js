@@ -80,10 +80,14 @@ export default class Avatar {
     setAvatar() {
         this.speedAdjustment = 1;
 
-        // Ensure materials are visible from all angles and not culled accidentally
+        // OPTIMIZATION: Enable frustum culling for better performance
+        // Only disable for very important objects that must always be visible
         this.avatar.traverse((child) => {
             if (child.isMesh) {
-                child.frustumCulled = false;
+                child.frustumCulled = true; // OPTIMIZATION: Enable frustum culling
+                // OPTIMIZATION: Disable shadows for better performance
+                child.castShadow = false;
+                child.receiveShadow = false;
                 if (child.material) {
                     child.material.side = THREE.DoubleSide;
                 }

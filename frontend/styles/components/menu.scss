@@ -43,13 +43,45 @@
 .switch-camera-view {
     @extend %center;
     cursor: pointer;
-    position: absolute;
+    position: fixed;
     top: 48px;
     right: 48px;
-    width: 40px;
-    height: 40px;
-    background-color: $color-base-white;
+    width: 50px;
+    height: 50px;
+    background-color: rgba(30, 64, 124, 0.9);
     border-radius: 50%;
-    border: none;
-    z-index: 999999999999999999999999999999999;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    
+    svg {
+        width: 20px;
+        height: 20px;
+        color: white;
+    }
+    
+    .camera-mode-label {
+        font-size: 8px;
+        font-weight: bold;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    &:hover {
+        transform: scale(1.1);
+        background-color: rgba(30, 64, 124, 1);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+    
+    &:active {
+        transform: scale(0.95);
+    }
 }

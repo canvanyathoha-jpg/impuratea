@@ -157,6 +157,9 @@ export default class DialogManager {
         // Add to dialog history
         this.addToHistory(config);
 
+        // NO POINTER LOCK - cursor always visible
+        // Removed pointer lock exit - not needed anymore
+
         // Camera controls tetap enabled agar player bisa melihat lingkungan saat dialog
         // this.disableCameraControls(); // DISABLED - biarkan kamera tetap bisa digerakkan
 
@@ -266,11 +269,8 @@ export default class DialogManager {
     disableCameraControls() {
         console.log('[DialogManager] Attempting to disable camera controls...');
         
-        // Disable pointer lock (FPS controls)
-        if (document.pointerLockElement) {
-            document.exitPointerLock();
-            console.log('[DialogManager] Exited pointer lock');
-        }
+        // NO POINTER LOCK - cursor always visible
+        // Removed pointer lock exit - not needed anymore
         
         // Try multiple ways to access camera controls
         let controlsDisabled = false;
@@ -1225,6 +1225,9 @@ export default class DialogManager {
             // CRITICAL FIX: Set isShowing to false BEFORE calling callback
             this.isShowing = false;
             
+            // NO POINTER LOCK - cursor always visible
+            // Removed pointer lock re-request - not needed anymore
+            
             if (this.onChoiceCallback) {
                 this.onChoiceCallback(choice, index);
             }
@@ -1251,6 +1254,9 @@ export default class DialogManager {
 
         setTimeout(() => {
             this.isShowing = false;
+            
+            // NO POINTER LOCK - cursor always visible
+            // Removed pointer lock re-request - not needed anymore
             
             if (this.onChoiceCallback) {
                 console.log('[DialogManager] Calling callback...');

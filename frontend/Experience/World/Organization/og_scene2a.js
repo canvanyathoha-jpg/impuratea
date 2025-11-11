@@ -749,15 +749,17 @@ export default class OrganizationScene2A {
         this.npcSenior.traverse((child) => {
             if (child.isMesh) {
                 child.visible = true;
-                child.castShadow = true;
-                child.receiveShadow = true;
+                // OPTIMIZATION: Disable shadows for better performance
+                child.castShadow = false;
+                child.receiveShadow = false;
             }
         });
 
         this.npcSenior.position.set(8, 8, 21); // Y=8 to match player height at floor level
         this.npcSenior.rotation.y = Math.PI;
         this.npcSenior.scale.set(9, 9, 9);
-        this.npcSenior.frustumCulled = false; // Disable frustum culling to ensure always rendered
+        // OPTIMIZATION: Enable frustum culling for better performance
+        this.npcSenior.frustumCulled = true;
         console.log("[OrgScene2A] Adding Senior NPC to scene...");
         this.scene.add(this.npcSenior);
         console.log("[OrgScene2A] Senior NPC added. Position:", this.npcSenior.position);
@@ -772,15 +774,17 @@ export default class OrganizationScene2A {
         this.npcKetua.traverse((child) => {
             if (child.isMesh) {
                 child.visible = true;
-                child.castShadow = true;
-                child.receiveShadow = true;
+                // OPTIMIZATION: Disable shadows for better performance
+                child.castShadow = false;
+                child.receiveShadow = false;
             }
         });
 
         this.npcKetua.position.set(12, 8, 21); // Y=8 to match player height at floor level
         this.npcKetua.rotation.y = Math.PI;
         this.npcKetua.scale.set(9, 9, 9);
-        this.npcKetua.frustumCulled = false; // Disable frustum culling to ensure always rendered
+        // OPTIMIZATION: Enable frustum culling for better performance
+        this.npcKetua.frustumCulled = true;
         console.log("[OrgScene2A] Adding Ketua NPC to scene...");
         this.scene.add(this.npcKetua);
         console.log("[OrgScene2A] Ketua NPC added. Position:", this.npcKetua.position);
