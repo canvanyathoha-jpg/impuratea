@@ -1,0 +1,103 @@
+// Language Toggle Button Styling
+// Button untuk switch antara bahasa Indonesia dan Inggris
+// Button ini harus selalu terlihat, bahkan saat preloader aktif
+
+#language-toggle-btn {
+    @extend %center;
+    
+    // Positioning - top left corner
+    // Using fixed position so it stays visible even when scrolling
+    position: fixed;
+    top: 48px;
+    left: 48px;
+    // Z-index sangat tinggi agar selalu di atas preloader dan elemen lainnya
+    z-index: 999999999999999999999999999999999;
+    
+    // Button styling
+    display: flex !important; // Force display
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    // Background dengan opacity agar terlihat di berbagai latar belakang
+    background-color: $color-base-black-transparent;
+    color: $color-base-white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    // Ensure button is clickable
+    pointer-events: auto;
+    // Make sure it's visible
+    opacity: 1 !important;
+    visibility: visible !important;
+    
+    // Hover effect - lebih gelap saat hover
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+    }
+    
+    // Active state - sedikit lebih kecil saat diklik
+    &:active {
+        transform: scale(0.95);
+    }
+    
+    // Focus state untuk accessibility
+    &:focus {
+        outline: 2px solid rgba(255, 255, 255, 0.5);
+        outline-offset: 2px;
+    }
+    
+    // Flag emoji styling
+    #language-flag {
+        font-size: 18px;
+        line-height: 1;
+        display: inline-block;
+    }
+    
+    // Language text styling
+    #language-text {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+    
+    // Mobile responsive - adjust size untuk layar kecil
+    @include media("<=tablet") {
+        // Keep visible on mobile but adjust size
+        top: 24px;
+        left: 24px;
+        padding: 6px 12px;
+        font-size: 12px;
+        
+        #language-flag {
+            font-size: 16px;
+        }
+        
+        #language-text {
+            font-size: 12px;
+        }
+    }
+    
+    // Ensure button is always visible, even on very small screens
+    @include media("<=phone") {
+        top: 16px;
+        left: 16px;
+        padding: 6px 10px;
+        gap: 6px;
+        
+        #language-flag {
+            font-size: 14px;
+        }
+        
+        #language-text {
+            font-size: 11px;
+        }
+    }
+}
+
