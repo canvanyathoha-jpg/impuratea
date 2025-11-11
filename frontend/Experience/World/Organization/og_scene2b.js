@@ -9,6 +9,15 @@ import SceneLoadingIndicator from "../../Utils/SceneLoadingIndicator.js";
 import { languageManager } from "../../Utils/LanguageManager.js";
 import { ORG_TEXTS } from "./OrganizationTexts.js";
 
+// Post-processing imports for professional visual effects
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
 export default class OrganizationScene2B {
     constructor() {
         this.experience = new Experience();
@@ -34,6 +43,13 @@ export default class OrganizationScene2B {
         this.aiVoiceTimeout = null;
         this.pendingDialogue = null;
         this.hasSpokenDialogue = false;
+        
+        // Professional rendering features
+        this.composer = null;
+        this.lights = {};
+        this.particleSystems = [];
+        this.environmentalEffects = {};
+        this.cameraAnimations = [];
 
         // Raycasting for speech bubble interaction
         this.raycaster = new THREE.Raycaster();
@@ -266,6 +282,9 @@ export default class OrganizationScene2B {
                 this.organizationModel.scale.set(7, 7, 7);
                 this.collidableGroup.add(this.organizationModel);
                 
+                // Enhance materials before continuing
+                this.enhanceMaterials();
+                
                 // Continue with collider setup
                 this.setupCollider(callback);
             } else {
@@ -323,6 +342,11 @@ export default class OrganizationScene2B {
                             
                             console.log("Organization Scene 2B loaded with full collision enabled.");
                             
+                            // Setup professional lighting and effects
+                            this.setupProfessionalLighting();
+                            this.setupAtmosphericEffects();
+                            this.setupPostProcessing();
+                            
                             // Call callback when done
                             if (callback) callback();
                         } catch (error) {
@@ -333,6 +357,364 @@ export default class OrganizationScene2B {
                 });
             }, 100); // Initial delay
         });
+    }
+
+    setupProfessionalLighting() {
+        console.log("[OrgScene2B] Setting up cinematic dark lighting system...");
+
+        // Enable shadows for renderer with cinematic settings
+        if (this.experience.renderer && this.experience.renderer.instance) {
+            this.experience.renderer.instance.shadowMap.enabled = true;
+            this.experience.renderer.instance.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.experience.renderer.instance.toneMapping = THREE.CineonToneMapping; // Cinematic tone mapping
+            this.experience.renderer.instance.toneMappingExposure = 0.6; // Darker exposure for drama
+        }
+
+        // 1. Very low ambient light for dark atmosphere (AAA-quality darkness)
+        this.lights.ambient = new THREE.AmbientLight(0x1a1a2e, 0.15);
+        this.scene.add(this.lights.ambient);
+
+        // 2. Main directional light (cool moonlight/dramatic key light)
+        this.lights.directional = new THREE.DirectionalLight(0x6b7c9c, 0.8);
+        this.lights.directional.position.set(40, 60, 20);
+        this.lights.directional.castShadow = true;
+
+        // Ultra high-quality shadow settings for cinematic look
+        this.lights.directional.shadow.mapSize.width = 8192;
+        this.lights.directional.shadow.mapSize.height = 8192;
+        this.lights.directional.shadow.camera.near = 1;
+        this.lights.directional.shadow.camera.far = 200;
+        this.lights.directional.shadow.camera.left = -100;
+        this.lights.directional.shadow.camera.right = 100;
+        this.lights.directional.shadow.camera.top = 100;
+        this.lights.directional.shadow.camera.bottom = -100;
+        this.lights.directional.shadow.bias = -0.00005;
+        this.lights.directional.shadow.normalBias = 0.01;
+        this.lights.directional.shadow.radius = 2; // Soft shadows
+
+        this.scene.add(this.lights.directional);
+
+        // 3. Dark hemisphere light for moody atmosphere
+        this.lights.hemisphere = new THREE.HemisphereLight(0x2c3e50, 0x1a1a2e, 0.3);
+        this.scene.add(this.lights.hemisphere);
+
+        // 4. Accent point lights with color (cinematic blue/orange contrast)
+        const pointLight1 = new THREE.PointLight(0xff6b35, 1.8, 50); // Warm orange
+        pointLight1.position.set(10, 12, 10);
+        pointLight1.castShadow = true;
+        pointLight1.shadow.mapSize.width = 2048;
+        pointLight1.shadow.mapSize.height = 2048;
+        this.scene.add(pointLight1);
+        this.lights.point1 = pointLight1;
+
+        const pointLight2 = new THREE.PointLight(0x4A90E2, 1.8, 50); // Cool blue
+        pointLight2.position.set(-10, 12, 10);
+        pointLight2.castShadow = true;
+        pointLight2.shadow.mapSize.width = 2048;
+        pointLight2.shadow.mapSize.height = 2048;
+        this.scene.add(pointLight2);
+        this.lights.point2 = pointLight2;
+
+        // 5. Dramatic rim light for character separation
+        this.lights.rim = new THREE.DirectionalLight(0x8badd6, 0.6);
+        this.lights.rim.position.set(-30, 40, -20);
+        this.scene.add(this.lights.rim);
+
+        // 6. Focused spot light on NPC for emphasis (red tint for tension)
+        this.lights.npcSpot = new THREE.SpotLight(0xffe5e5, 3.0);
+        this.lights.npcSpot.position.set(4, 28, 25);
+        this.lights.npcSpot.angle = Math.PI / 7;
+        this.lights.npcSpot.penumbra = 0.5; // Soft edges
+        this.lights.npcSpot.decay = 2.5;
+        this.lights.npcSpot.distance = 70;
+        this.lights.npcSpot.castShadow = true;
+        this.lights.npcSpot.shadow.mapSize.width = 4096;
+        this.lights.npcSpot.shadow.mapSize.height = 4096;
+        this.scene.add(this.lights.npcSpot);
+
+        // 7. Additional accent lights for depth
+        const accentLight1 = new THREE.PointLight(0xff1744, 0.8, 30);
+        accentLight1.position.set(20, 8, -10);
+        this.scene.add(accentLight1);
+        this.lights.accent1 = accentLight1;
+
+        const accentLight2 = new THREE.PointLight(0x00bcd4, 0.8, 30);
+        accentLight2.position.set(-20, 8, -10);
+        this.scene.add(accentLight2);
+        this.lights.accent2 = accentLight2;
+
+        console.log("[OrgScene2B] Cinematic dark lighting system setup complete");
+    }
+
+    setupPostProcessing() {
+        console.log("[OrgScene2B] Setting up advanced cinematic post-processing...");
+
+        const renderer = this.experience.renderer.instance;
+        const camera = this.experience.camera.perspectiveCamera || this.experience.camera.instance;
+        const sizes = this.experience.sizes;
+
+        if (!renderer || !camera) {
+            console.warn("[OrgScene2B] Renderer or camera not available for post-processing");
+            return;
+        }
+
+        // Create effect composer
+        this.composer = new EffectComposer(renderer);
+        this.composer.setSize(sizes.width, sizes.height);
+        this.composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // 1. Render pass - base scene
+        const renderPass = new RenderPass(this.scene, camera);
+        this.composer.addPass(renderPass);
+
+        // 2. SSAO (Screen Space Ambient Occlusion) for deep realistic shadows
+        const ssaoPass = new SSAOPass(this.scene, camera, sizes.width, sizes.height);
+        ssaoPass.kernelRadius = 24; // Increased for darker scene
+        ssaoPass.minDistance = 0.003;
+        ssaoPass.maxDistance = 0.15;
+        ssaoPass.output = SSAOPass.OUTPUT.Default;
+        this.composer.addPass(ssaoPass);
+
+        // 3. Strong Unreal Bloom for cinematic glow
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(sizes.width, sizes.height),
+            1.2,    // Increased strength for dramatic glow
+            1.0,    // Larger radius
+            0.2     // Lower threshold for more bloom
+        );
+        this.composer.addPass(bloomPass);
+
+        // 4. Chromatic Aberration for cinematic distortion
+        const chromaticAberrationShader = {
+            uniforms: {
+                'tDiffuse': { value: null },
+                'amount': { value: 0.003 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float amount;
+                varying vec2 vUv;
+
+                void main() {
+                    vec2 offset = amount * (vUv - 0.5);
+                    vec4 cr = texture2D(tDiffuse, vUv + offset);
+                    vec4 cga = texture2D(tDiffuse, vUv);
+                    vec4 cb = texture2D(tDiffuse, vUv - offset);
+                    gl_FragColor = vec4(cr.r, cga.g, cb.b, cga.a);
+                }
+            `
+        };
+        const chromaticPass = new ShaderPass(chromaticAberrationShader);
+        this.composer.addPass(chromaticPass);
+
+        // 5. Vignette for cinematic framing
+        const vignetteShader = {
+            uniforms: {
+                'tDiffuse': { value: null },
+                'darkness': { value: 1.5 }, // Strong vignette
+                'offset': { value: 0.95 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float darkness;
+                uniform float offset;
+                varying vec2 vUv;
+
+                void main() {
+                    vec4 texel = texture2D(tDiffuse, vUv);
+                    vec2 uv = (vUv - vec2(0.5)) * vec2(offset);
+                    float vignette = clamp(pow(cos(uv.x * 3.1416), 1.2) * pow(cos(uv.y * 3.1416), 1.2) * darkness, 0.0, 1.0);
+                    texel.rgb *= vignette;
+                    gl_FragColor = texel;
+                }
+            `
+        };
+        const vignettePass = new ShaderPass(vignetteShader);
+        this.composer.addPass(vignettePass);
+
+        // 6. Film Grain for cinematic texture
+        const filmGrainShader = {
+            uniforms: {
+                'tDiffuse': { value: null },
+                'time': { value: 0.0 },
+                'intensity': { value: 0.15 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float time;
+                uniform float intensity;
+                varying vec2 vUv;
+
+                float random(vec2 co) {
+                    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+                }
+
+                void main() {
+                    vec4 texel = texture2D(tDiffuse, vUv);
+                    float noise = random(vUv + time) * intensity;
+                    texel.rgb += noise;
+                    gl_FragColor = texel;
+                }
+            `
+        };
+        this.filmGrainPass = new ShaderPass(filmGrainShader);
+        this.composer.addPass(this.filmGrainPass);
+
+        // 7. FXAA (Anti-aliasing) for smooth edges
+        const fxaaPass = new ShaderPass(FXAAShader);
+        fxaaPass.material.uniforms['resolution'].value.x = 1 / (sizes.width * Math.min(window.devicePixelRatio, 2));
+        fxaaPass.material.uniforms['resolution'].value.y = 1 / (sizes.height * Math.min(window.devicePixelRatio, 2));
+        this.composer.addPass(fxaaPass);
+
+        // 8. Output pass for correct color space
+        const outputPass = new OutputPass();
+        this.composer.addPass(outputPass);
+
+        console.log("[OrgScene2B] Advanced cinematic post-processing setup complete");
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            if (this.composer) {
+                this.composer.setSize(sizes.width, sizes.height);
+                this.composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                // Update FXAA
+                if (fxaaPass) {
+                    fxaaPass.material.uniforms['resolution'].value.x = 1 / (sizes.width * Math.min(window.devicePixelRatio, 2));
+                    fxaaPass.material.uniforms['resolution'].value.y = 1 / (sizes.height * Math.min(window.devicePixelRatio, 2));
+                }
+            }
+        });
+    }
+
+    setupAtmosphericEffects() {
+        console.log("[OrgScene2B] Setting up dark atmospheric effects...");
+
+        // 1. Add dark cinematic fog for depth and mystery
+        this.scene.fog = new THREE.Fog(0x0a0a15, 20, 120); // Very dark blue fog
+
+        // 2. Create dust particle system for atmosphere
+        const dustParticleCount = 200;
+        const dustGeometry = new THREE.BufferGeometry();
+        const dustPositions = new Float32Array(dustParticleCount * 3);
+        const dustVelocities = new Float32Array(dustParticleCount * 3);
+
+        for (let i = 0; i < dustParticleCount * 3; i += 3) {
+            dustPositions[i] = (Math.random() - 0.5) * 100;      // x
+            dustPositions[i + 1] = Math.random() * 40;            // y
+            dustPositions[i + 2] = (Math.random() - 0.5) * 100;  // z
+
+            dustVelocities[i] = (Math.random() - 0.5) * 0.02;
+            dustVelocities[i + 1] = Math.random() * 0.01 + 0.01;
+            dustVelocities[i + 2] = (Math.random() - 0.5) * 0.02;
+        }
+
+        dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+        dustGeometry.setAttribute('velocity', new THREE.BufferAttribute(dustVelocities, 3));
+
+        const dustMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.3,
+            transparent: true,
+            opacity: 0.4,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        this.environmentalEffects.dustParticles = new THREE.Points(dustGeometry, dustMaterial);
+        this.scene.add(this.environmentalEffects.dustParticles);
+        this.particleSystems.push({
+            particles: this.environmentalEffects.dustParticles,
+            type: 'dust'
+        });
+
+        // 3. Create light rays / god rays effect using geometry
+        const rayGeometry = new THREE.BufferGeometry();
+        const rayCount = 20;
+        const rayPositions = new Float32Array(rayCount * 3);
+
+        for (let i = 0; i < rayCount * 3; i += 3) {
+            rayPositions[i] = (Math.random() - 0.5) * 80;
+            rayPositions[i + 1] = Math.random() * 30 + 10;
+            rayPositions[i + 2] = (Math.random() - 0.5) * 80;
+        }
+
+        rayGeometry.setAttribute('position', new THREE.BufferAttribute(rayPositions, 3));
+
+        const rayMaterial = new THREE.PointsMaterial({
+            color: 0xffdd88,
+            size: 2.0,
+            transparent: true,
+            opacity: 0.15,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        this.environmentalEffects.lightRays = new THREE.Points(rayGeometry, rayMaterial);
+        this.scene.add(this.environmentalEffects.lightRays);
+
+        console.log("[OrgScene2B] Atmospheric effects setup complete");
+    }
+
+    enhanceMaterials() {
+        console.log("[OrgScene2B] Enhancing materials with PBR...");
+
+        if (!this.organizationModel) {
+            console.warn("[OrgScene2B] Organization model not available for material enhancement");
+            return;
+        }
+
+        // Traverse all meshes and enhance materials
+        this.organizationModel.traverse((child) => {
+            if (child.isMesh) {
+                // Enable shadows
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+                // Enhance material properties if it's a standard material
+                if (child.material) {
+                    // If it's a basic material, upgrade to standard for PBR
+                    if (child.material.type === 'MeshBasicMaterial') {
+                        const oldMaterial = child.material;
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: oldMaterial.color,
+                            map: oldMaterial.map,
+                            roughness: 0.7,
+                            metalness: 0.1
+                        });
+                        oldMaterial.dispose();
+                    } else if (child.material.type === 'MeshStandardMaterial' || child.material.type === 'MeshPhysicalMaterial') {
+                        // Enhance existing standard materials
+                        if (!child.material.roughness) child.material.roughness = 0.7;
+                        if (!child.material.metalness) child.material.metalness = 0.1;
+                        child.material.envMapIntensity = 1.0;
+                    }
+                }
+            }
+        });
+
+        console.log("[OrgScene2B] Materials enhanced");
     }
 
     createPortals() {
@@ -573,7 +955,11 @@ export default class OrganizationScene2B {
         this.speechBubbleGroup.rotation.y = Math.PI;
         
         this.scene.add(this.speechBubbleGroup);
-        this.createAlternativeButton();
+
+        // Add tooltip for speech bubble interaction
+        this.createSpeechBubbleTooltip();
+
+        console.log("[OrgScene2B] 3D speech bubble created and positioned above NPC");
     }
 
     playPendingDialogue() {
@@ -646,53 +1032,58 @@ export default class OrganizationScene2B {
         this.speechBubbleGroup.add(this.speechTextPlane);
     }
 
-    createAlternativeButton() {
-        this.alternativeButton = document.createElement('div');
-        this.alternativeButton.id = 'alternative-speech-button';
-        this.alternativeButton.innerHTML = `
-            <div style="position: fixed; top: 20px; right: 20px; z-index: 10000001;">
-                <button id="read-speech-btn" style="
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    border: none;
-                    padding: 15px 25px;
-                    border-radius: 25px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                    transition: all 0.3s ease;
-                ">
-                    💬 ${languageManager.translate(ORG_TEXTS.ui.readConversation)}
-                </button>
+    createSpeechBubbleTooltip() {
+        console.log("[OrgScene2B] Creating speech bubble tooltip...");
+
+        // Create tooltip with dark theme
+        const tooltip = document.createElement('div');
+        tooltip.id = 'speech-bubble-tooltip';
+        tooltip.innerHTML = `
+            <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(10,10,20,0.95); backdrop-filter: blur(10px); color: rgba(255,255,255,0.9); padding: 12px 24px; border-radius: 4px; border: 1px solid rgba(74,144,226,0.3); font-size: 13px; z-index: 10000002; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; font-family: 'Courier New', monospace;">
+                <div style="text-align: center;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">💬 Click speech bubble to read</div>
+                    <div style="font-size: 11px; opacity: 0.7;">Use cursor to interact</div>
+                </div>
             </div>
         `;
 
-        document.body.appendChild(this.alternativeButton);
-        
-        const button = this.alternativeButton.querySelector('#read-speech-btn');
-        button.addEventListener('click', () => {
-            // Play click sound
-            if (this.experience && this.experience.soundManager) {
-                this.experience.soundManager.play('click', 0.6);
-            }
-            this.playPendingDialogue();
-            this.showScreenSpeechBubble();
-        });
+        document.body.appendChild(tooltip);
+
+        // Show tooltip after delay
+        setTimeout(() => {
+            const tooltipDiv = tooltip.querySelector('div');
+            tooltipDiv.style.opacity = '1';
+        }, 2000);
+
+        // Hide tooltip after showing
+        setTimeout(() => {
+            const tooltipDiv = tooltip.querySelector('div');
+            tooltipDiv.style.opacity = '0';
+            setTimeout(() => {
+                if (document.body.contains(tooltip)) {
+                    document.body.removeChild(tooltip);
+                }
+            }, 300);
+        }, 5000);
+
+        console.log("[OrgScene2B] Speech bubble tooltip created");
     }
 
     showScreenSpeechBubble() {
+        console.log("[OrgScene2B] Showing screen speech bubble...");
+
+        // Create screen overlay speech bubble with dark theme
         const screenBubble = document.createElement('div');
         screenBubble.id = 'screen-speech-bubble';
         screenBubble.innerHTML = `
-            <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: white; border: 3px solid #333; border-radius: 20px; padding: 30px; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000001; cursor: pointer;">
-                <div style="font-size: 24px; font-weight: bold; color: #000; margin-bottom: 15px; text-align: center;">
-                    ${languageManager.translate(ORG_TEXTS.scene2b.speaker)}:
+            <div style="position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: linear-gradient(180deg, rgba(10,10,20,0.98) 0%, rgba(15,15,25,0.98) 100%); backdrop-filter: blur(40px); border: 1px solid rgba(74,144,226,0.3); border-radius: 8px; padding: 30px 40px; max-width: 600px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); z-index: 10000001; cursor: pointer;">
+                <div style="font-size: 20px; font-weight: bold; color: rgba(74,144,226,0.9); margin-bottom: 20px; text-align: center; font-family: 'Courier New', monospace; letter-spacing: 2px; text-transform: uppercase;">
+                    ${languageManager.translate(ORG_TEXTS.scene2b.speaker)}
                 </div>
-                <div style="font-size: 18px; color: #000; line-height: 1.6; text-align: center;">
-                    ${languageManager.translate(ORG_TEXTS.scene2b.dialogue)}
+                <div style="font-size: 16px; color: rgba(255,255,255,0.9); line-height: 1.8; text-align: left; font-family: system-ui, sans-serif;">
+                    ${languageManager.translate(ORG_TEXTS.scene2b.dialogue).replace(/\n/g, '<br>')}
                 </div>
-                <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                <div style="text-align: center; margin-top: 25px; font-size: 12px; color: rgba(255,255,255,0.5); font-family: 'Courier New', monospace; letter-spacing: 1px;">
                     ${languageManager.translate(ORG_TEXTS.ui.clickToClose)}
                 </div>
             </div>
@@ -700,13 +1091,17 @@ export default class OrganizationScene2B {
 
         document.body.appendChild(screenBubble);
         this.playPendingDialogue();
+
+        // Add click event to close
         screenBubble.addEventListener('click', () => {
-            // Play click sound
             if (this.experience && this.experience.soundManager) {
                 this.experience.soundManager.play('click', 0.6);
             }
             document.body.removeChild(screenBubble);
+            console.log("[OrgScene2B] Screen speech bubble closed");
         });
+
+        console.log("[OrgScene2B] Screen speech bubble displayed");
     }
 
     onMouseMove(event) {
@@ -767,90 +1162,289 @@ export default class OrganizationScene2B {
     }
 
     showChoices() {
-        console.log("[OrgScene2B] Creating choice panel...");
-        
+        console.log("[OrgScene2B] Creating dark cinematic choice panel...");
+
+        // Remove existing choice panel if any
         const existingPanel = document.getElementById('choice-panel');
         if (existingPanel) {
             existingPanel.remove();
         }
 
+        // Create choice panel element with dark cinematic theme
         const panel = document.createElement('div');
         panel.id = 'choice-panel';
         panel.innerHTML = `
-            <div style="background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.95)); border: 3px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 25px; min-width: 450px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <button id="choice-A" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(76,175,80,0.15); border: 2px solid rgba(76,175,80,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
-                        <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #4caf50;">A</span>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene2b.choices.a)}</div>
+            <div style="
+                background: linear-gradient(180deg, rgba(10,10,20,0.95) 0%, rgba(15,15,25,0.98) 100%);
+                backdrop-filter: blur(40px) saturate(150%);
+                -webkit-backdrop-filter: blur(40px) saturate(150%);
+                border: 1px solid rgba(255,255,255,0.05);
+                border-radius: 8px;
+                padding: 40px;
+                max-width: 600px;
+                box-shadow:
+                    0 20px 60px 0 rgba(0,0,0,0.9),
+                    0 0 0 1px rgba(255,255,255,0.02) inset,
+                    0 1px 0 rgba(255,255,255,0.05) inset;
+                position: relative;
+                overflow: hidden;
+            ">
+                <!-- Scan line effect -->
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(180deg,
+                        transparent 0%,
+                        rgba(255,255,255,0.015) 50%,
+                        transparent 100%
+                    );
+                    animation: scanline 4s linear infinite;
+                    pointer-events: none;
+                    z-index: 1;
+                "></div>
+
+                <!-- Choice title -->
+                <div style="
+                    text-align: center;
+                    margin-bottom: 30px;
+                    position: relative;
+                    z-index: 2;
+                ">
+                    <div style="
+                        color: rgba(255,255,255,0.5);
+                        font-size: 12px;
+                        font-weight: 600;
+                        margin-bottom: 12px;
+                        letter-spacing: 3px;
+                        text-transform: uppercase;
+                        font-family: 'Courier New', monospace;
+                    ">YOUR DECISION</div>
+                    <div style="
+                        width: 80px;
+                        height: 1px;
+                        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                        margin: 0 auto;
+                    "></div>
+                </div>
+
+                <!-- Choices container -->
+                <div style="display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 2;">
+                    <!-- Choice A -->
+                    <button id="choice-A" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 18px;
+                        padding: 18px 22px;
+                        background: linear-gradient(135deg, rgba(30,160,120,0.08) 0%, rgba(20,120,90,0.05) 100%);
+                        border: 1px solid rgba(60,200,150,0.25);
+                        border-radius: 4px;
+                        color: white;
+                        cursor: pointer;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        text-align: left;
+                        font-size: 15px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+                        position: relative;
+                        overflow: hidden;
+                        font-family: system-ui, -apple-system, sans-serif;
+                    ">
+                        <!-- Hover overlay -->
+                        <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: linear-gradient(135deg, rgba(60,200,150,0.1) 0%, rgba(40,160,120,0.05) 100%);
+                            opacity: 0;
+                            transition: opacity 0.3s ease;
+                            pointer-events: none;
+                        " class="choice-hover"></div>
+
+                        <span style="
+                            font-size: 20px;
+                            font-weight: 700;
+                            min-width: 32px;
+                            height: 32px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: rgba(80,220,160,0.9);
+                            background: rgba(60,200,150,0.12);
+                            border-radius: 2px;
+                            border: 1px solid rgba(60,200,150,0.2);
+                            font-family: 'Courier New', monospace;
+                            position: relative;
+                            z-index: 1;
+                        ">A</span>
+                        <div style="flex: 1; position: relative; z-index: 1;">
+                            <div style="
+                                font-weight: 600;
+                                font-size: 16px;
+                                margin-bottom: 4px;
+                                line-height: 1.4;
+                                color: rgba(255,255,255,0.95);
+                            ">${languageManager.translate(ORG_TEXTS.scene2b.choices.a)}</div>
                         </div>
                     </button>
-                    <button id="choice-B" style="display: flex; align-items: center; gap: 15px; padding: 18px 22px; background: rgba(244,67,54,0.15); border: 2px solid rgba(244,67,54,0.5); border-radius: 12px; color: white; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 16px;">
-                        <span style="font-size: 24px; font-weight: bold; min-width: 35px; text-align: center; color: #f44336;">B</span>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 17px; line-height: 1.3;">${languageManager.translate(ORG_TEXTS.scene2b.choices.b)}</div>
+
+                    <!-- Choice B -->
+                    <button id="choice-B" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 18px;
+                        padding: 18px 22px;
+                        background: linear-gradient(135deg, rgba(180,30,30,0.08) 0%, rgba(140,20,20,0.05) 100%);
+                        border: 1px solid rgba(240,80,80,0.25);
+                        border-radius: 4px;
+                        color: white;
+                        cursor: pointer;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        text-align: left;
+                        font-size: 15px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+                        position: relative;
+                        overflow: hidden;
+                        font-family: system-ui, -apple-system, sans-serif;
+                    ">
+                        <!-- Hover overlay -->
+                        <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: linear-gradient(135deg, rgba(240,80,80,0.1) 0%, rgba(200,60,60,0.05) 100%);
+                            opacity: 0;
+                            transition: opacity 0.3s ease;
+                            pointer-events: none;
+                        " class="choice-hover"></div>
+
+                        <span style="
+                            font-size: 20px;
+                            font-weight: 700;
+                            min-width: 32px;
+                            height: 32px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: rgba(255,100,100,0.9);
+                            background: rgba(240,80,80,0.12);
+                            border-radius: 2px;
+                            border: 1px solid rgba(240,80,80,0.2);
+                            font-family: 'Courier New', monospace;
+                            position: relative;
+                            z-index: 1;
+                        ">B</span>
+                        <div style="flex: 1; position: relative; z-index: 1;">
+                            <div style="
+                                font-weight: 600;
+                                font-size: 16px;
+                                margin-bottom: 4px;
+                                line-height: 1.4;
+                                color: rgba(255,255,255,0.95);
+                            ">${languageManager.translate(ORG_TEXTS.scene2b.choices.b)}</div>
                         </div>
                     </button>
                 </div>
             </div>
+
+            <style>
+                @keyframes scanline {
+                    0% { transform: translateY(-100%); }
+                    100% { transform: translateY(100%); }
+                }
+
+                @keyframes slideInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(40px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                #choice-A:hover .choice-hover,
+                #choice-B:hover .choice-hover {
+                    opacity: 1;
+                }
+
+                #choice-A:hover {
+                    transform: translateX(4px);
+                    border-color: rgba(80,220,160,0.5);
+                    box-shadow: 0 4px 16px rgba(60,200,150,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+                }
+
+                #choice-B:hover {
+                    transform: translateX(4px);
+                    border-color: rgba(255,100,100,0.5);
+                    box-shadow: 0 4px 16px rgba(240,80,80,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+                }
+
+                #choice-A:active, #choice-B:active {
+                    transform: translateX(2px) scale(0.99);
+                }
+            </style>
         `;
 
+        // Style the panel - positioned at bottom of screen with animation
         panel.style.cssText = `
             position: fixed;
-            bottom: 20%;
+            bottom: 12%;
             left: 50%;
             transform: translate(-50%, 0);
             z-index: 10000000;
             opacity: 0;
-            transition: opacity 0.5s ease;
+            animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            pointer-events: all;
         `;
 
+        // Add to document
         document.body.appendChild(panel);
+        console.log("[OrgScene2B] Choice panel added to DOM");
 
+        // Fade in
         setTimeout(() => {
             panel.style.opacity = '1';
+            console.log("[OrgScene2B] Choice panel faded in");
         }, 100);
 
-        // Add event listeners for choices
+        // Add event listeners
         document.getElementById('choice-A').addEventListener('click', () => {
             console.log("[OrgScene2B] Player chose A");
-            // Play click sound
-            if (this.experience && this.experience.soundManager) {
-                this.experience.soundManager.play('click', 0.6);
-            }
             this.handleChoice('A');
         });
 
         document.getElementById('choice-B').addEventListener('click', () => {
             console.log("[OrgScene2B] Player chose B");
-            // Play click sound
-            if (this.experience && this.experience.soundManager) {
-                this.experience.soundManager.play('click', 0.6);
-            }
             this.handleChoice('B');
         });
 
         // Add hover effects
-        const choiceA = document.getElementById('choice-A');
-        const choiceB = document.getElementById('choice-B');
-        
-        choiceA.addEventListener('mouseenter', function() {
+        document.getElementById('choice-A').addEventListener('mouseenter', function() {
             this.style.background = 'rgba(76,175,80,0.3)';
             this.style.borderColor = 'rgba(76,175,80,0.8)';
             this.style.transform = 'scale(1.02)';
         });
-        choiceA.addEventListener('mouseleave', function() {
+
+        document.getElementById('choice-A').addEventListener('mouseleave', function() {
             this.style.background = 'rgba(76,175,80,0.15)';
             this.style.borderColor = 'rgba(76,175,80,0.5)';
             this.style.transform = 'scale(1)';
         });
 
-        choiceB.addEventListener('mouseenter', function() {
+        document.getElementById('choice-B').addEventListener('mouseenter', function() {
             this.style.background = 'rgba(244,67,54,0.3)';
             this.style.borderColor = 'rgba(244,67,54,0.8)';
             this.style.transform = 'scale(1.02)';
         });
-        choiceB.addEventListener('mouseleave', function() {
+
+        document.getElementById('choice-B').addEventListener('mouseleave', function() {
             this.style.background = 'rgba(244,67,54,0.15)';
             this.style.borderColor = 'rgba(244,67,54,0.5)';
             this.style.transform = 'scale(1)';
@@ -984,6 +1578,63 @@ export default class OrganizationScene2B {
         if (this.uiManager) {
             this.uiManager.updatePositions();
         }
+
+        // Update particles
+        this.updateParticles();
+
+        // Update film grain time for animation
+        if (this.filmGrainPass && this.filmGrainPass.uniforms) {
+            this.filmGrainPass.uniforms.time.value = this.experience.time.elapsed * 0.001;
+        }
+
+        // Render using composer for post-processing effects
+        if (this.composer) {
+            this.composer.render();
+        }
+    }
+
+    updateParticles() {
+        if (!this.particleSystems || this.particleSystems.length === 0) return;
+
+        const time = this.experience.time.elapsed * 0.001;
+
+        this.particleSystems.forEach((system) => {
+            if (system.type === 'dust' && system.particles) {
+                const positions = system.particles.geometry.attributes.position;
+                const velocities = system.particles.geometry.attributes.velocity;
+
+                for (let i = 0; i < positions.count; i++) {
+                    // Update Y position (floating upward)
+                    positions.array[i * 3 + 1] += velocities.array[i * 3 + 1];
+
+                    // Update X and Z positions (drifting)
+                    positions.array[i * 3] += velocities.array[i * 3];
+                    positions.array[i * 3 + 2] += velocities.array[i * 3 + 2];
+
+                    // Reset particle if it goes too high
+                    if (positions.array[i * 3 + 1] > 40) {
+                        positions.array[i * 3 + 1] = 0;
+                        positions.array[i * 3] = (Math.random() - 0.5) * 100;
+                        positions.array[i * 3 + 2] = (Math.random() - 0.5) * 100;
+                    }
+
+                    // Wrap particles horizontally
+                    if (Math.abs(positions.array[i * 3]) > 50) {
+                        positions.array[i * 3] = -positions.array[i * 3];
+                    }
+                    if (Math.abs(positions.array[i * 3 + 2]) > 50) {
+                        positions.array[i * 3 + 2] = -positions.array[i * 3 + 2];
+                    }
+                }
+
+                positions.needsUpdate = true;
+            }
+        });
+
+        // Update light rays rotation
+        if (this.environmentalEffects.lightRays) {
+            this.environmentalEffects.lightRays.rotation.y = Math.sin(time * 0.2) * 0.1;
+        }
     }
 
     dispose() {
@@ -1008,10 +1659,6 @@ export default class OrganizationScene2B {
             this.canvas.removeEventListener('mousemove', this.onMouseMove);
         }
 
-        if (this.alternativeButton) {
-            this.alternativeButton.remove();
-            this.alternativeButton = null;
-        }
 
         if (this.choicePanel) {
             this.choicePanel.remove();
@@ -1060,6 +1707,51 @@ export default class OrganizationScene2B {
 
         if (this.organizationModel && this.organizationModel.parent) {
             this.scene.remove(this.organizationModel.parent);
+        }
+
+        // Dispose composer and post-processing
+        if (this.composer) {
+            this.composer.dispose();
+            this.composer = null;
+        }
+
+        // Remove all lights
+        if (this.lights) {
+            Object.values(this.lights).forEach(light => {
+                if (light && light.parent) {
+                    this.scene.remove(light);
+                    if (light.dispose) light.dispose();
+                }
+            });
+            this.lights = {};
+        }
+
+        // Dispose environmental effects
+        if (this.environmentalEffects) {
+            if (this.environmentalEffects.dustParticles) {
+                if (this.environmentalEffects.dustParticles.geometry) {
+                    this.environmentalEffects.dustParticles.geometry.dispose();
+                }
+                if (this.environmentalEffects.dustParticles.material) {
+                    this.environmentalEffects.dustParticles.material.dispose();
+                }
+                this.scene.remove(this.environmentalEffects.dustParticles);
+            }
+            if (this.environmentalEffects.lightRays) {
+                if (this.environmentalEffects.lightRays.geometry) {
+                    this.environmentalEffects.lightRays.geometry.dispose();
+                }
+                if (this.environmentalEffects.lightRays.material) {
+                    this.environmentalEffects.lightRays.material.dispose();
+                }
+                this.scene.remove(this.environmentalEffects.lightRays);
+            }
+            this.environmentalEffects = {};
+        }
+
+        // Clear fog
+        if (this.scene.fog) {
+            this.scene.fog = null;
         }
 
         // Clean up loading indicator

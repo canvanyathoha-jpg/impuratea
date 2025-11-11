@@ -23,10 +23,7 @@ export default class Player {
         this.domElements = elements({
             joystickArea: ".joystick-area",
             controlOverlay: ".control-overlay",
-            messageInput: "#chat-message-input",
             switchViewButton: ".switch-camera-view",
-            chatBox: "#chatBox",
-            toggleChatboxBtn: "#toggleChatboxBtn",
         });
 
         this.initPlayer();
@@ -193,8 +190,6 @@ export default class Player {
     }
 
     onKeyDown = (e) => {
-        if (document.activeElement === this.domElements.messageInput) return;
-
         // Only respond to WASD keys for movement
         if (e.code === "KeyW") {
             this.actions.forward = true;
@@ -315,17 +310,6 @@ export default class Player {
     addEventListeners() {
         document.addEventListener("keydown", this.onKeyDown);
         document.addEventListener("keyup", this.onKeyUp);
-
-        // Toggle chatbox visibility
-        if (this.domElements.toggleChatboxBtn && this.domElements.chatBox) {
-            this.domElements.toggleChatboxBtn.addEventListener("click", this.toggleChatbox);
-        }
-    }
-
-    toggleChatbox = () => {
-        if (this.domElements.chatBox) {
-            this.domElements.chatBox.classList.toggle("hidden");
-        }
     }
 
     resize() {}

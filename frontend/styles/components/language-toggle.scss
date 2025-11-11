@@ -1,103 +1,363 @@
-// Language Toggle Button Styling
-// Button untuk switch antara bahasa Indonesia dan Inggris
-// Button ini harus selalu terlihat, bahkan saat preloader aktif
+// Language Selector - Compact Button with Dropdown Menu
+// Modern minimalist design dengan dropdown menu untuk switch bahasa
+// Sesuai standar industri seperti Google, GitHub, Netflix, dll
 
-#language-toggle-btn {
-    @extend %center;
-    
+.language-selector {
     // Positioning - top left corner
-    // Using fixed position so it stays visible even when scrolling
     position: fixed;
-    top: 48px;
-    left: 48px;
-    // Z-index sangat tinggi agar selalu di atas preloader dan elemen lainnya
+    top: 16px;
+    left: 16px;
     z-index: 999999999999999999999999999999999;
-    
-    // Button styling
-    display: flex !important; // Force display
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
-    // Background dengan opacity agar terlihat di berbagai latar belakang
-    background-color: $color-base-black-transparent;
-    color: $color-base-white;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    // Ensure button is clickable
-    pointer-events: auto;
-    // Make sure it's visible
+
+    // Ensure visibility
     opacity: 1 !important;
     visibility: visible !important;
-    
-    // Hover effect - lebih gelap saat hover
-    &:hover {
-        background-color: rgba(0, 0, 0, 0.8);
-        border-color: rgba(255, 255, 255, 0.4);
-        transform: scale(1.05);
-    }
-    
-    // Active state - sedikit lebih kecil saat diklik
-    &:active {
-        transform: scale(0.95);
-    }
-    
-    // Focus state untuk accessibility
-    &:focus {
-        outline: 2px solid rgba(255, 255, 255, 0.5);
-        outline-offset: 2px;
-    }
-    
-    // Flag emoji styling
-    #language-flag {
-        font-size: 18px;
+}
+
+// Main Language Button - Compact & Minimalist
+.language-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+
+    // Modern glassmorphism background
+    background: linear-gradient(135deg,
+        rgba(15, 15, 25, 0.92) 0%,
+        rgba(20, 20, 30, 0.95) 100%);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+
+    // Subtle border
+    border: 1px solid rgba(74, 144, 226, 0.25);
+    border-radius: 8px;
+
+    // Typography
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    // Interaction
+    cursor: pointer;
+    user-select: none;
+    pointer-events: auto;
+
+    // Smooth transitions
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    // Subtle shadow
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.4),
+        0 1px 2px rgba(74, 144, 226, 0.1);
+
+    // Flag emoji
+    .current-lang-flag {
+        font-size: 16px;
         line-height: 1;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
     }
-    
-    // Language text styling
-    #language-text {
-        font-size: 14px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        display: inline-block;
-    }
-    
-    // Mobile responsive - adjust size untuk layar kecil
-    @include media("<=tablet") {
-        // Keep visible on mobile but adjust size
-        top: 24px;
-        left: 24px;
-        padding: 6px 12px;
+
+    // Language code
+    .current-lang-code {
         font-size: 12px;
-        
-        #language-flag {
-            font-size: 16px;
-        }
-        
-        #language-text {
-            font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+    }
+
+    // Dropdown icon (chevron down)
+    .dropdown-icon {
+        width: 12px;
+        height: 12px;
+        stroke: rgba(255, 255, 255, 0.6);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    // Hover state
+    &:hover {
+        background: linear-gradient(135deg,
+            rgba(20, 20, 30, 0.95) 0%,
+            rgba(25, 25, 35, 0.98) 100%);
+        border-color: rgba(74, 144, 226, 0.4);
+        transform: translateY(-1px);
+        box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.5),
+            0 0 16px rgba(74, 144, 226, 0.15);
+
+        .dropdown-icon {
+            stroke: rgba(255, 255, 255, 0.9);
         }
     }
-    
-    // Ensure button is always visible, even on very small screens
-    @include media("<=phone") {
-        top: 16px;
-        left: 16px;
-        padding: 6px 10px;
-        gap: 6px;
-        
-        #language-flag {
-            font-size: 14px;
+
+    // Active/Open state
+    &:active,
+    &.active {
+        transform: translateY(0);
+        box-shadow:
+            0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    // When dropdown is open, rotate icon
+    &.active .dropdown-icon {
+        transform: rotate(180deg);
+    }
+
+    // Focus state
+    &:focus-visible {
+        outline: none;
+        border-color: rgba(74, 144, 226, 0.6);
+        box-shadow:
+            0 2px 8px rgba(0, 0, 0, 0.4),
+            0 0 0 2px rgba(74, 144, 226, 0.3);
+    }
+}
+
+// Dropdown Menu
+.language-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 180px;
+
+    // Modern glassmorphism background
+    background: linear-gradient(135deg,
+        rgba(15, 15, 25, 0.95) 0%,
+        rgba(20, 20, 30, 0.98) 100%);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+
+    // Border and shape
+    border: 1px solid rgba(74, 144, 226, 0.25);
+    border-radius: 10px;
+
+    // Shadow for depth
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.6),
+        0 2px 8px rgba(0, 0, 0, 0.4),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset;
+
+    // Padding inside dropdown
+    padding: 6px;
+
+    // Hidden by default
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-8px);
+
+    // Smooth transition
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    // When dropdown is open
+    &.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+
+    // Language option buttons
+    .language-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 12px;
+
+        // Background
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+
+        // Text styling
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 13px;
+        font-weight: 500;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        text-align: left;
+
+        // Interaction
+        cursor: pointer;
+        user-select: none;
+
+        // Smooth transition
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+        // Flag emoji
+        .lang-flag {
+            font-size: 18px;
+            line-height: 1;
+            flex-shrink: 0;
         }
-        
-        #language-text {
+
+        // Language name (full name)
+        .lang-name {
+            flex: 1;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        // Language code (small, right side)
+        .lang-code-small {
             font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        // Hover state
+        &:hover {
+            background: rgba(74, 144, 226, 0.15);
+            color: rgba(255, 255, 255, 0.95);
+            transform: translateX(2px);
+
+            .lang-name {
+                color: rgba(255, 255, 255, 1);
+            }
+
+            .lang-code-small {
+                color: rgba(74, 144, 226, 0.9);
+            }
+        }
+
+        // Active/Selected state
+        &.selected {
+            background: rgba(74, 144, 226, 0.2);
+            color: rgba(255, 255, 255, 1);
+
+            .lang-name {
+                font-weight: 600;
+                color: rgba(255, 255, 255, 1);
+            }
+
+            .lang-code-small {
+                color: rgba(74, 144, 226, 1);
+                font-weight: 700;
+            }
+        }
+
+        // Active press state
+        &:active {
+            transform: translateX(1px) scale(0.98);
+        }
+
+        // Focus state
+        &:focus-visible {
+            outline: none;
+            background: rgba(74, 144, 226, 0.15);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3) inset;
+        }
+
+        // Not first child - add divider
+        &:not(:first-child) {
+            margin-top: 2px;
         }
     }
 }
 
+// Mobile responsive
+@include media("<=tablet") {
+    .language-selector {
+        top: 12px;
+        left: 12px;
+    }
+
+    .language-btn {
+        padding: 6px 10px;
+        gap: 5px;
+
+        .current-lang-flag {
+            font-size: 14px;
+        }
+
+        .current-lang-code {
+            font-size: 11px;
+        }
+
+        .dropdown-icon {
+            width: 10px;
+            height: 10px;
+        }
+    }
+
+    .language-dropdown {
+        min-width: 160px;
+        padding: 5px;
+
+        .language-option {
+            padding: 8px 10px;
+            gap: 8px;
+
+            .lang-flag {
+                font-size: 16px;
+            }
+
+            .lang-name {
+                font-size: 12px;
+            }
+
+            .lang-code-small {
+                font-size: 10px;
+            }
+        }
+    }
+}
+
+@include media("<=phone") {
+    .language-selector {
+        top: 10px;
+        left: 10px;
+    }
+
+    .language-btn {
+        padding: 6px 8px;
+        gap: 4px;
+
+        .current-lang-flag {
+            font-size: 13px;
+        }
+
+        .current-lang-code {
+            font-size: 10px;
+        }
+    }
+
+    .language-dropdown {
+        min-width: 150px;
+
+        .language-option {
+            padding: 7px 9px;
+
+            .lang-flag {
+                font-size: 15px;
+            }
+
+            .lang-name {
+                font-size: 11px;
+            }
+
+            .lang-code-small {
+                font-size: 9px;
+            }
+        }
+    }
+}
+
+// Entrance animation
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.language-selector {
+    animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}

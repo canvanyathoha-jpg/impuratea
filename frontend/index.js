@@ -8,10 +8,6 @@ import { languageManager } from "./Experience/Utils/LanguageManager.js";
 
 const domElements = elements({
     canvas: ".experience-canvas",
-    chatContainer: ".chat-container",
-    messageSubmitButton: "#chat-message-button",
-    messageInput: "#chat-message-input",
-    inputWrapper: ".message-input-wrapper",
     nameInputButton: "#name-input-button",
     nameInput: "#name-input",
     avatarLeftImg: ".avatar-left",
@@ -38,65 +34,134 @@ window.addEventListener("keydown", function (e) {
     }
 });
 
-// Language Toggle Setup
-// Get language toggle button and its elements
+// Language Selector Setup - Compact Button with Dropdown
+// Get language selector elements
 const languageToggleBtn = document.getElementById('language-toggle-btn');
-const languageFlag = document.getElementById('language-flag');
-const languageText = document.getElementById('language-text');
+const languageDropdown = document.getElementById('languageDropdown');
+const currentLangFlag = document.getElementById('currentLangFlag');
+const currentLangCode = document.getElementById('currentLangCode');
+const languageOptions = document.querySelectorAll('.language-option');
 
-// Debug: Check if button elements are found
+// Debug: Check if elements are found
 if (!languageToggleBtn) {
     console.error('[Language] Language toggle button not found in DOM!');
 } else {
-    console.log('[Language] Language toggle button found successfully');
+    console.log('[Language] Language selector found successfully');
 }
 
-if (!languageFlag || !languageText) {
-    console.error('[Language] Language flag or text element not found!');
-}
-
-// Update language button UI
-// Function untuk update tampilan button sesuai bahasa saat ini
+// Update current language display on button
 function updateLanguageButton() {
     const lang = languageManager.getLanguage();
-    if (languageFlag && languageText) {
+
+    if (currentLangFlag && currentLangCode) {
         if (lang === 'id') {
-            // Set flag dan text untuk bahasa Indonesia
-            languageFlag.textContent = '🇮🇩';
-            languageText.textContent = 'ID';
+            currentLangFlag.textContent = '🇮🇩';
+            currentLangCode.textContent = 'ID';
         } else {
-            // Set flag dan text untuk bahasa Inggris
-            languageFlag.textContent = '🇬🇧';
-            languageText.textContent = 'EN';
+            currentLangFlag.textContent = '🇬🇧';
+            currentLangCode.textContent = 'EN';
         }
-        console.log('[Language] Button UI updated to:', lang);
+    }
+
+    // Update selected state in dropdown options
+    languageOptions.forEach(option => {
+        const optionLang = option.getAttribute('data-lang');
+        if (optionLang === lang) {
+            option.classList.add('selected');
+        } else {
+            option.classList.remove('selected');
+        }
+    });
+
+    console.log('[Language] Button UI updated to:', lang);
+}
+
+// Toggle dropdown visibility
+function toggleDropdown(show) {
+    if (show === undefined) {
+        languageDropdown.classList.toggle('active');
+        languageToggleBtn.classList.toggle('active');
+    } else if (show) {
+        languageDropdown.classList.add('active');
+        languageToggleBtn.classList.add('active');
+    } else {
+        languageDropdown.classList.remove('active');
+        languageToggleBtn.classList.remove('active');
     }
 }
 
 // Initialize language button on page load
 updateLanguageButton();
 
-// Toggle language on button click
+// Toggle dropdown when button is clicked
 if (languageToggleBtn) {
-    languageToggleBtn.addEventListener('click', () => {
-        console.log('[Language] Language toggle button clicked');
-        
+    languageToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        console.log('[Language] Language button clicked');
+
         // Play click sound jika sound manager sudah tersedia
+        if (experience && experience.soundManager) {
+            experience.soundManager.play('click', 0.5);
+        }
+
+        toggleDropdown();
+    });
+
+    // Keyboard accessibility for button
+    languageToggleBtn.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            toggleDropdown();
+        } else if (e.key === 'Escape') {
+            toggleDropdown(false);
+        }
+    });
+}
+
+// Handle language option clicks
+languageOptions.forEach(option => {
+    option.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetLang = option.getAttribute('data-lang');
+
+        console.log('[Language] Language option clicked:', targetLang);
+
+        // Play click sound
         if (experience && experience.soundManager) {
             experience.soundManager.play('click', 0.6);
         }
-        
-        // Toggle bahasa dan update UI
-        const newLang = languageManager.toggleLanguage();
-        updateLanguageButton();
-        console.log('[Language] Language toggled to:', newLang);
-        
-        // Dispatch event untuk update UI lainnya yang mendengarkan perubahan bahasa
-        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: newLang } }));
+
+        // Set language
+        if (targetLang && targetLang !== languageManager.getLanguage()) {
+            languageManager.setLanguage(targetLang);
+            updateLanguageButton();
+
+            // Dispatch event untuk update UI lainnya
+            window.dispatchEvent(new CustomEvent('languageChanged', {
+                detail: { language: targetLang }
+            }));
+        }
+
+        // Close dropdown after selection
+        setTimeout(() => {
+            toggleDropdown(false);
+        }, 150);
     });
-} else {
-    console.error('[Language] Cannot add click event listener - button not found!');
-}
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!languageToggleBtn.contains(e.target) && !languageDropdown.contains(e.target)) {
+        toggleDropdown(false);
+    }
+});
+
+// Close dropdown on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        toggleDropdown(false);
+    }
+});
 
 // Listen for language changes from other sources
 window.addEventListener('languageChanged', (event) => {
