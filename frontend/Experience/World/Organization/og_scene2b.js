@@ -753,7 +753,7 @@ export default class OrganizationScene2B {
             }
         });
 
-        this.npcSenior.position.set(8, 8, 21); // Y=8 to match player height at floor level
+        this.npcSenior.position.set(8, 1, 27); // Y=1 to lower NPC position significantly, Z increased to move NPC backward
         this.npcSenior.rotation.y = Math.PI;
         this.npcSenior.scale.set(9, 9, 9);
         // OPTIMIZATION: Enable frustum culling for better performance
@@ -778,7 +778,7 @@ export default class OrganizationScene2B {
             }
         });
 
-        this.npcKetua.position.set(12, 8, 21); // Y=8 to match player height at floor level
+        this.npcKetua.position.set(12, 1, 27); // Y=1 to lower NPC position significantly, Z increased to move NPC backward
         this.npcKetua.rotation.y = Math.PI;
         this.npcKetua.scale.set(9, 9, 9);
         // OPTIMIZATION: Enable frustum culling for better performance
@@ -955,7 +955,15 @@ export default class OrganizationScene2B {
         
         this.createSpeechTextTexture();
         
-        this.speechBubbleGroup.position.set(4, 16, 21);
+        // Position above NPC - raised and moved backward
+        if (this.npcSenior) {
+            const npcPos = this.npcSenior.position.clone();
+            npcPos.y += 18; // Reduced from 24 to lower bubble chat position
+            npcPos.z += 3; // Move bubble chat backward (away from player)
+            this.speechBubbleGroup.position.copy(npcPos);
+        } else {
+            this.speechBubbleGroup.position.set(8, 19, 30); // Reduced Y from 24 to 19, Z remains to move backward
+        }
         this.speechBubbleGroup.rotation.y = Math.PI;
         
         this.scene.add(this.speechBubbleGroup);
