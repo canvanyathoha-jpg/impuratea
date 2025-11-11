@@ -32,6 +32,14 @@ export default class AcademicScene1 {
         this.canvas.addEventListener('click', this.onMouseClick.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
 
+        // Listen for language changes
+        this.languageChangeHandler = (event) => {
+            const newLang = event.detail?.language || languageManager.getLanguage();
+            console.log("[AcademicScene1] Language changed to:", newLang);
+            this.updateLanguage(newLang);
+        };
+        window.addEventListener('languageChanged', this.languageChangeHandler);
+
         // Show loading indicator and load scene asynchronously
         this.initWithPreloader();
     }
@@ -293,8 +301,14 @@ export default class AcademicScene1 {
     }
 
     showScene1Part3() {
-        const speaker = "Teman Sebangku";
-        const text = "Eh, kayaknya kamu belum siap ya? Tenang aja, nanti aku kasih contekan. Dijamin nilaimu bagus!";
+        const speaker = {
+            id: "Teman Sebangku",
+            en: "Deskmate"
+        };
+        const text = {
+            id: "Eh, kayaknya kamu belum siap ya? Tenang aja, nanti aku kasih contekan. Dijamin nilaimu bagus!",
+            en: "Hey, looks like you're not ready, huh? Don't worry, I'll give you the answers. Guaranteed you'll get a good grade!"
+        };
         
         // Create the 3D bubble and pass the next story function as a callback.
         // The story will now pause until the player interacts with the bubble.
@@ -409,7 +423,12 @@ export default class AcademicScene1 {
     create3DSpeechBubble(speaker, text, callback) {
         this.cleanupSpeechBubble();
         this.speechBubbleGroup = new THREE.Group();
-        this.speechBubbleGroup.userData = { speaker, text, callback }; // Store data for click events
+        
+        // Normalize speaker and text to bilingual objects
+        const speakerObj = typeof speaker === 'string' ? { id: speaker, en: speaker } : speaker;
+        const textObj = typeof text === 'string' ? { id: text, en: text } : text;
+        
+        this.speechBubbleGroup.userData = { speaker: speakerObj, text: textObj, callback }; // Store data for click events
 
         // Create enhanced bubble with better visual design
         // Main bubble plane dengan background yang lebih terang dan kontras lebih baik
@@ -454,7 +473,12 @@ export default class AcademicScene1 {
         this.speechBubbleGroup.add(border);
         this.speechBubbleGroup.add(bubblePlane);
         
-        this.createSpeechTextTexture(speaker, text);
+        // Get current language text
+        const currentLang = languageManager.getLanguage();
+        const currentSpeaker = speakerObj[currentLang] || speakerObj.id;
+        const currentText = textObj[currentLang] || textObj.id;
+        
+        this.createSpeechTextTexture(currentSpeaker, currentText);
 
         const npcPosition = this.npcDeskmate.position.clone();
         // Position speech bubble to the left side of NPC, slightly above eye level
@@ -470,7 +494,7 @@ export default class AcademicScene1 {
         this.scene.add(this.speechBubbleGroup);
         // Dialog muncul otomatis tanpa perlu klik tombol "Baca Percakapan"
         setTimeout(() => {
-            this.showScreenSpeechBubble(speaker, text, callback);
+            this.showScreenSpeechBubble(speakerObj, textObj, callback);
         }, 300);
         
         // Play dialog open sound
@@ -480,7 +504,7 @@ export default class AcademicScene1 {
         
         // Play speech audio menggunakan Web Speech API dengan voice sesuai gender NPC
         if (this.speechAudioManager && this.speechAudioManager.isSupported) {
-            const fullText = `${speaker}: ${text}`;
+            const fullText = `${currentSpeaker}: ${currentText}`;
             // Jangan set pitch/rate secara eksplisit - biarkan SpeechAudioManager set otomatis berdasarkan gender
             this.speechAudioManager.speak(fullText, {
                 gender: this.npcGender, // Gunakan gender NPC yang sesuai (female untuk scene 1)
@@ -820,6 +844,22 @@ export default class AcademicScene1 {
                 }
                 
                 const dialogData = this.speechBubbleGroup.userData;
+                // Re-speak with new language if changed
+                const currentLang = languageManager.getLanguage();
+                const currentSpeaker = dialogData.speaker[currentLang] || dialogData.speaker.id;
+                const currentText = dialogData.text[currentLang] || dialogData.text.id;
+                
+                if (this.speechAudioManager && this.speechAudioManager.isSupported) {
+                    const fullText = `${currentSpeaker}: ${currentText}`;
+                    this.speechAudioManager.speak(fullText, {
+                        gender: this.npcGender,
+                        volume: 0.85,
+                        onError: (error) => {
+                            console.warn('[AcademicScene1] Speech audio error:', error);
+                        }
+                    });
+                }
+                
                 this.showScreenSpeechBubble(dialogData.speaker, dialogData.text, dialogData.callback);
             }
         }
@@ -874,6 +914,16 @@ export default class AcademicScene1 {
     showScreenSpeechBubble(speaker, text, callback) {
         this.cleanupScreenSpeechBubble(); // Ensure no duplicates
         
+        // Normalize speaker and text to bilingual objects
+        const speakerObj = typeof speaker === 'string' ? { id: speaker, en: speaker } : speaker;
+        const textObj = typeof text === 'string' ? { id: text, en: text } : text;
+        
+        // Get current language text
+        const currentLang = languageManager.getLanguage();
+        const currentSpeaker = speakerObj[currentLang] || speakerObj.id;
+        const currentText = textObj[currentLang] || textObj.id;
+        const clickToContinue = languageManager.translate('ui', 'clickToClose') || (currentLang === 'id' ? '💡 Klik untuk melanjutkan' : '💡 Click to continue');
+        
         // TIDAK PERLU BACKDROP GELAP - Dialog muncul jelas tanpa overlay
         // Hapus backdrop untuk visibility yang lebih baik
         
@@ -898,17 +948,23 @@ export default class AcademicScene1 {
             font-family: 'Segoe UI', Arial, sans-serif;
         `;
         
+        // Store bilingual data for language updates
+        screenBubble.dataset.speakerId = speakerObj.id;
+        screenBubble.dataset.speakerEn = speakerObj.en;
+        screenBubble.dataset.textId = textObj.id;
+        screenBubble.dataset.textEn = textObj.en;
+        
         screenBubble.innerHTML = `
             <div style="margin-bottom: 15px;">
                 <h3 style="margin: 0; color: #1565c0; font-size: 22px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                    👤 ${speaker}
+                    👤 ${currentSpeaker}
                 </h3>
             </div>
             <p style="margin: 15px 0; color: #000000; font-size: 18px; line-height: 1.7; font-weight: 500;">
-                ${text}
+                ${currentText}
             </p>
             <small style="color: #757575; font-size: 12px; font-style: italic;">
-                💡 Klik untuk melanjutkan
+                ${clickToContinue}
             </small>
         `;
         
@@ -1146,6 +1202,67 @@ export default class AcademicScene1 {
         }
     }
 
+    updateLanguage(newLang) {
+        // Update 3D speech bubble texture
+        if (this.speechBubbleGroup && this.speechBubbleGroup.userData) {
+            const dialogData = this.speechBubbleGroup.userData;
+            const currentSpeaker = dialogData.speaker[newLang] || dialogData.speaker.id;
+            const currentText = dialogData.text[newLang] || dialogData.text.id;
+            
+            // Recreate texture with new language
+            const textPlane = this.speechBubbleGroup.children.find(child => child.material && child.material.map);
+            if (textPlane) {
+                this.speechBubbleGroup.remove(textPlane);
+                textPlane.material.dispose();
+                textPlane.geometry.dispose();
+            }
+            this.createSpeechTextTexture(currentSpeaker, currentText);
+        }
+        
+        // Update screen speech bubble
+        const screenBubble = document.getElementById('screen-speech-bubble');
+        if (screenBubble && screenBubble.dataset.speakerId) {
+            const speakerObj = {
+                id: screenBubble.dataset.speakerId,
+                en: screenBubble.dataset.speakerEn
+            };
+            const textObj = {
+                id: screenBubble.dataset.textId,
+                en: screenBubble.dataset.textEn
+            };
+            const currentSpeaker = speakerObj[newLang] || speakerObj.id;
+            const currentText = textObj[newLang] || textObj.id;
+            const clickToContinue = languageManager.translate('ui', 'clickToClose') || (newLang === 'id' ? '💡 Klik untuk melanjutkan' : '💡 Click to continue');
+            
+            const h3 = screenBubble.querySelector('h3');
+            const p = screenBubble.querySelector('p');
+            const small = screenBubble.querySelector('small');
+            
+            if (h3) h3.innerHTML = `👤 ${currentSpeaker}`;
+            if (p) p.textContent = currentText;
+            if (small) small.textContent = clickToContinue;
+        }
+        
+        // Re-speak with new language
+        if (this.speechBubbleGroup && this.speechBubbleGroup.userData) {
+            const dialogData = this.speechBubbleGroup.userData;
+            const currentSpeaker = dialogData.speaker[newLang] || dialogData.speaker.id;
+            const currentText = dialogData.text[newLang] || dialogData.text.id;
+            
+            if (this.speechAudioManager) {
+                this.speechAudioManager.stop();
+                const fullText = `${currentSpeaker}: ${currentText}`;
+                this.speechAudioManager.speak(fullText, {
+                    gender: this.npcGender,
+                    volume: 0.85,
+                    onError: (error) => {
+                        console.warn('[AcademicScene1] Speech audio error:', error);
+                    }
+                });
+            }
+        }
+    }
+
     update() {
         if (this.npcMixer) {
             this.npcMixer.update(this.experience.time.delta * 0.001);
@@ -1154,6 +1271,13 @@ export default class AcademicScene1 {
 
     dispose() {
         console.log("[AcademicScene1] Disposing Academic Scene 1...");
+        
+        // Remove language change listener
+        if (this.languageChangeHandler) {
+            window.removeEventListener('languageChanged', this.languageChangeHandler);
+            this.languageChangeHandler = null;
+        }
+        
         this.cleanupSpeechBubble();
         
         // Clean up loading indicator
@@ -1164,6 +1288,11 @@ export default class AcademicScene1 {
         // Stop ambient sound
         if (this.experience.soundManager) {
             this.experience.soundManager.stopAmbient('ambientClassroom');
+        }
+        
+        // Cleanup speech audio manager
+        if (this.speechAudioManager) {
+            this.speechAudioManager.dispose();
         }
         
         // Cleanup highlight

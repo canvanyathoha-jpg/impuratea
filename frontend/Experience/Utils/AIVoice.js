@@ -3,6 +3,8 @@
  * Provides AI voice narration for game dialogues and speeches
  */
 
+import { languageManager } from './LanguageManager.js';
+
 // Global variable to track active AI Voice instance
 let activeAIVoiceInstance = null;
 
@@ -23,9 +25,19 @@ export default class AIVoice {
         this.rate = 0.9; // Slightly slower for better comprehension
         this.pitch = 1.0;
         this.volume = 0.8; // 80% volume
+        this.currentLanguage = languageManager.getLanguage();
 
         // Initialize voices
         this.initVoices();
+
+        // Listen for language changes
+        this.languageChangeHandler = (event) => {
+            const newLang = event.detail?.language || languageManager.getLanguage();
+            console.log("[AIVoice] Language changed to:", newLang);
+            this.currentLanguage = newLang;
+            this.selectBestVoice();
+        };
+        window.addEventListener('languageChanged', this.languageChangeHandler);
 
         // Set this as the active instance
         activeAIVoiceInstance = this;
@@ -50,26 +62,38 @@ export default class AIVoice {
     }
 
     selectBestVoice() {
-        // Try to find Indonesian voice first
-        let indonesianVoice = this.voices.find(voice =>
-            voice.lang === 'id-ID' || voice.lang.startsWith('id')
-        );
+        const targetLang = this.currentLanguage || languageManager.getLanguage();
+        const isIndonesian = targetLang === 'id';
+        
+        let bestVoice = null;
+        
+        if (isIndonesian) {
+            // Try to find Indonesian voice first
+            bestVoice = this.voices.find(voice =>
+                voice.lang === 'id-ID' || voice.lang.startsWith('id')
+            );
+        } else {
+            // For English, try to find English voice
+            bestVoice = this.voices.find(voice =>
+                voice.lang === 'en-US' || voice.lang === 'en-GB' || voice.lang.startsWith('en')
+            );
+        }
 
-        // If no Indonesian voice, try to find a good quality voice
-        if (!indonesianVoice) {
+        // If no language-specific voice, try to find a good quality voice
+        if (!bestVoice) {
             // Prefer Google voices or Microsoft voices
-            indonesianVoice = this.voices.find(voice =>
+            bestVoice = this.voices.find(voice =>
                 voice.name.includes('Google') || voice.name.includes('Microsoft')
             );
         }
 
         // Fallback to first available voice
-        if (!indonesianVoice && this.voices.length > 0) {
-            indonesianVoice = this.voices[0];
+        if (!bestVoice && this.voices.length > 0) {
+            bestVoice = this.voices[0];
         }
 
-        this.selectedVoice = indonesianVoice;
-        console.log("[AIVoice] Selected voice:", indonesianVoice?.name || 'None');
+        this.selectedVoice = bestVoice;
+        console.log("[AIVoice] Selected voice:", bestVoice?.name || 'None', `for language: ${targetLang}`);
     }
 
     /**
@@ -89,7 +113,10 @@ export default class AIVoice {
         this.utterance.rate = options.rate || this.rate;
         this.utterance.pitch = options.pitch || this.pitch;
         this.utterance.volume = options.volume || this.volume;
-        this.utterance.lang = 'id-ID'; // Indonesian language
+        
+        // Set language based on current language setting
+        const targetLang = this.currentLanguage || languageManager.getLanguage();
+        this.utterance.lang = targetLang === 'id' ? 'id-ID' : 'en-US';
 
         // Event handlers
         this.utterance.onstart = () => {
@@ -174,6 +201,12 @@ export default class AIVoice {
      */
     dispose() {
         console.log("[AIVoice] Disposing AI Voice system...");
+
+        // Remove language change listener
+        if (this.languageChangeHandler) {
+            window.removeEventListener('languageChanged', this.languageChangeHandler);
+            this.languageChangeHandler = null;
+        }
 
         // Stop all speech immediately
         this.stop();

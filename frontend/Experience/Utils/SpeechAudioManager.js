@@ -2,6 +2,9 @@
  * SpeechAudioManager - Manages text-to-speech audio for speech bubbles
  * Prioritas: ResponsiveVoice (Indonesian voices yang lebih natural) -> Web Speech API (fallback)
  */
+
+import { languageManager } from './LanguageManager.js';
+
 export default class SpeechAudioManager {
     constructor() {
         // Check if ResponsiveVoice is available (prioritas utama untuk Indonesian voices)
@@ -9,6 +12,17 @@ export default class SpeechAudioManager {
         
         // Check if browser supports Web Speech API (fallback)
         this.isSupported = 'speechSynthesis' in window;
+        
+        // Track current language
+        this.currentLanguage = languageManager.getLanguage();
+        
+        // Listen for language changes
+        this.languageChangeHandler = (event) => {
+            const newLang = event.detail?.language || languageManager.getLanguage();
+            console.log('[SpeechAudioManager] Language changed to:', newLang);
+            this.currentLanguage = newLang;
+        };
+        window.addEventListener('languageChanged', this.languageChangeHandler);
         
         if (this.responsiveVoiceAvailable) {
             console.log('[SpeechAudioManager] ✅ ResponsiveVoice tersedia - menggunakan Indonesian voices');
@@ -439,10 +453,17 @@ export default class SpeechAudioManager {
         // Prioritas 1: Gunakan ResponsiveVoice jika tersedia (lebih natural untuk Indonesian)
         if (this.responsiveVoiceAvailable) {
             try {
-                // ResponsiveVoice voice names untuk Indonesian:
-                // - "Indonesian Female" untuk female NPC
-                // - "Indonesian Male" untuk male NPC
-                const voiceName = isFemale ? 'Indonesian Female' : 'Indonesian Male';
+                // ResponsiveVoice voice names berdasarkan bahasa dan gender
+                const targetLang = this.currentLanguage || languageManager.getLanguage();
+                let voiceName;
+                
+                if (targetLang === 'id') {
+                    // Indonesian voices
+                    voiceName = isFemale ? 'Indonesian Female' : 'Indonesian Male';
+                } else {
+                    // English voices
+                    voiceName = isFemale ? 'UK English Female' : 'UK English Male';
+                }
                 
                 // Rate: 0.85-1.0 untuk naturalness (default ResponsiveVoice rate adalah 1.0)
                 const rate = options.rate !== undefined ? options.rate : 0.92;
@@ -516,13 +537,17 @@ export default class SpeechAudioManager {
         const isFemale = gender.toLowerCase() === 'female';
         const voice = this.getVoice(gender);
         
+        // Set language based on current language setting
+        const targetLang = this.currentLanguage || languageManager.getLanguage();
+        const targetLangCode = targetLang === 'id' ? 'id-ID' : 'en-US';
+        
         if (voice) {
             utterance.voice = voice;
-            utterance.lang = voice.lang || 'id-ID';
-            console.log(`[SpeechAudioManager] ✅ Using Web Speech API voice: ${voice.name} (gender: ${gender})`);
+            utterance.lang = voice.lang || targetLangCode;
+            console.log(`[SpeechAudioManager] ✅ Using Web Speech API voice: ${voice.name} (gender: ${gender}, lang: ${targetLang})`);
         } else {
-            utterance.lang = 'id-ID';
-            console.warn(`[SpeechAudioManager] ⚠️ No suitable voice found for ${gender}, using pitch adjustment only`);
+            utterance.lang = targetLangCode;
+            console.warn(`[SpeechAudioManager] ⚠️ No suitable voice found for ${gender}, using pitch adjustment only (lang: ${targetLang})`);
         }
         
         // Set options dengan pitch dan rate yang disesuaikan untuk naturalness
@@ -623,6 +648,24 @@ export default class SpeechAudioManager {
         }
         
         return false;
+    }
+    
+    /**
+     * Dispose and cleanup
+     */
+    dispose() {
+        // Remove language change listener
+        if (this.languageChangeHandler) {
+            window.removeEventListener('languageChanged', this.languageChangeHandler);
+            this.languageChangeHandler = null;
+        }
+        
+        // Stop any ongoing speech
+        this.stop();
+        
+        // Clear references
+        this.currentUtterance = null;
+        this.voices = [];
     }
 }
 
