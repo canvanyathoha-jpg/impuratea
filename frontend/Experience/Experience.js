@@ -17,7 +17,7 @@ import World from "./World/World.js";
 export default class Experience {
     static instance;
 
-    constructor(canvas, socket) {
+    constructor(canvas) {
         if (Experience.instance) {
             return Experience.instance;
         }
@@ -25,7 +25,8 @@ export default class Experience {
         Experience.instance = this;
 
         this.canvas = canvas;
-        this.socket = socket;
+        // Socket removed - game is now offline single-player
+        this.socket = null;
         this.sizes = new Sizes();
         this.time = new Time();
         this.scoreManager = new ScoreManager();

@@ -15,7 +15,8 @@ export default class Player {
         this.camera = this.experience.camera;
         this.octree = this.experience.world.octree;
         this.resources = this.experience.resources;
-        this.socket = this.experience.socket;
+        // Socket removed - game is now offline single-player
+        this.socket = null;
 
         this.spawnPosition = initialSpawnPos; // Store spawn position
 
@@ -30,7 +31,8 @@ export default class Player {
 
         this.initPlayer();
         this.initControls();
-        this.setPlayerSocket();
+        // setPlayerSocket removed - no socket needed for offline single-player
+        this.setAvatarFromLocalStorage();
         this.setJoyStick();
         this.addEventListeners();
     }
@@ -78,10 +80,8 @@ export default class Player {
             1.4
         );
 
+        // Other players removed - game is now single-player only
         this.otherPlayers = {};
-
-        this.socket.emit("setID");
-        this.socket.emit("initPlayer", this.player);
     }
 
     setSpawnPoint(position) {
@@ -152,128 +152,44 @@ export default class Player {
         });
     }
 
-    setPlayerSocket() {
-        this.socket.on("setID", (setID, name) => {
-            // Auto-load avatar from localStorage if not on westgate scene
-            if (this.resources.currentScene !== "westgate") {
-                const savedAvatar = localStorage.getItem("impuratea-avatar");
-                const savedUsername = localStorage.getItem("impuratea-username");
+    /**
+     * Set avatar from localStorage (offline single-player mode)
+     * Loads avatar selection from localStorage if available
+     * This is called during Player initialization
+     */
+    setAvatarFromLocalStorage() {
+        // Check if avatar is already selected and saved in localStorage
+        const savedAvatar = localStorage.getItem("impuratea-avatar");
+        const savedUsername = localStorage.getItem("impuratea-username");
 
-                if (savedAvatar && savedUsername) {
-                    // Emit avatar choice automatically
-                    setTimeout(() => {
-                        this.socket.emit("setAvatar", savedAvatar);
-                        this.socket.emit("setName", savedUsername);
-                    }, 100);
-                }
-            }
-        });
-
-        this.socket.on("setAvatarSkin", (avatarSkin, id) => {
-            if (!this.avatar && id === this.socket.id) {
-                this.player.avatarSkin = avatarSkin;
-                this.avatar = new Avatar(
-                    this.resources.items[avatarSkin],
-                    this.scene,
-                    undefined,
-                    undefined,
-                    avatarSkin // Pass avatarType ("male" or "female")
-                );
-                this.updatePlayerSocket();
-            }
-        });
-
-        this.socket.on("playerData", (playerData) => {
-            for (let player of playerData) {
-                if (player.id !== this.socket.id) {
-                    this.scene.traverse((child) => {
-                        if (child.userData.id === player.id) {
-                            return;
-                        } else {
-                            if (!this.otherPlayers.hasOwnProperty(player.id)) {
-                                if (
-                                    player.name === "" ||
-                                    player.avatarSkin === ""
-                                ) {
-                                    return;
-                                }
-
-                                const name = player.name.substring(0, 25);
-
-                                const newAvatar = new Avatar(
-                                    this.resources.items[player.avatarSkin],
-                                    this.scene,
-                                    name,
-                                    player.id,
-                                    player.avatarSkin // Pass avatarType for other players too
-                                );
-
-                                player.model = newAvatar;
-                                this.otherPlayers[player.id] = player;
-                            }
-                        }
-                    });
-                    if (this.otherPlayers[player.id]) {
-                        this.otherPlayers[player.id].position = {
-                            position_x: player.position_x,
-                            position_y: player.position_y,
-                            position_z: player.position_z,
-                        };
-                        this.otherPlayers[player.id].quaternion = {
-                            quaternion_x: player.quaternion_x,
-                            quaternion_y: player.quaternion_y,
-                            quaternion_z: player.quaternion_z,
-                            quaternion_w: player.quaternion_w,
-                        };
-                        this.otherPlayers[player.id].animation = {
-                            animation: player.animation,
-                        };
-                    }
-                }
-            }
-        });
-
-        this.socket.on("removePlayer", (id) => {
-            this.disconnectedPlayerId = id;
-
-            this.otherPlayers[id].model.nametag.material.dispose();
-            this.otherPlayers[id].model.nametag.geometry.dispose();
-            this.scene.remove(this.otherPlayers[id].model.nametag);
-
-            this.otherPlayers[id].model.avatar.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                    child.material.dispose();
-                    child.geometry.dispose();
-                }
-
-                if (child.material) {
-                    child.material.dispose();
-                }
-
-                if (child.geometry) {
-                    child.geometry.dispose();
-                }
-            });
-
-            this.scene.remove(this.otherPlayers[id].model.avatar);
-
-            delete this.otherPlayers[id].nametag;
-            delete this.otherPlayers[id].model;
-            delete this.otherPlayers[id];
-        });
+        if (savedAvatar && this.resources.items[savedAvatar]) {
+            // Avatar already selected, create it immediately
+            // Use setTimeout to ensure resources are fully loaded
+            setTimeout(() => {
+                this.createPlayerAvatar(savedAvatar);
+                console.log(`[Player] Avatar loaded from localStorage: ${savedAvatar}`);
+            }, 100);
+        } else {
+            console.log(`[Player] No avatar found in localStorage, waiting for user selection`);
+        }
     }
 
-    updatePlayerSocket() {
-        setInterval(() => {
-            if (this.avatar) {
-                this.socket.emit("updatePlayer", {
-                    position: this.avatar.avatar.position,
-                    quaternion: this.avatar.avatar.quaternion,
-                    animation: this.player.animation,
-                    avatarSkin: this.player.avatarSkin,
-                });
-            }
-        }, 20);
+    /**
+     * Create player avatar (offline single-player mode)
+     * Called by Preloader after avatar selection or from localStorage
+     */
+    createPlayerAvatar(avatarSkin) {
+        if (!this.avatar && this.resources.items[avatarSkin]) {
+            this.player.avatarSkin = avatarSkin;
+            this.avatar = new Avatar(
+                this.resources.items[avatarSkin],
+                this.scene,
+                undefined,
+                undefined,
+                avatarSkin // Pass avatarType ("male" or "female")
+            );
+            console.log(`[Player] Avatar created: ${avatarSkin}`);
+        }
     }
 
     onKeyDown = (e) => {
@@ -541,34 +457,8 @@ export default class Player {
         this.avatar.animation.update(this.time.delta);
     }
 
-    updateOtherPlayers() {
-        for (let player in this.otherPlayers) {
-            this.otherPlayers[player].model.avatar.position.set(
-                this.otherPlayers[player].position.position_x,
-                this.otherPlayers[player].position.position_y,
-                this.otherPlayers[player].position.position_z
-            );
-
-            this.otherPlayers[player].model.animation.play(
-                this.otherPlayers[player].animation.animation
-            );
-
-            this.otherPlayers[player].model.animation.update(this.time.delta);
-
-            this.otherPlayers[player].model.avatar.quaternion.set(
-                this.otherPlayers[player].quaternion.quaternion_x,
-                this.otherPlayers[player].quaternion.quaternion_y,
-                this.otherPlayers[player].quaternion.quaternion_z,
-                this.otherPlayers[player].quaternion.quaternion_w
-            );
-
-            this.otherPlayers[player].model.nametag.position.set(
-                this.otherPlayers[player].position.position_x,
-                this.otherPlayers[player].position.position_y + 5.5,
-                this.otherPlayers[player].position.position_z
-            );
-        }
-    }
+    // updateOtherPlayers removed - game is now single-player only
+    // No other players to update in offline mode
 
     updateAvatarRotation() {
         if (this.actions.forward) {
@@ -831,7 +721,7 @@ export default class Player {
             this.updateAvatarRotation();
             this.updateAvatarAnimation();
             this.updateCameraPosition();
-            this.updateOtherPlayers();
+            // updateOtherPlayers removed - game is single-player only
         }
     }
 }

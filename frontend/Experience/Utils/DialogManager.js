@@ -51,7 +51,8 @@ export default class DialogManager {
     }
     
     /**
-     * Create permanent history button di pojok kiri atas layar
+     * Create permanent history button di bawah tombol language switch
+     * Positioned below language toggle button (top: 100px, left: 48px) to avoid overlapping
      * Button ini terpisah dari dialog dan selalu terlihat
      */
     createPermanentHistoryButton() {
@@ -66,8 +67,8 @@ export default class DialogManager {
         historyButton.id = 'dialog-history-button-permanent';
         historyButton.style.cssText = `
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 100px;
+            left: 48px;
             padding: 10px 16px;
             background: rgba(0, 0, 0, 0.8);
             border: 2px solid #00ffff;

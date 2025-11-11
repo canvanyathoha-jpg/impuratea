@@ -1,5 +1,5 @@
 import "./index.scss";
-import { io } from "socket.io-client";
+// Socket.IO removed - game is now offline single-player
 import Experience from "./Experience/Experience.js";
 import elements from "./Experience/Utils/functions/elements.js";
 import { languageManager } from "./Experience/Utils/LanguageManager.js";
@@ -18,107 +18,12 @@ const domElements = elements({
     avatarRightImg: ".avatar-right",
 });
 
-// Frontend Server ----------------------------------
-
-const socketUrl = new URL("/", window.location.href);
-
-// const socket = io(socketUrl.toString());
-const chatSocket = io(socketUrl.toString() + "chat");
-const updateSocket = io(socketUrl.toString() + "update");
-let userName = "";
-
 // Experience ----------------------------------
+// No socket needed - game is offline single-player
+const experience = new Experience(domElements.canvas);
 
-const experience = new Experience(domElements.canvas, updateSocket);
-
-// Sockets ----------------------------------
-
-chatSocket.on("connect", () => {
-    // console.log("Connected to server with ID" + chatSocket.id);
-});
-
-// Event listeners for chat - keep these
-domElements.messageSubmitButton.addEventListener("click", handleMessageSubmit);
-domElements.chatContainer.addEventListener("click", handleChatClick);
-document.addEventListener("keydown", handleMessageSubmit);
-
-// Note: nameInputButton and avatar listeners are now handled by Preloader.js
-// Removing duplicate event listeners to prevent conflicts
-
-function handleChatClick() {
-    if (domElements.inputWrapper.classList.contains("hidden"))
-        domElements.inputWrapper.classList.remove("hidden");
-}
-
-// These functions are no longer needed
-// Name and avatar selections are now handled by Preloader.js
-// The Preloader class has its own handlers that emit to socket
-function handleNameSubmit() {
-    // Function kept for backward compatibility but no longer used
-    userName = domElements.nameInput.value;
-    chatSocket.emit("setName", userName);
-    updateSocket.emit("setName", userName);
-}
-
-function handleCharacterSelectionLeft() {
-    // Function kept for backward compatibility but no longer used
-    updateSocket.emit("setAvatar", "male");
-}
-
-function handleCharacterSelectionRight() {
-    // Function kept for backward compatibility but no longer used
-    updateSocket.emit("setAvatar", "female");
-}
-
-function handleMessageSubmit(event) {
-    if (event.type === "click" || event.key === "Enter") {
-        // Play click sound for button click (not for Enter key)
-        if (event.type === "click" && experience && experience.soundManager) {
-            experience.soundManager.play('click', 0.6);
-        }
-        
-        domElements.inputWrapper.classList.toggle("hidden");
-        domElements.messageInput.focus();
-
-        if (domElements.messageInput.value === "") return;
-        displayMessage(
-            userName,
-            domElements.messageInput.value.substring(0, 500),
-            getTime()
-        );
-        chatSocket.emit(
-            "send-message",
-            domElements.messageInput.value.substring(0, 500),
-            getTime()
-        );
-        domElements.messageInput.value = "";
-    }
-}
-
-function getTime() {
-    const currentDate = new Date();
-    const hours = currentDate.getHours().toString().padStart(2, "0");
-    const minutes = currentDate.getMinutes().toString().padStart(2, "0");
-    const time = `${hours}:${minutes}`;
-    return time;
-}
-
-function displayMessage(name, message, time) {
-    const messageDiv = document.createElement("div");
-    messageDiv.innerHTML = `<span class="different-color">[${time}] ${name}:</span> ${message}`;
-    domElements.chatContainer.append(messageDiv);
-    domElements.chatContainer.scrollTop =
-        domElements.chatContainer.scrollHeight;
-}
-
-// Get data from server ----------------------------------
-
-chatSocket.on("recieved-message", (name, message, time) => {
-    displayMessage(name, message, time);
-});
-
-// Update Socket ----------------------------------------------------
-updateSocket.on("connect", () => {});
+// Chat functionality removed - game is now offline single-player
+// Chat features are no longer needed for single-player gameplay
 
 const audio = document.getElementById("myAudio");
 

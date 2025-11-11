@@ -45,10 +45,22 @@ export default class NPC {
         this.model.position.copy(this.position);
         this.model.rotation.y = THREE.MathUtils.degToRad(this.initialRotation); // Set initial rotation
 
-        // Clone animations safely - check if animations exist
-        this.animations = (avatarData.animations && Array.isArray(avatarData.animations)) 
-            ? avatarData.animations.map((clip) => clip.clone()) 
-            : [];
+        // Clone animations safely - check if animations exist and filter out invalid ones
+        if (avatarData.animations && Array.isArray(avatarData.animations)) {
+            this.animations = avatarData.animations
+                .filter((clip) => clip != null && clip.clone) // Filter out null/undefined and ensure clone method exists
+                .map((clip) => {
+                    try {
+                        return clip.clone();
+                    } catch (error) {
+                        console.warn(`[NPC] Failed to clone animation:`, error);
+                        return null;
+                    }
+                })
+                .filter((clonedClip) => clonedClip != null && clonedClip.uuid); // Filter out null/undefined and ensure uuid exists
+        } else {
+            this.animations = [];
+        }
 
         this.scene.add(this.model);
 
@@ -57,7 +69,7 @@ export default class NPC {
         this.createNameTag();
 
         console.log(`[NPC] Created ${this.name} (${this.gender}) at`, this.position);
-        console.log(`[NPC] Available animations: ${this.animations.length}`, this.animations.map(clip => clip.name));
+        console.log(`[NPC] Available animations: ${this.animations.length}`, this.animations.map(clip => clip ? clip.name : 'null'));
     }
 
     setAnimations() {
@@ -71,10 +83,22 @@ export default class NPC {
                 return null;
             }
 
+            // Filter out any invalid clips first
+            const validAnimations = this.animations.filter((clip) => 
+                clip != null && 
+                typeof clip === 'object' && 
+                clip.uuid && 
+                clip.name
+            );
+
+            if (validAnimations.length === 0) {
+                return null;
+            }
+
             // Try to find by name first
             for (const name of preferredNames) {
                 const lowerName = name.toLowerCase();
-                const match = this.animations.find((clip) => {
+                const match = validAnimations.find((clip) => {
                     if (!clip || !clip.name) return false;
                     const clipName = clip.name.toLowerCase();
                     return (
@@ -83,14 +107,17 @@ export default class NPC {
                         lowerName.includes(clipName)
                     );
                 });
-                if (match) {
+                if (match && match.uuid) {
                     return match;
                 }
             }
 
-            // Fallback to index if name not found
-            if (fallbackIndex >= 0 && fallbackIndex < this.animations.length) {
-                return this.animations[fallbackIndex];
+            // Fallback to index if name not found, but only if index is valid
+            if (fallbackIndex >= 0 && fallbackIndex < validAnimations.length) {
+                const fallbackClip = validAnimations[fallbackIndex];
+                if (fallbackClip && fallbackClip.uuid) {
+                    return fallbackClip;
+                }
             }
 
             return null;
@@ -104,70 +131,74 @@ export default class NPC {
         const wavingClip = findClip(['wave', 'waving'], 4);
         const dancingClip = findClip(['dance', 'dancing'], 5);
 
-        // Create actions only for animations that exist
-        if (idleClip) {
-            try {
-                this.actions.idle = this.mixer.clipAction(idleClip);
-            } catch (error) {
-                console.warn(`[NPC] Failed to create idle animation:`, error);
+        // Helper function to safely create clipAction
+        const createAction = (clip, actionName) => {
+            if (!clip || !clip.uuid) {
+                console.warn(`[NPC] Invalid clip for ${actionName}:`, clip);
+                return null;
             }
+            try {
+                return this.mixer.clipAction(clip);
+            } catch (error) {
+                console.warn(`[NPC] Failed to create ${actionName} animation:`, error, clip);
+                return null;
+            }
+        };
+
+        // Create actions only for animations that exist and are valid
+        if (idleClip && idleClip.uuid) {
+            this.actions.idle = createAction(idleClip, 'idle');
         }
 
-        if (walkingClip) {
-            try {
-                this.actions.walking = this.mixer.clipAction(walkingClip);
-            } catch (error) {
-                console.warn(`[NPC] Failed to create walking animation:`, error);
-            }
+        if (walkingClip && walkingClip.uuid) {
+            this.actions.walking = createAction(walkingClip, 'walking');
         }
 
-        if (runningClip) {
-            try {
-                this.actions.running = this.mixer.clipAction(runningClip);
-            } catch (error) {
-                console.warn(`[NPC] Failed to create running animation:`, error);
-            }
+        if (runningClip && runningClip.uuid) {
+            this.actions.running = createAction(runningClip, 'running');
         }
 
-        if (jumpingClip) {
-            try {
-                this.actions.jumping = this.mixer.clipAction(jumpingClip);
-            } catch (error) {
-                console.warn(`[NPC] Failed to create jumping animation:`, error);
-            }
+        if (jumpingClip && jumpingClip.uuid) {
+            this.actions.jumping = createAction(jumpingClip, 'jumping');
         }
 
-        if (wavingClip) {
-            try {
-                this.actions.waving = this.mixer.clipAction(wavingClip);
-            } catch (error) {
-                console.warn(`[NPC] Failed to create waving animation:`, error);
-            }
+        if (wavingClip && wavingClip.uuid) {
+            this.actions.waving = createAction(wavingClip, 'waving');
         }
 
-        if (dancingClip) {
-            try {
-                this.actions.dancing = this.mixer.clipAction(dancingClip);
-            } catch (error) {
-                console.warn(`[NPC] Failed to create dancing animation:`, error);
-            }
+        if (dancingClip && dancingClip.uuid) {
+            this.actions.dancing = createAction(dancingClip, 'dancing');
         }
 
         // Start with idle animation if available, otherwise use first available animation
         if (this.actions.idle) {
-            this.currentAction = this.actions.idle;
-            this.currentAction.play();
-        } else if (this.animations.length > 0) {
-            // Fallback: use first available animation
             try {
-                const firstClip = this.animations[0];
-                if (firstClip) {
-                    this.currentAction = this.mixer.clipAction(firstClip);
-                    this.currentAction.play();
-                    console.warn(`[NPC] Using fallback animation: ${firstClip.name}`);
-                }
+                this.currentAction = this.actions.idle;
+                this.currentAction.play();
             } catch (error) {
-                console.warn(`[NPC] Failed to create fallback animation:`, error);
+                console.warn(`[NPC] Failed to play idle animation:`, error);
+            }
+        } else if (this.animations.length > 0) {
+            // Fallback: use first valid animation
+            const validAnimations = this.animations.filter((clip) => 
+                clip != null && clip.uuid && typeof clip === 'object'
+            );
+            
+            if (validAnimations.length > 0) {
+                try {
+                    const firstClip = validAnimations[0];
+                    if (firstClip && firstClip.uuid) {
+                        this.currentAction = createAction(firstClip, 'fallback');
+                        if (this.currentAction) {
+                            this.currentAction.play();
+                            console.warn(`[NPC] Using fallback animation: ${firstClip.name || 'unknown'}`);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`[NPC] Failed to create fallback animation:`, error);
+                }
+            } else {
+                console.warn(`[NPC] No valid animations available for ${this.name}`);
             }
         } else {
             console.warn(`[NPC] No animations available for ${this.name}`);

@@ -291,14 +291,30 @@ export default class Preloader {
         // Get saved username
         const savedUsername = localStorage.getItem('impuratea-username');
 
-        // Emit to socket to create player avatar
-        if (this.experience && this.experience.socket) {
-            this.experience.socket.emit('setAvatar', avatarSkin);
-            if (savedUsername) {
-                this.experience.socket.emit('setName', savedUsername);
+        // Create player avatar directly (offline single-player mode)
+        // No socket needed - create avatar directly through Player instance
+        // Player might not exist yet (created after resources are ready)
+        // So we use a retry mechanism with setTimeout
+        const createAvatar = () => {
+            if (this.experience && this.experience.world && this.experience.world.player) {
+                this.experience.world.player.createPlayerAvatar(avatarSkin);
+                console.log(`[Preloader] Avatar created: ${avatarSkin}, Username: ${savedUsername}`);
+            } else {
+                // Player not ready yet, try again after a short delay
+                // Avatar will also be created automatically via setAvatarFromLocalStorage() when Player is initialized
+                console.log(`[Preloader] Player not ready yet, avatar saved to localStorage: ${avatarSkin}`);
+                // Try again after resources are loaded (max 3 seconds)
+                setTimeout(() => {
+                    if (this.experience && this.experience.world && this.experience.world.player) {
+                        this.experience.world.player.createPlayerAvatar(avatarSkin);
+                        console.log(`[Preloader] Avatar created after delay: ${avatarSkin}`);
+                    }
+                }, 500);
             }
-            console.log(`[Preloader] Avatar selected: ${avatarSkin}, Username: ${savedUsername}`);
-        }
+        };
+        
+        // Try to create avatar immediately, or after a short delay
+        createAvatar();
 
         this.preloaderOutro();
     };
