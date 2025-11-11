@@ -50,6 +50,10 @@ export default class Preloader {
             controlsInfo: ".controls-info",
             customizeButton: ".customize-character-btn",
             description: ".description",
+            deviceSelectContainer: ".device-select-container",
+            deviceSelectTitle: ".device-select-title",
+            deviceSelectSubtitle: ".device-select-subtitle",
+            deviceOptions: ".device-option",
         });
 
         console.log('[Preloader] DOM elements found:', {
@@ -316,8 +320,122 @@ export default class Preloader {
         // Try to create avatar immediately, or after a short delay
         createAvatar();
 
+        // Show device selection screen instead of going directly to game
+        this.characterSelectOutro();
+    };
+
+    onDeviceSelect = (event) => {
+        // Play click sound
+        if (this.experience && this.experience.soundManager) {
+            this.experience.soundManager.play('click', 0.6);
+        }
+
+        // Determine which device was selected
+        let target = event.target;
+        let deviceType = null;
+
+        // Check target and its parents for device option
+        while (target && target !== document.body) {
+            if (target.classList && target.classList.contains('device-option')) {
+                deviceType = target.getAttribute('data-device');
+                break;
+            }
+            target = target.parentElement;
+        }
+
+        if (!deviceType) {
+            console.warn('[Preloader] Could not determine device selection');
+            return;
+        }
+
+        // Save device selection to localStorage
+        localStorage.setItem('impuratea-device', deviceType);
+        console.log(`[Preloader] Device selected: ${deviceType}`);
+
+        // Show/hide joystick based on device selection
+        const joystickArea = document.querySelector('.joystick-area');
+        if (joystickArea) {
+            if (deviceType === 'mobile') {
+                joystickArea.style.display = 'block';
+            } else {
+                joystickArea.style.display = 'none';
+            }
+        }
+
+        // Continue to game
         this.preloaderOutro();
     };
+
+    async characterSelectOutro() {
+        return new Promise((resolve) => {
+            this.timeline5 = new gsap.timeline();
+            this.timeline5
+                .to(this.domElements.characterSelectContainer, {
+                    opacity: 0,
+                    duration: 1.2,
+                    ease: "power4.out",
+                    onComplete: () => {
+                        this.domElements.characterSelectContainer.style.display = 'none';
+                    },
+                })
+                .to(
+                    this.domElements.deviceSelectContainer,
+                    {
+                        opacity: 1,
+                        duration: 1.2,
+                        ease: "power4.out",
+                        onStart: () => {
+                            this.domElements.deviceSelectContainer.style.display = 'flex';
+                            
+                            // Add event listeners to device options AFTER container is shown
+                            // This ensures elements are accessible
+                            this.attachDeviceOptionListeners();
+                        },
+                        onComplete: () => {
+                            resolve();
+                        },
+                    },
+                    "-=1.05"
+                );
+        });
+    }
+
+    attachDeviceOptionListeners() {
+        // Get device options directly from DOM (more reliable)
+        const deviceOptions = document.querySelectorAll('.device-option');
+        
+        console.log('[Preloader] Found device options:', deviceOptions.length);
+        
+        deviceOptions.forEach((option, index) => {
+            if (option) {
+                // Remove any existing listeners first
+                const newOption = option.cloneNode(true);
+                option.parentNode.replaceChild(newOption, option);
+                
+                // Ensure pointer events are enabled
+                newOption.style.pointerEvents = 'auto';
+                newOption.style.cursor = 'pointer';
+                newOption.style.userSelect = 'none';
+                newOption.style.WebkitUserSelect = 'none';
+                
+                // Add click event listener
+                newOption.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.onDeviceSelect(e);
+                });
+                
+                // Also add touch events for mobile
+                newOption.addEventListener("touchend", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.onDeviceSelect(e);
+                });
+                
+                console.log(`[Preloader] Attached listener to device option ${index + 1}:`, newOption.getAttribute('data-device'));
+            }
+        });
+    }
 
     async nameInputOutro() {
         return new Promise((resolve) => {
@@ -464,6 +582,19 @@ export default class Preloader {
             options.forEach(option => {
                 if (option) {
                     option.addEventListener("click", this.onCharacterSelect);
+                }
+            });
+        }
+
+        // Add event listeners to device options
+        if (this.domElements.deviceOptions) {
+            const deviceOptions = this.domElements.deviceOptions.length 
+                ? Array.from(this.domElements.deviceOptions) 
+                : [this.domElements.deviceOptions];
+            
+            deviceOptions.forEach(option => {
+                if (option) {
+                    option.addEventListener("click", this.onDeviceSelect);
                 }
             });
         }

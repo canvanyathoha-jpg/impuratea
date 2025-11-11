@@ -133,21 +133,69 @@ export default class Player {
     }
 
     setJoyStick() {
-        this.options = {
-            zone: this.domElements.joystickArea,
-            mode: "dynamic",
-        };
-        this.joystick = nipplejs.create(this.options);
+        // Check device preference from localStorage
+        const deviceType = localStorage.getItem('impuratea-device') || 'desktop';
+        
+        // Only create joystick if device is mobile
+        if (deviceType === 'mobile') {
+            // Show joystick area
+            if (this.domElements.joystickArea) {
+                this.domElements.joystickArea.style.display = 'block';
+            }
+            
+            this.options = {
+                zone: this.domElements.joystickArea,
+                mode: "dynamic",
+                color: "rgba(30, 64, 124, 0.8)",
+                size: 160,
+                threshold: 0.1,
+                fadeTime: 250,
+                multitouch: false,
+                maxNumberOfNipples: 1,
+                dataOnly: false,
+                position: { top: '50%', left: '50%' },
+                catchDistance: 200,
+            };
+            this.joystick = nipplejs.create(this.options);
 
-        this.joystick.on("move", (e, data) => {
-            this.actions.movingJoyStick = true;
-            this.joystickVector.z = -data.vector.y;
-            this.joystickVector.x = data.vector.x;
-        });
+            this.joystick.on("start", () => {
+                // Add active class for enhanced visual feedback
+                if (this.domElements.joystickArea) {
+                    this.domElements.joystickArea.classList.add('active');
+                }
+            });
 
-        this.joystick.on("end", () => {
-            this.actions.movingJoyStick = false;
-        });
+            this.joystick.on("move", (e, data) => {
+                this.actions.movingJoyStick = true;
+                this.joystickVector.z = -data.vector.y;
+                this.joystickVector.x = data.vector.x;
+                
+                // Add active class for enhanced visual feedback
+                if (this.domElements.joystickArea) {
+                    this.domElements.joystickArea.classList.add('active');
+                }
+            });
+
+            this.joystick.on("end", () => {
+                this.actions.movingJoyStick = false;
+                
+                // Remove active class
+                if (this.domElements.joystickArea) {
+                    this.domElements.joystickArea.classList.remove('active');
+                }
+            });
+
+            this.joystick.on("dir", (evt, data) => {
+                // Optional: Add direction-based visual feedback
+                console.log("[Player] Joystick direction:", data.direction);
+            });
+        } else {
+            // Hide joystick area for desktop
+            if (this.domElements.joystickArea) {
+                this.domElements.joystickArea.style.display = 'none';
+            }
+            this.joystick = null;
+        }
     }
 
     /**

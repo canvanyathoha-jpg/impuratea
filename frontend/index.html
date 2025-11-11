@@ -328,6 +328,25 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Device Selection Screen -->
+            <div class="device-select-container" style="display: none;">
+                <div class="device-select-title">Pilih Perangkat</div>
+                <p class="device-select-subtitle">Pilih perangkat yang kamu gunakan untuk bermain</p>
+                
+                <div class="device-options-wrapper">
+                    <div class="device-option" data-device="mobile">
+                        <div class="device-icon">📱</div>
+                        <div class="device-name">Mobile</div>
+                        <div class="device-description">Gunakan joystick untuk mengontrol karakter</div>
+                    </div>
+                    <div class="device-option" data-device="desktop">
+                        <div class="device-icon">💻</div>
+                        <div class="device-name">Laptop/PC</div>
+                        <div class="device-description">Gunakan keyboard dan mouse untuk bermain</div>
+                    </div>
+                </div>
+            </div>
             <!-- <iframe
             id="frame"
             class="frame"
@@ -340,7 +359,7 @@
         </div>
 
         <!-- Mobile Controls -->
-        <div class="joystick-area"></div>
+        <div class="joystick-area" style="display: none;"></div>
         <div class="control-overlay hidden"></div>
         <!-- <button class="mobile-chat-button">
             <svg
