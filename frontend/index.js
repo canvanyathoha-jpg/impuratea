@@ -8,10 +8,6 @@ import { languageManager } from "./Experience/Utils/LanguageManager.js";
 
 const domElements = elements({
     canvas: ".experience-canvas",
-    chatContainer: ".chat-container",
-    messageSubmitButton: "#chat-message-button",
-    messageInput: "#chat-message-input",
-    inputWrapper: ".message-input-wrapper",
     nameInputButton: "#name-input-button",
     nameInput: "#name-input",
     avatarLeftImg: ".avatar-left",

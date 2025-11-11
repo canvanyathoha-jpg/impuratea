@@ -30,7 +30,10 @@ export default class Camera {
         this.fppMouseSensitivity = 0.002; // Mouse sensitivity for FPP look
         this.fppRotationX = 0; // Vertical rotation (pitch)
         this.fppRotationY = 0; // Horizontal rotation (yaw)
-        this.isPointerLocked = false;
+        this.isPointerLocked = false; // Not used anymore - keeping for compatibility
+        this.lastMouseX = 0; // Last mouse X position for calculating delta
+        this.lastMouseY = 0; // Last mouse Y position for calculating delta
+        this.isMouseDown = false; // Track if mouse button is pressed (for drag-to-rotate)
         
         // Transition settings
         this.transitionDuration = 0.5; // seconds
@@ -142,8 +145,20 @@ export default class Camera {
             this.controls.enabled = false;
             this.controls.enableZoom = false;
             // Sync current rotation to FPP rotation
-            this.fppRotationY = this.perspectiveCamera.rotation.y;
-            this.fppRotationX = this.perspectiveCamera.rotation.x;
+            // IMPORTANT: Convert from quaternion to Euler angles correctly
+            // The camera's rotation might be stored as quaternion, so we need to extract Euler angles
+            const euler = new THREE.Euler().setFromQuaternion(this.perspectiveCamera.quaternion, 'YXZ');
+            this.fppRotationY = euler.y; // Yaw (horizontal rotation)
+            this.fppRotationX = euler.x; // Pitch (vertical rotation)
+            console.log('[Camera] Synced FPP rotation from camera:', { 
+                fppRotationX: this.fppRotationX, 
+                fppRotationY: this.fppRotationY,
+                cameraRotation: {
+                    x: this.perspectiveCamera.rotation.x,
+                    y: this.perspectiveCamera.rotation.y,
+                    z: this.perspectiveCamera.rotation.z
+                }
+            });
             
             // Setup FPP controls if not already setup (lazy initialization)
             if (!this.fppControlsSetup) {
@@ -152,8 +167,6 @@ export default class Camera {
                 }, 100);
             }
         } else {
-            // TPP: Enable orbit controls for third person view
-            // IMPORTANT: Re-enable all OrbitControls features for TPP
             if (this.controls) {
                 this.controls.enabled = true;
                 this.controls.enableZoom = true;
@@ -176,13 +189,11 @@ export default class Camera {
      */
     updateCameraPosition(playerPosition, playerDirection) {
         if (!playerPosition || !this.perspectiveCamera) return;
-        
-        // Safety check: ensure experience and time exist
+
         if (!this.experience || !this.experience.time) return;
         
         const deltaTime = this.experience.time.delta / 1000;
         
-        // Handle transition between modes
         if (this.isTransitioning) {
             this.transitionProgress += deltaTime / this.transitionDuration;
             if (this.transitionProgress >= 1) {
@@ -226,23 +237,30 @@ export default class Camera {
             console.log('[Camera FPP] SET - fppHeight:', this.fppHeight, 'targetPosition.y:', targetPosition.y.toFixed(2), 'camera.y AFTER SET:', this.perspectiveCamera.position.y.toFixed(2));
             
             // Apply FPP rotation (mouse look)
-            // Use Euler angles for FPP rotation
-            const euler = new THREE.Euler(this.fppRotationX, this.fppRotationY, 0, 'YXZ');
-            this.perspectiveCamera.quaternion.setFromEuler(euler);
+            // IMPORTANT: Always apply rotation based on fppRotationX and fppRotationY
+            // These values are updated when mouse button is pressed and dragged (drag-to-rotate)
+            // 
+            // CRITICAL: Don't reset rotation - always use the stored fppRotationX/Y values
+            // This ensures camera maintains its direction
+            // 
+            // IMPORTANT: Ensure fppRotationX and fppRotationY are valid numbers
+            if (typeof this.fppRotationX === 'number' && typeof this.fppRotationY === 'number' && 
+                !isNaN(this.fppRotationX) && !isNaN(this.fppRotationY)) {
+                const euler = new THREE.Euler(this.fppRotationX, this.fppRotationY, 0, 'YXZ');
+                this.perspectiveCamera.quaternion.setFromEuler(euler);
+            } else {
+                // If rotation values are invalid, log warning but don't crash
+                console.warn('[Camera FPP] Invalid rotation values:', { 
+                    fppRotationX: this.fppRotationX, 
+                    fppRotationY: this.fppRotationY 
+                });
+            }
             
-            // Request pointer lock when entering FPP mode
-            if (!this.isPointerLocked && !this.isTransitioning && this.canvas) {
-                try {
-                    this.canvas.requestPointerLock();
-                } catch (error) {
-                    console.warn('[Camera] Could not request pointer lock:', error);
-                }
-            }
+            // NO POINTER LOCK - cursor always visible
+            // Mouse movement updates fppRotationX/Y when mouse button is pressed (drag-to-rotate)
+            // This allows user to always see cursor and click buttons
         } else {
-            // Exit pointer lock when switching to TPP
-            if (this.isPointerLocked) {
-                document.exitPointerLock();
-            }
+            // TPP mode - no pointer lock needed
             // Third Person Perspective: Original behavior - let OrbitControls handle everything
             // Don't interfere with camera target - it's already set in Player.js updateColliderMovement()
             // This restores the original camera behavior before FPP/TPP feature
@@ -266,42 +284,57 @@ export default class Camera {
             return;
         }
         
-        // Mouse move handler for FPP look
+        // Mouse move handler for FPP look (NO POINTER LOCK - cursor always visible)
         this.onMouseMove = (event) => {
-            if (this.cameraMode !== 'fpp' || !this.isPointerLocked) return;
+            // IMPORTANT: Only process mouse movement if in FPP mode
+            if (this.cameraMode !== 'fpp') return;
             
-            const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-            const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+            // Only rotate camera when mouse button is pressed (drag to rotate)
+            // This allows user to click buttons without rotating camera
+            if (!this.isMouseDown) return;
             
-            // Update rotation
-            this.fppRotationY -= movementX * this.fppMouseSensitivity;
-            this.fppRotationX -= movementY * this.fppMouseSensitivity;
+            // Calculate mouse movement delta
+            const deltaX = event.clientX - this.lastMouseX;
+            const deltaY = event.clientY - this.lastMouseY;
+            
+            // Update rotation based on mouse movement
+            this.fppRotationY -= deltaX * this.fppMouseSensitivity;
+            this.fppRotationX -= deltaY * this.fppMouseSensitivity;
             
             // Clamp vertical rotation to prevent flipping
             this.fppRotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.fppRotationX));
+            
+            // Update last mouse position
+            this.lastMouseX = event.clientX;
+            this.lastMouseY = event.clientY;
         };
         
-        // Pointer lock change handler
-        this.onPointerLockChange = () => {
-            this.isPointerLocked = document.pointerLockElement === this.canvas;
-        };
-        
-        // Click canvas to lock pointer in FPP mode
-        this.onCanvasClick = () => {
-            if (this.cameraMode === 'fpp' && !this.isPointerLocked && this.canvas) {
-                this.canvas.requestPointerLock();
+        // Mouse down handler - start tracking mouse position
+        this.onMouseDown = (event) => {
+            if (this.cameraMode !== 'fpp') return;
+            
+            // Only track if clicking on canvas (not on UI elements)
+            if (event.target === this.canvas) {
+                this.isMouseDown = true;
+                this.lastMouseX = event.clientX;
+                this.lastMouseY = event.clientY;
             }
         };
         
-        // Add event listeners
+        // Mouse up handler - stop tracking mouse position
+        this.onMouseUp = () => {
+            if (this.cameraMode !== 'fpp') return;
+            this.isMouseDown = false;
+        };
+        
+        // NO POINTER LOCK - cursor always visible for clicking buttons
+        // Add event listeners for drag-to-rotate
         try {
             document.addEventListener('mousemove', this.onMouseMove);
-            document.addEventListener('pointerlockchange', this.onPointerLockChange);
-            if (this.canvas) {
-                this.canvas.addEventListener('click', this.onCanvasClick);
-            }
+            document.addEventListener('mousedown', this.onMouseDown);
+            document.addEventListener('mouseup', this.onMouseUp);
             this.fppControlsSetup = true;
-            console.log('[Camera] FPP controls setup successfully');
+            console.log('[Camera] FPP controls setup successfully (drag-to-rotate, no pointer lock)');
         } catch (error) {
             console.error('[Camera] Error setting up FPP controls:', error);
         }
@@ -313,6 +346,29 @@ export default class Camera {
      */
     getCameraMode() {
         return this.cameraMode;
+    }
+    
+    /**
+     * Get DialogManager instance from current scene
+     * @returns {DialogManager|null} DialogManager instance or null if not found
+     */
+    getDialogManager() {
+        // Try multiple ways to access DialogManager
+        if (this.experience?.world?.currentScene?.dialogManager) {
+            return this.experience.world.currentScene.dialogManager;
+        }
+        if (this.experience?.dialogManager) {
+            return this.experience.dialogManager;
+        }
+        // Try to find DialogManager in any scene
+        if (this.experience?.world?.currentScene) {
+            const scene = this.experience.world.currentScene;
+            // Check if scene has dialogManager property
+            if (scene.dialogManager) {
+                return scene.dialogManager;
+            }
+        }
+        return null;
     }
 
     enableOrbitControls() {
@@ -347,6 +403,8 @@ export default class Camera {
             }
             // DO NOT call this.controls.update() in FPP mode!
             // The camera position is managed directly in updateCameraPosition()
+            
+            // NO POINTER LOCK - cursor always visible for clicking buttons
             
             // Debug: Check if camera position was overridden (uncomment to debug)
             if (this.lastFPPTargetPosition) {
