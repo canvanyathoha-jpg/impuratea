@@ -110,14 +110,34 @@ export default class AcademicScene2A {
         this.npcDeskmate.scale.set(9, 9, 9);
         this.scene.add(this.npcDeskmate);
 
-        this.npcAnimations = femaleModel.animations.map((clip) => clip.clone());
+        // Safely clone animations - check if animations array exists
+        this.npcAnimations = (femaleModel.animations && Array.isArray(femaleModel.animations)) 
+            ? femaleModel.animations.map((clip) => clip.clone()) 
+            : [];
+        
+        console.log("[AcademicScene2A] Available animations:", this.npcAnimations.length);
+        console.log("[AcademicScene2A] Animation names:", this.npcAnimations.map(clip => clip.name));
+        
         this.npcMixer = new THREE.AnimationMixer(this.npcDeskmate);
         this.npcActions = {};
 
-        const idleAnimation = this.npcAnimations.find(clip => clip.name === 'idle') || this.npcAnimations[1];
-        this.npcActions.idle = this.npcMixer.clipAction(idleAnimation);
+        // Safely setup animations - only create clipActions for animations that exist
+        const idleClip = this.npcAnimations.find(clip => clip && clip.name && clip.name.toLowerCase().includes('idle')) 
+            || this.npcAnimations.find(clip => clip && clip.name) 
+            || (this.npcAnimations.length > 0 ? this.npcAnimations[0] : null);
+        
+        if (idleClip) {
+            try {
+                this.npcActions.idle = this.npcMixer.clipAction(idleClip);
+                console.log("[AcademicScene2A] Idle animation created:", idleClip.name);
+                this.npcActions.idle.play();
+            } catch (error) {
+                console.warn("[AcademicScene2A] Failed to create/play idle animation:", error);
+            }
+        } else {
+            console.warn("[AcademicScene2A] No idle animation found, NPC will be static");
+        }
 
-        this.npcActions.idle.play();
         console.log("[AcademicScene2A] Deskmate NPC created.");
     }
 
@@ -174,9 +194,12 @@ export default class AcademicScene2A {
         console.log("[AcademicScene2A] Visible:", this.teacherNPC.visible);
         console.log("[AcademicScene2A] In scene:", this.scene.children.includes(this.teacherNPC));
 
-        // Setup animations jika ada
-        this.teacherAnimations = guruModel.animations ? guruModel.animations.map((clip) => clip.clone()) : [];
+        // Setup animations jika ada - safely handle animations
+        this.teacherAnimations = (guruModel.animations && Array.isArray(guruModel.animations)) 
+            ? guruModel.animations.map((clip) => clip.clone()) 
+            : [];
         console.log("[AcademicScene2A] Teacher animations count:", this.teacherAnimations.length);
+        console.log("[AcademicScene2A] Teacher animation names:", this.teacherAnimations.map(clip => clip.name));
         this.teacherMixer = new THREE.AnimationMixer(this.teacherNPC);
         this.teacherActions = {};
 
@@ -783,21 +806,42 @@ export default class AcademicScene2A {
 
     onMouseMove(event) {
         if (!this.speechBubbleGroup) return;
+        
+        // Check if camera is available before using raycaster
+        if (!this.experience || !this.experience.camera || !this.experience.camera.instance) {
+            return; // Camera not ready yet, skip raycasting
+        }
+        
         const rect = this.canvas.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+        
+        try {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+        } catch (error) {
+            console.warn("[AcademicScene2A] Error setting raycaster from camera:", error);
+        }
     }
 
     onMouseClick(event) {
         if (!this.speechBubbleGroup) return;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        if (intersects.length > 0) {
-            const dialogData = this.speechBubbleGroup.userData;
-            this.showScreenSpeechBubble(dialogData.speaker, dialogData.text, dialogData.callback);
+        
+        // Check if camera is available before using raycaster
+        if (!this.experience || !this.experience.camera || !this.experience.camera.instance) {
+            return; // Camera not ready yet, skip raycasting
+        }
+        
+        try {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+            if (intersects.length > 0) {
+                const dialogData = this.speechBubbleGroup.userData;
+                this.showScreenSpeechBubble(dialogData.speaker, dialogData.text, dialogData.callback);
+            }
+        } catch (error) {
+            console.warn("[AcademicScene2A] Error setting raycaster from camera:", error);
         }
     }
 

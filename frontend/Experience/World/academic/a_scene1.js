@@ -45,6 +45,7 @@ export default class AcademicScene1 {
         // Load scene models asynchronously (non-blocking)
         this.loadSceneAsync().then(() => {
             console.log("[AcademicScene1] Scene loaded successfully!");
+            console.log("[AcademicScene1] dialogManager after load:", !!this.dialogManager);
             
             // Hide loading indicator
             this.hideLoadingIndicator();
@@ -55,7 +56,9 @@ export default class AcademicScene1 {
             }
             
             // Start story after scene is loaded
+            console.log("[AcademicScene1] Waiting 1 second before starting story...");
             setTimeout(() => {
+                console.log("[AcademicScene1] Timeout completed, calling startStory()...");
                 this.startStory();
             }, 1000);
         }).catch((error) => {
@@ -120,17 +123,64 @@ export default class AcademicScene1 {
         this.storyStarted = false;
         this.hoverSoundPlayed = false; // Flag to prevent hover sound spam
 
-        this.npcAnimations = femaleModel.animations.map((clip) => clip.clone());
+        // Safely clone animations - check if animations array exists
+        this.npcAnimations = (femaleModel.animations && Array.isArray(femaleModel.animations)) 
+            ? femaleModel.animations.map((clip) => clip.clone()) 
+            : [];
+        
+        console.log("[AcademicScene1] Available animations:", this.npcAnimations.length);
+        console.log("[AcademicScene1] Animation names:", this.npcAnimations.map(clip => clip.name));
+        
         this.npcMixer = new THREE.AnimationMixer(this.npcDeskmate);
         this.npcActions = {};
 
-        // Setup all animations
-        this.npcActions.idle = this.npcMixer.clipAction(this.npcAnimations.find(clip => clip.name === 'idle') || this.npcAnimations[1]);
-        this.npcActions.waving = this.npcMixer.clipAction(this.npcAnimations.find(clip => clip.name === 'waving') || this.npcAnimations[5]);
+        // Safely setup animations - only create clipActions for animations that exist
+        // Find idle animation by name, or use first available animation
+        const idleClip = this.npcAnimations.find(clip => clip && clip.name && clip.name.toLowerCase().includes('idle')) 
+            || this.npcAnimations.find(clip => clip && clip.name) 
+            || (this.npcAnimations.length > 0 ? this.npcAnimations[0] : null);
+        
+        if (idleClip) {
+            try {
+                this.npcActions.idle = this.npcMixer.clipAction(idleClip);
+                console.log("[AcademicScene1] Idle animation created:", idleClip.name);
+            } catch (error) {
+                console.warn("[AcademicScene1] Failed to create idle animation:", error);
+            }
+        } else {
+            console.warn("[AcademicScene1] No idle animation found, NPC will be static");
+        }
 
-        // Start with idle
-        this.npcActions.idle.play();
-        this.currentNPCAnimation = 'idle';
+        // Find waving animation by name, or use second available animation
+        const wavingClip = this.npcAnimations.find(clip => clip && clip.name && clip.name.toLowerCase().includes('wav')) 
+            || this.npcAnimations.find(clip => clip && clip.name && clip.name !== idleClip?.name) 
+            || (this.npcAnimations.length > 1 ? this.npcAnimations[1] : null);
+        
+        if (wavingClip) {
+            try {
+                this.npcActions.waving = this.npcMixer.clipAction(wavingClip);
+                console.log("[AcademicScene1] Waving animation created:", wavingClip.name);
+            } catch (error) {
+                console.warn("[AcademicScene1] Failed to create waving animation:", error);
+            }
+        } else {
+            console.warn("[AcademicScene1] No waving animation found");
+        }
+
+        // Start with idle animation if available
+        if (this.npcActions.idle) {
+            try {
+                this.npcActions.idle.play();
+                this.currentNPCAnimation = 'idle';
+                console.log("[AcademicScene1] Idle animation playing");
+            } catch (error) {
+                console.warn("[AcademicScene1] Failed to play idle animation:", error);
+                this.currentNPCAnimation = null;
+            }
+        } else {
+            this.currentNPCAnimation = null;
+            console.warn("[AcademicScene1] No animations available, NPC will be static");
+        }
         
         // Create highlight effect for NPC
         this.createNPCHighlight();
@@ -166,39 +216,59 @@ export default class AcademicScene1 {
      * Play waving animation when dialog starts
      */
     playWavingAnimation() {
-        if (!this.npcActions.waving) return;
+        // Only play if both animations exist
+        if (!this.npcActions.waving || !this.npcActions.idle) {
+            console.warn("[AcademicScene1] Cannot play waving animation - animations not available");
+            return;
+        }
         
-        // Fade from idle to waving
-        this.npcActions.waving.reset();
-        this.npcActions.waving.setLoop(THREE.LoopOnce);
-        this.npcActions.waving.play();
-        this.npcActions.waving.crossFadeFrom(this.npcActions.idle, 0.3);
-        
-        // Return to idle after animation
-        this.npcActions.waving.clampWhenFinished = true;
-        this.npcActions.waving.addEventListener('finished', () => {
-            this.npcActions.idle.reset().play();
-            this.npcActions.idle.crossFadeFrom(this.npcActions.waving, 0.3);
-            this.currentNPCAnimation = 'idle';
-        });
-        
-        this.currentNPCAnimation = 'waving';
+        try {
+            // Fade from idle to waving
+            this.npcActions.waving.reset();
+            this.npcActions.waving.setLoop(THREE.LoopOnce);
+            this.npcActions.waving.play();
+            this.npcActions.waving.crossFadeFrom(this.npcActions.idle, 0.3);
+            
+            // Return to idle after animation
+            this.npcActions.waving.clampWhenFinished = true;
+            this.npcActions.waving.addEventListener('finished', () => {
+                if (this.npcActions.idle) {
+                    this.npcActions.idle.reset().play();
+                    this.npcActions.idle.crossFadeFrom(this.npcActions.waving, 0.3);
+                    this.currentNPCAnimation = 'idle';
+                }
+            });
+            
+            this.currentNPCAnimation = 'waving';
+        } catch (error) {
+            console.warn("[AcademicScene1] Error playing waving animation:", error);
+        }
     }
 
     startStory() {
         console.log("[AcademicScene1] Starting story sequence...");
+        console.log("[AcademicScene1] dialogManager exists:", !!this.dialogManager);
+        console.log("[AcademicScene1] dialogManager type:", typeof this.dialogManager);
+        
         this.storyStarted = true;
         this.hideNPCHighlight(); // Hide highlight when story starts
         
-        this.dialogManager.showDialog({
-            text: {
-                id: "Kamu memasuki ruangan kelas yang sedang disibukkan dengan persiapan ujian harian fisika hari ini. Suasana tegang, semua orang membuka-buka catatan mereka dengan cemas.",
-                en: "You enter the classroom which is bustling with preparations for today's physics daily exam. The atmosphere is tense, everyone is anxiously flipping through their notes."
-            },
-            onChoice: () => {
-                this.showScene1Part2();
-            }
-        });
+        try {
+            console.log("[AcademicScene1] Calling dialogManager.showDialog...");
+            this.dialogManager.showDialog({
+                text: {
+                    id: "Kamu memasuki ruangan kelas yang sedang disibukkan dengan persiapan ujian harian fisika hari ini. Suasana tegang, semua orang membuka-buka catatan mereka dengan cemas.",
+                    en: "You enter the classroom which is bustling with preparations for today's physics daily exam. The atmosphere is tense, everyone is anxiously flipping through their notes."
+                },
+                onChoice: () => {
+                    console.log("[AcademicScene1] Dialog continue button clicked, showing scene 1 part 2");
+                    this.showScene1Part2();
+                }
+            });
+            console.log("[AcademicScene1] dialogManager.showDialog called successfully");
+        } catch (error) {
+            console.error("[AcademicScene1] Error calling dialogManager.showDialog:", error);
+        }
     }
     
     startStoryNow() {
@@ -610,10 +680,21 @@ export default class AcademicScene1 {
     }
 
     onMouseMove(event) {
+        // Check if camera is available before using raycaster
+        if (!this.experience || !this.experience.camera || !this.experience.camera.instance) {
+            return; // Camera not ready yet, skip raycasting
+        }
+        
         const rect = this.canvas.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        
+        try {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        } catch (error) {
+            console.warn("[AcademicScene1] Error setting raycaster from camera:", error);
+            return;
+        }
         
         // Check NPC hover (only if story hasn't started yet or manual mode)
         if (this.npcDeskmate && !this.storyStarted) {
@@ -639,7 +720,7 @@ export default class AcademicScene1 {
         
         // Check speech bubble hover
         if (this.speechBubbleGroup) {
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
             if (intersects.length > 0) {
                 this.canvas.style.cursor = 'pointer';
             } else if (!this.isNPCHovered) {
@@ -695,7 +776,17 @@ export default class AcademicScene1 {
     }
 
     onMouseClick(event) {
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        // Check if camera is available before using raycaster
+        if (!this.experience || !this.experience.camera || !this.experience.camera.instance) {
+            return; // Camera not ready yet, skip raycasting
+        }
+        
+        try {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+        } catch (error) {
+            console.warn("[AcademicScene1] Error setting raycaster from camera:", error);
+            return;
+        }
         
         // Check NPC click (only if story hasn't started yet)
         if (this.npcDeskmate && !this.storyStarted) {
@@ -720,16 +811,16 @@ export default class AcademicScene1 {
         
         // Check speech bubble click
         if (this.speechBubbleGroup) {
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        if (intersects.length > 0) {
+            const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+            if (intersects.length > 0) {
                 console.log('[AcademicScene1] Speech bubble clicked');
                 // Play click sound
                 if (this.experience.soundManager) {
                     this.experience.soundManager.play('click', 0.6);
                 }
                 
-            const dialogData = this.speechBubbleGroup.userData;
-            this.showScreenSpeechBubble(dialogData.speaker, dialogData.text, dialogData.callback);
+                const dialogData = this.speechBubbleGroup.userData;
+                this.showScreenSpeechBubble(dialogData.speaker, dialogData.text, dialogData.callback);
             }
         }
     }

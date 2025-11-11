@@ -159,14 +159,26 @@ updateLanguageButton();
 const ensureLanguageButtonVisible = () => {
     const btn = document.getElementById('language-toggle-btn');
     if (btn) {
-        btn.style.display = 'flex';
-        btn.style.visibility = 'visible';
-        btn.style.opacity = '1';
-        btn.style.zIndex = '999999999999999';
-        btn.style.pointerEvents = 'auto';
+        // Force visibility with important styles
+        btn.style.cssText = `
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 999999999999999 !important;
+            pointer-events: auto !important;
+            position: fixed !important;
+            top: 48px !important;
+            left: 48px !important;
+        `;
+        
+        // Remove any classes that might hide it
+        btn.classList.remove('hidden');
+        
         console.log('[Language] Button ensured visible:', btn);
+        return true;
     } else {
         console.error('[Language] Language toggle button not found!');
+        return false;
     }
 };
 
@@ -184,6 +196,46 @@ if (document.readyState === 'loading') {
 setTimeout(ensureLanguageButtonVisible, 100);
 setTimeout(ensureLanguageButtonVisible, 500);
 setTimeout(ensureLanguageButtonVisible, 1000);
+setTimeout(ensureLanguageButtonVisible, 2000);
+setTimeout(ensureLanguageButtonVisible, 3000);
+
+// Continuously check and ensure button is visible (especially for scene changes)
+// Check every 2 seconds to ensure button stays visible
+setInterval(() => {
+    const btn = document.getElementById('language-toggle-btn');
+    if (btn) {
+        const computedStyle = window.getComputedStyle(btn);
+        const isHidden = computedStyle.display === 'none' || 
+                        computedStyle.visibility === 'hidden' || 
+                        computedStyle.opacity === '0' ||
+                        btn.classList.contains('hidden');
+        
+        if (isHidden) {
+            console.warn('[Language] Button was hidden, forcing visibility');
+            ensureLanguageButtonVisible();
+        }
+    }
+}, 2000);
+
+// Listen for scene changes and ensure button is visible
+window.addEventListener('load', ensureLanguageButtonVisible);
+window.addEventListener('pageshow', ensureLanguageButtonVisible);
+
+// Also ensure button is visible after experience is initialized
+// Use MutationObserver to detect when scene changes happen
+const observer = new MutationObserver(() => {
+    ensureLanguageButtonVisible();
+});
+
+// Observe document body for changes
+if (document.body) {
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+}
 
 // Toggle language on button click
 if (languageToggleBtn) {

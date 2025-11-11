@@ -79,14 +79,34 @@ export default class AcademicScene4A {
         this.npcSenior.scale.set(10, 10, 10);
         this.scene.add(this.npcSenior);
 
-        this.npcAnimations = maleModel.animations.map((clip) => clip.clone());
+        // Safely clone animations - check if animations array exists
+        this.npcAnimations = (maleModel.animations && Array.isArray(maleModel.animations)) 
+            ? maleModel.animations.map((clip) => clip.clone()) 
+            : [];
+        
+        console.log("[AcademicScene4A] Available animations:", this.npcAnimations.length);
+        console.log("[AcademicScene4A] Animation names:", this.npcAnimations.map(clip => clip.name));
+        
         this.npcMixer = new THREE.AnimationMixer(this.npcSenior);
         this.npcActions = {};
 
-        const idleAnimation = this.npcAnimations.find(clip => clip.name === 'idle') || this.npcAnimations[1];
-        this.npcActions.idle = this.npcMixer.clipAction(idleAnimation);
+        // Safely setup animations - only create clipActions for animations that exist
+        const idleClip = this.npcAnimations.find(clip => clip && clip.name && clip.name.toLowerCase().includes('idle')) 
+            || this.npcAnimations.find(clip => clip && clip.name) 
+            || (this.npcAnimations.length > 0 ? this.npcAnimations[0] : null);
+        
+        if (idleClip) {
+            try {
+                this.npcActions.idle = this.npcMixer.clipAction(idleClip);
+                console.log("[AcademicScene4A] Idle animation created:", idleClip.name);
+                this.npcActions.idle.play();
+            } catch (error) {
+                console.warn("[AcademicScene4A] Failed to create/play idle animation:", error);
+            }
+        } else {
+            console.warn("[AcademicScene4A] No idle animation found, NPC will be static");
+        }
 
-        this.npcActions.idle.play();
         console.log("[AcademicScene4A] Senior NPC created.");
     }
 
@@ -443,40 +463,58 @@ export default class AcademicScene4A {
 
     // Override onMouseMove untuk update cursor dan hover effect
     onMouseMove(event) {
+        // Check if camera is available before using raycaster
+        if (!this.experience || !this.experience.camera || !this.experience.camera.instance) {
+            return; // Camera not ready yet, skip raycasting
+        }
+        
         const rect = this.canvas.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         
-        if (this.storyStarted && this.speechBubbleGroup) {
-            // Jika dialog sudah dimulai, cek hover pada speech bubble
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
-            return;
-    }
+        try {
+            if (this.storyStarted && this.speechBubbleGroup) {
+                // Jika dialog sudah dimulai, cek hover pada speech bubble
+                this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+                const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+                this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+                return;
+            }
 
-        // Jika dialog belum dimulai, cek hover pada NPC
-        if (!this.storyStarted && (this.npcSenior || this.npcInteractionZone)) {
-            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-            const objectsToCheck = [];
-            if (this.npcSenior) objectsToCheck.push(this.npcSenior);
-            if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
-            
-            const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
-            this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            // Jika dialog belum dimulai, cek hover pada NPC
+            if (!this.storyStarted && (this.npcSenior || this.npcInteractionZone)) {
+                this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+                const objectsToCheck = [];
+                if (this.npcSenior) objectsToCheck.push(this.npcSenior);
+                if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
+                
+                const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
+                this.canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            }
+        } catch (error) {
+            console.warn("[AcademicScene4A] Error setting raycaster from camera:", error);
         }
     }
 
     // Override onMouseClick untuk menangani klik pada NPC
     onMouseClick(event) {
+        // Check if camera is available before using raycaster
+        if (!this.experience || !this.experience.camera || !this.experience.camera.instance) {
+            return; // Camera not ready yet, skip raycasting
+        }
+        
         if (this.storyStarted) {
             // Jika dialog sudah dimulai, cek klik pada speech bubble (kode lama)
             if (this.speechBubbleGroup) {
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
-        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
-        if (intersects.length > 0) {
-            const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
-            this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
+                try {
+                    this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+                    const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+                    if (intersects.length > 0) {
+                        const dialogData = JSON.parse(this.speechBubbleGroup.userData.dialog);
+                        this.showScreenSpeechBubble(dialogData.speaker, dialogData.text);
+                    }
+                } catch (error) {
+                    console.warn("[AcademicScene4A] Error setting raycaster from camera:", error);
                 }
             }
             return;
@@ -486,18 +524,23 @@ export default class AcademicScene4A {
         const rect = this.canvas.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
         
-        // Cek intersect dengan NPC atau interaction zone
-        const objectsToCheck = [];
-        if (this.npcSenior) objectsToCheck.push(this.npcSenior);
-        if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
-        
-        const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
-        
-        if (intersects.length > 0) {
-            console.log("[AcademicScene4A] NPC clicked! Starting dialog...");
-            this.startStory();
+        try {
+            this.raycaster.setFromCamera(this.mouse, this.experience.camera.instance);
+            
+            // Cek intersect dengan NPC atau interaction zone
+            const objectsToCheck = [];
+            if (this.npcSenior) objectsToCheck.push(this.npcSenior);
+            if (this.npcInteractionZone) objectsToCheck.push(this.npcInteractionZone);
+            
+            const intersects = this.raycaster.intersectObjects(objectsToCheck, true);
+            
+            if (intersects.length > 0) {
+                console.log("[AcademicScene4A] NPC clicked! Starting dialog...");
+                this.startStory();
+            }
+        } catch (error) {
+            console.warn("[AcademicScene4A] Error setting raycaster from camera:", error);
         }
     }
 

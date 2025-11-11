@@ -1,0 +1,113 @@
+// Language Toggle Button Styles
+// Button untuk mengganti bahasa (Indonesia/English)
+
+#language-toggle-btn {
+    position: fixed;
+    top: 48px;
+    left: 48px; // Place on left side to avoid conflict with menu button (right side)
+    width: auto;
+    min-width: 80px;
+    height: 44px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    color: white;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 999999999999999 !important; // Very high z-index to be above everything including dialogs
+    backdrop-filter: blur(10px);
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
+    visibility: visible !important;
+    opacity: 1 !important;
+    
+    // Ensure button is always visible
+    &:hover {
+        background: rgba(0, 0, 0, 0.9);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.05);
+        box-shadow: 
+            0 6px 20px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    
+    &:active {
+        transform: scale(0.98);
+    }
+    
+    // Flag emoji
+    #language-flag {
+        font-size: 20px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    // Language text (ID/EN)
+    #language-text {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    
+    // Responsive design
+    @include media("<=tablet") {
+        top: 40px;
+        left: 40px;
+        min-width: 70px;
+        height: 40px;
+        padding: 6px 12px;
+        font-size: 12px;
+        
+        #language-flag {
+            font-size: 18px;
+        }
+        
+        #language-text {
+            font-size: 12px;
+        }
+    }
+    
+    @include media("<=phone") {
+        top: 15px;
+        left: 15px;
+        min-width: 65px;
+        height: 36px;
+        padding: 5px 10px;
+        gap: 6px;
+        
+        #language-flag {
+            font-size: 16px;
+        }
+        
+        #language-text {
+            font-size: 11px;
+        }
+    }
+}
+
+// Ensure button is not hidden by preloader or other elements
+.preloader,
+.landing-container,
+#sceneChoiceOverlay {
+    // Don't hide language button
+    ~ #language-toggle-btn {
+        z-index: 99999999999999 !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+}
+
