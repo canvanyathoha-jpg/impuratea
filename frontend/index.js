@@ -25,6 +25,66 @@ const experience = new Experience(domElements.canvas);
 // Chat functionality removed - game is now offline single-player
 // Chat features are no longer needed for single-player gameplay
 
+// Camera Mode Toggle Button ----------------------------------
+// Wait for Experience to be fully initialized before setting up camera toggle
+const setupCameraToggle = () => {
+    const cameraModeToggle = document.getElementById('cameraModeToggle');
+    const cameraModeLabel = cameraModeToggle?.querySelector('.camera-mode-label');
+
+    if (!cameraModeToggle) {
+        console.warn('[Camera] Camera mode toggle button not found');
+        return;
+    }
+
+    // Wait a bit for Experience to fully initialize
+    const checkCamera = () => {
+        if (experience && experience.camera && experience.camera.getCameraMode) {
+            // Update button label based on current camera mode
+            const updateCameraModeLabel = () => {
+                if (cameraModeLabel && experience.camera) {
+                    try {
+                        const mode = experience.camera.getCameraMode();
+                        cameraModeLabel.textContent = mode.toUpperCase();
+                    } catch (error) {
+                        console.warn('[Camera] Error getting camera mode:', error);
+                    }
+                }
+            };
+            
+            // Initial label update
+            updateCameraModeLabel();
+            
+            // Toggle camera mode on button click
+            cameraModeToggle.addEventListener('click', () => {
+                if (experience && experience.camera && experience.camera.toggleCameraMode) {
+                    try {
+                        experience.camera.toggleCameraMode();
+                        updateCameraModeLabel();
+                    } catch (error) {
+                        console.error('[Camera] Error toggling camera mode:', error);
+                    }
+                }
+            });
+            
+            console.log('[Camera] Camera toggle button setup complete');
+        } else {
+            // Retry after a short delay
+            setTimeout(checkCamera, 100);
+        }
+    };
+    
+    // Start checking
+    checkCamera();
+};
+
+// Setup camera toggle after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCameraToggle);
+} else {
+    // DOM already ready, setup immediately
+    setTimeout(setupCameraToggle, 200);
+}
+
 const audio = document.getElementById("myAudio");
 
 window.addEventListener("keydown", function (e) {

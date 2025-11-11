@@ -285,9 +285,19 @@ export default class Player {
     }
 
     getForwardVector() {
-        this.camera.perspectiveCamera.getWorldDirection(this.player.direction);
-        this.player.direction.y = 0;
-        this.player.direction.normalize();
+        const cameraMode = this.camera.getCameraMode();
+        
+        if (cameraMode === 'fpp') {
+            // FPP: Use camera's forward direction directly
+            this.camera.perspectiveCamera.getWorldDirection(this.player.direction);
+            this.player.direction.y = 0;
+            this.player.direction.normalize();
+        } else {
+            // TPP: Use original behavior
+            this.camera.perspectiveCamera.getWorldDirection(this.player.direction);
+            this.player.direction.y = 0;
+            this.player.direction.normalize();
+        }
 
         return this.player.direction;
     }
@@ -400,9 +410,30 @@ export default class Player {
         this.player.collider.translate(deltaPosition);
         this.playerCollisions();
 
-        this.player.body.position.sub(this.camera.controls.target);
-        this.camera.controls.target.copy(this.player.collider.end);
-        this.player.body.position.add(this.player.collider.end);
+        // Update camera position based on mode (FPP or TPP)
+        // Safety check: ensure camera and controls exist
+        if (!this.camera || !this.camera.getCameraMode) {
+            // Fallback to original behavior if camera not ready
+            this.player.body.position.sub(this.camera?.controls?.target || new THREE.Vector3());
+            if (this.camera?.controls) {
+                this.camera.controls.target.copy(this.player.collider.end);
+            }
+            this.player.body.position.add(this.player.collider.end);
+            return;
+        }
+        
+        const cameraMode = this.camera.getCameraMode();
+        
+        if (cameraMode === 'tpp' && this.camera.controls) {
+            // TPP Mode: Use OrbitControls target system
+            this.player.body.position.sub(this.camera.controls.target);
+            this.camera.controls.target.copy(this.player.collider.end);
+            this.player.body.position.add(this.player.collider.end);
+        } else {
+            // FPP Mode: Camera is directly at player position
+            // No need to adjust body position relative to controls target
+            this.player.body.position.copy(this.player.collider.end);
+        }
 
         this.player.body.updateMatrixWorld();
 
@@ -694,23 +725,67 @@ export default class Player {
     }
 
     updateCameraPosition() {
-        if (
-            this.player.animation !== "idle" &&
-            this.player.animation !== "dancing"
-        ) {
-            const cameraAngleFromPlayer = Math.atan2(
-                this.player.body.position.x - this.avatar.avatar.position.x,
-                this.player.body.position.z - this.avatar.avatar.position.z
+        // Safety check: ensure camera and its methods exist
+        if (!this.camera || !this.camera.getCameraMode || !this.camera.updateCameraPosition) {
+            return;
+        }
+        
+        const cameraMode = this.camera.getCameraMode();
+        
+        if (cameraMode === 'fpp') {
+            // FPP Mode: Camera follows player directly, avatar hidden
+            // Get player forward direction from camera rotation
+            if (!this.camera.perspectiveCamera) return;
+            
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(this.camera.perspectiveCamera.quaternion);
+            forward.y = 0; // Keep horizontal
+            forward.normalize();
+            
+            // Update camera position (handled by Camera.js)
+            this.camera.updateCameraPosition(
+                this.player.collider.end,
+                forward
             );
+            
+            // Hide avatar in FPP mode
+            if (this.avatar && this.avatar.avatar) {
+                this.avatar.avatar.visible = false;
+            }
+        } else {
+            // TPP Mode: Original behavior - avatar visible, camera follows with OrbitControls
+            // Show avatar in TPP mode
+            if (this.avatar && this.avatar.avatar) {
+                this.avatar.avatar.visible = true;
+            }
+            
+            // Update camera target (handled by Camera.js and OrbitControls)
+            this.camera.updateCameraPosition(
+                this.player.collider.end,
+                null
+            );
+            
+            // Rotate avatar based on camera angle (original behavior)
+            if (
+                this.avatar &&
+                this.avatar.avatar &&
+                this.player.animation !== "idle" &&
+                this.player.animation !== "dancing"
+            ) {
+                const cameraAngleFromPlayer = Math.atan2(
+                    this.player.body.position.x - this.avatar.avatar.position.x,
+                    this.player.body.position.z - this.avatar.avatar.position.z
+                );
 
-            this.targetRotation.setFromAxisAngle(
-                this.upVector,
-                cameraAngleFromPlayer + this.player.directionOffset
-            );
-            this.avatar.avatar.quaternion.rotateTowards(
-                this.targetRotation,
-                0.15
-            );
+                this.targetRotation.setFromAxisAngle(
+                    this.upVector,
+                    cameraAngleFromPlayer + this.player.directionOffset
+                );
+                this.avatar.avatar.quaternion.rotateTowards(
+                    this.targetRotation,
+                    0.15
+                );
+            }
         }
     }
 
