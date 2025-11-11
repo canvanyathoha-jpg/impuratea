@@ -26,7 +26,7 @@ export default class Camera {
         this.tppSmoothness = 0.1; // Smooth follow speed
         
         // FPP settings
-        this.fppHeight = 1.6; // Eye height in FPP mode (relative to player collider)
+        this.fppHeight = 8.5; // Eye height in FPP mode (relative to player collider) - increased for better view
         this.fppMouseSensitivity = 0.002; // Mouse sensitivity for FPP look
         this.fppRotationX = 0; // Vertical rotation (pitch)
         this.fppRotationY = 0; // Horizontal rotation (yaw)
@@ -38,6 +38,11 @@ export default class Camera {
         
         // Initialize FPP controls flag (will be setup when FPP mode is first used)
         this.fppControlsSetup = false;
+        
+        // Track if user has manually adjusted camera (to prevent auto-reset)
+        this.userAdjustedCamera = false;
+        this.lastUserInteractionTime = 0;
+        this.userInteractionTimeout = 2000; // 2 seconds - if no interaction, allow auto-follow
 
         this.setPerspectiveCamera();
         this.setOrbitControls();
@@ -77,6 +82,8 @@ export default class Camera {
         this.controls.enableCollisionDetection = true;
         this.controls.collisionDistance = 0.5; // Minimum distance from collider
 
+        // Note: User interaction tracking removed for TPP - using original simple behavior
+
         console.log('[Camera] OrbitControls initialized:', {
             enabled: this.controls.enabled,
             enableZoom: this.controls.enableZoom,
@@ -91,9 +98,14 @@ export default class Camera {
      * Toggle between FPP (First Person) and TPP (Third Person) camera modes
      */
     toggleCameraMode() {
-        if (this.isTransitioning) return; // Prevent rapid toggling
+        // Allow toggling even during transition (but log a warning)
+        if (this.isTransitioning) {
+            console.warn('[Camera] Toggle requested during transition, allowing anyway');
+            // Don't return - allow the toggle to proceed
+        }
         
         const newMode = this.cameraMode === 'fpp' ? 'tpp' : 'fpp';
+        console.log(`[Camera] Toggling from ${this.cameraMode.toUpperCase()} to ${newMode.toUpperCase()}`);
         this.setCameraMode(newMode);
         
         // Play sound if available
@@ -114,8 +126,12 @@ export default class Camera {
             return;
         }
         
-        if (this.cameraMode === mode) return; // Already in this mode
+        if (this.cameraMode === mode) {
+            console.log(`[Camera] Already in ${mode.toUpperCase()} mode, skipping`);
+            return; // Already in this mode
+        }
         
+        console.log(`[Camera] Setting camera mode from ${this.cameraMode.toUpperCase()} to ${mode.toUpperCase()}`);
         this.cameraMode = mode;
         this.isTransitioning = true;
         this.transitionProgress = 0;
@@ -137,12 +153,18 @@ export default class Camera {
             }
         } else {
             // TPP: Enable orbit controls for third person view
-            this.controls.enabled = true;
-            this.controls.enableZoom = true;
+            // IMPORTANT: Re-enable all OrbitControls features for TPP
+            if (this.controls) {
+                this.controls.enabled = true;
+                this.controls.enableZoom = true;
+                this.controls.enableRotate = true;
+                this.controls.enablePan = true;
+            }
             // Exit pointer lock
             if (this.isPointerLocked) {
                 document.exitPointerLock();
             }
+            console.log('[Camera] TPP mode enabled - OrbitControls re-enabled');
         }
     }
 
@@ -174,14 +196,34 @@ export default class Camera {
             const targetPosition = playerPosition.clone();
             targetPosition.y += this.fppHeight;
             
+            // IMPORTANT: Ensure OrbitControls is completely disabled and not updating
+            // This must be done BEFORE setting position to prevent override
+            if (this.controls) {
+                this.controls.enabled = false;
+                // Also disable all OrbitControls features
+                this.controls.enableZoom = false;
+                this.controls.enableRotate = false;
+                this.controls.enablePan = false;
+            }
+            
             // Smooth transition if switching modes
             if (this.isTransitioning) {
                 const startPos = this.perspectiveCamera.position.clone();
                 this.perspectiveCamera.position.lerp(targetPosition, this.transitionProgress);
             } else {
-                // Direct position in FPP
-                this.perspectiveCamera.position.copy(targetPosition);
+                // Direct position in FPP - use set() to ensure all components are set
+                this.perspectiveCamera.position.set(targetPosition.x, targetPosition.y, targetPosition.z);
             }
+            
+            // CRITICAL: Force update matrix immediately to ensure position is applied
+            // This must be done AFTER setting position
+            this.perspectiveCamera.updateMatrixWorld(true); // true = force update
+            
+            // IMPORTANT: Store the target position so we can verify it's not being overridden
+            this.lastFPPTargetPosition = targetPosition.clone();
+            
+            // Debug: Log to verify position is set correctly (uncomment to debug)
+            console.log('[Camera FPP] SET - fppHeight:', this.fppHeight, 'targetPosition.y:', targetPosition.y.toFixed(2), 'camera.y AFTER SET:', this.perspectiveCamera.position.y.toFixed(2));
             
             // Apply FPP rotation (mouse look)
             // Use Euler angles for FPP rotation
@@ -201,15 +243,10 @@ export default class Camera {
             if (this.isPointerLocked) {
                 document.exitPointerLock();
             }
-            // Third Person Perspective: Camera behind player
-            // This is handled by OrbitControls, but we adjust target
-            const targetPosition = playerPosition.clone();
-            targetPosition.y += this.tppHeight;
-            
-            // Update controls target smoothly
-            if (this.controls) {
-                this.controls.target.lerp(targetPosition, this.tppSmoothness);
-            }
+            // Third Person Perspective: Original behavior - let OrbitControls handle everything
+            // Don't interfere with camera target - it's already set in Player.js updateColliderMovement()
+            // This restores the original camera behavior before FPP/TPP feature
+            // OrbitControls will naturally follow the target set by Player.js
         }
     }
 
@@ -294,9 +331,34 @@ export default class Camera {
     update() {
         if (!this.controls) return;
         
-        // Only update OrbitControls in TPP mode
+        // IMPORTANT: Update order matters!
+        // In FPP mode, we must NOT call controls.update() at all
+        // The camera position is set in updateCameraPosition() which is called AFTER this update()
+        // So we need to ensure OrbitControls doesn't interfere
+        
         if (this.cameraMode === 'tpp' && this.controls.enabled === true) {
+            // TPP: Update OrbitControls normally
             this.controls.update();
+        } else if (this.cameraMode === 'fpp') {
+            // FPP: Completely disable OrbitControls and DO NOT call update()
+            // This is critical - controls.update() would override our camera position
+            if (this.controls.enabled) {
+                this.controls.enabled = false;
+            }
+            // DO NOT call this.controls.update() in FPP mode!
+            // The camera position is managed directly in updateCameraPosition()
+            
+            // Debug: Check if camera position was overridden (uncomment to debug)
+            if (this.lastFPPTargetPosition) {
+                const currentY = this.perspectiveCamera.position.y;
+                const targetY = this.lastFPPTargetPosition.y;
+                if (Math.abs(currentY - targetY) > 0.1) {
+                    console.warn('[Camera FPP] Position was overridden! Target:', targetY.toFixed(2), 'Current:', currentY.toFixed(2), 'Difference:', (currentY - targetY).toFixed(2));
+                    // Force restore position if it was overridden
+                    this.perspectiveCamera.position.y = targetY;
+                    this.perspectiveCamera.updateMatrixWorld(true);
+                }
+            }
         }
     }
 }

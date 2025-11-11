@@ -44,6 +44,15 @@ export default class NPC {
         this.model.scale.set(9, 9, 9); // Same scale as player avatar
         this.model.position.copy(this.position);
         this.model.rotation.y = THREE.MathUtils.degToRad(this.initialRotation); // Set initial rotation
+        
+        // OPTIMIZATION: Enable frustum culling and disable shadows for better performance
+        this.model.traverse((child) => {
+            if (child.isMesh) {
+                child.frustumCulled = true; // Enable frustum culling
+                child.castShadow = false; // Disable shadows for better performance
+                child.receiveShadow = false; // Disable shadows for better performance
+            }
+        });
 
         // Clone animations safely - check if animations exist and filter out invalid ones
         if (avatarData.animations && Array.isArray(avatarData.animations)) {
@@ -428,23 +437,36 @@ export default class NPC {
 
         const deltaTime = this.time.delta / 1000;
 
-        // Update animations
+        // OPTIMIZATION: Update animations (always needed)
         if (this.mixer) {
             this.mixer.update(deltaTime);
         }
 
-        // Update movement
+        // OPTIMIZATION: Update movement (always needed)
         this.updateMovement(deltaTime);
 
-        // Update chat
-        this.updateChat();
-
-        // Make name tag face camera
-        if (this.nameTag && this.experience.camera) {
-            this.nameTag.quaternion.copy(this.experience.camera.perspectiveCamera.quaternion);
+        // OPTIMIZATION: Update chat less frequently to save performance
+        // Only update chat every few frames (reduce from every frame to every 3 frames)
+        if (!this.chatUpdateCounter) this.chatUpdateCounter = 0;
+        this.chatUpdateCounter++;
+        if (this.chatUpdateCounter >= 3) {
+            this.updateChat();
+            this.chatUpdateCounter = 0;
         }
-        if (this.chatBubble && this.experience.camera) {
-            this.chatBubble.quaternion.copy(this.experience.camera.perspectiveCamera.quaternion);
+
+        // OPTIMIZATION: Update name tag and chat bubble less frequently
+        // Only update every 2 frames to reduce calculations
+        if (!this.uiUpdateCounter) this.uiUpdateCounter = 0;
+        this.uiUpdateCounter++;
+        if (this.uiUpdateCounter >= 2) {
+            // Make name tag face camera
+            if (this.nameTag && this.experience.camera) {
+                this.nameTag.quaternion.copy(this.experience.camera.perspectiveCamera.quaternion);
+            }
+            if (this.chatBubble && this.experience.camera) {
+                this.chatBubble.quaternion.copy(this.experience.camera.perspectiveCamera.quaternion);
+            }
+            this.uiUpdateCounter = 0;
         }
     }
 

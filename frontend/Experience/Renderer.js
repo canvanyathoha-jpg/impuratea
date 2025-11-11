@@ -8,23 +8,51 @@ export default class Renderer {
         this.scene = this.experience.scene;
         this.canvas = this.experience.canvas;
         this.camera = this.experience.camera;
+        
+        // Get performance manager if available
+        this.performanceManager = this.experience.performanceManager;
 
         this.setRenderer();
+        
+        // Listen for quality changes
+        if (this.performanceManager) {
+            this.performanceManager.on('qualityChanged', (quality, settings) => {
+                this.applyQualitySettings(settings);
+            });
+        }
     }
 
     setRenderer() {
         try {
+            // Get quality settings from PerformanceManager or use defaults
+            const qualitySettings = this.performanceManager 
+                ? this.performanceManager.getQualitySettings()
+                : { antialias: false, pixelRatio: 1.0 };
+            
             this.renderer = new THREE.WebGLRenderer({
                 canvas: this.canvas,
-                antialias: true,
+                antialias: qualitySettings.antialias || false, // OPTIMIZATION: Disable antialias for better performance
                 logarithmicDepthBuffer: true, // Get rid of z-fighting
                 powerPreference: "high-performance", // Use dedicated GPU if available
             });
             this.renderer.outputColorSpace = THREE.SRGBColorSpace;
             this.renderer.toneMapping = THREE.CineonToneMapping;
             this.renderer.toneMappingExposure = 1.5;
+            
+            // OPTIMIZATION: Disable shadows by default for better performance
+            this.renderer.shadowMap.enabled = false;
+            
             this.renderer.setSize(this.sizes.width, this.sizes.height);
-            this.renderer.setPixelRatio(this.sizes.pixelRatio);
+            
+            // Use quality-based pixel ratio
+            const pixelRatio = qualitySettings.pixelRatio || this.sizes.pixelRatio;
+            this.renderer.setPixelRatio(pixelRatio);
+            
+            console.log('[Renderer] Initialized with settings:', {
+                antialias: qualitySettings.antialias,
+                pixelRatio: pixelRatio,
+                shadows: false
+            });
             
             // Handle WebGL context loss events (only add listeners once)
             if (!this.contextLossHandled) {
@@ -51,9 +79,42 @@ export default class Renderer {
         }
     }
 
+    /**
+     * Apply quality settings from PerformanceManager
+     * @param {Object} settings - Quality settings object
+     */
+    applyQualitySettings(settings) {
+        if (!this.renderer) return;
+        
+        // Update pixel ratio
+        const pixelRatio = settings.pixelRatio || this.sizes.pixelRatio;
+        this.renderer.setPixelRatio(pixelRatio);
+        
+        // Update shadow settings
+        this.renderer.shadowMap.enabled = settings.shadows || false;
+        if (settings.shadowMapSize) {
+            // Note: Shadow map size is set per light, not globally
+            // This is handled in Environment.js
+        }
+        
+        console.log('[Renderer] Quality settings applied:', {
+            pixelRatio: pixelRatio,
+            shadows: settings.shadows,
+            antialias: settings.antialias
+        });
+    }
+
     onResize() {
+        if (!this.renderer) return;
+        
         this.renderer.setSize(this.sizes.width, this.sizes.height);
-        this.renderer.setPixelRatio(this.sizes.pixelRatio);
+        
+        // Use quality-based pixel ratio
+        const qualitySettings = this.performanceManager 
+            ? this.performanceManager.getQualitySettings()
+            : null;
+        const pixelRatio = qualitySettings?.pixelRatio || this.sizes.pixelRatio;
+        this.renderer.setPixelRatio(pixelRatio);
     }
 
     update() {

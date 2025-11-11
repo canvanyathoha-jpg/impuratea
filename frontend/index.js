@@ -85,6 +85,61 @@ if (document.readyState === 'loading') {
     setTimeout(setupCameraToggle, 200);
 }
 
+// Performance FPS Display ----------------------------------
+// Update FPS display if PerformanceManager is available
+const updateFPSDisplay = () => {
+    const fpsDisplay = document.getElementById('fps-display');
+    const fpsValue = document.getElementById('fps-value');
+    const qualityValue = document.getElementById('quality-value');
+    
+    if (!fpsDisplay || !experience || !experience.performanceManager) return;
+    
+    // Show FPS display (can be toggled with a key press)
+    // Press 'F' key to toggle FPS display
+    let fpsDisplayVisible = false;
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'f' || e.key === 'F') {
+            fpsDisplayVisible = !fpsDisplayVisible;
+            fpsDisplay.style.display = fpsDisplayVisible ? 'block' : 'none';
+        }
+    });
+    
+    // Update FPS display every second
+    setInterval(() => {
+        if (fpsDisplayVisible && experience.performanceManager) {
+            const fps = Math.round(experience.performanceManager.getFPS());
+            const avgFPS = Math.round(experience.performanceManager.getAverageFPS());
+            const quality = experience.performanceManager.getQuality().toUpperCase();
+            
+            if (fpsValue) {
+                fpsValue.textContent = `${fps} (avg: ${avgFPS})`;
+                // Color code based on FPS
+                if (fps < 20) {
+                    fpsValue.style.color = '#ff0000'; // Red for low FPS
+                } else if (fps < 30) {
+                    fpsValue.style.color = '#ffaa00'; // Orange for medium FPS
+                } else {
+                    fpsValue.style.color = '#00ff00'; // Green for good FPS
+                }
+            }
+            if (qualityValue) {
+                qualityValue.textContent = quality;
+            }
+        }
+    }, 1000);
+};
+
+// Setup FPS display after Experience is ready
+setTimeout(() => {
+    if (experience && experience.performanceManager) {
+        updateFPSDisplay();
+    } else {
+        // Retry after a delay
+        setTimeout(updateFPSDisplay, 500);
+    }
+}, 500);
+
 const audio = document.getElementById("myAudio");
 
 window.addEventListener("keydown", function (e) {

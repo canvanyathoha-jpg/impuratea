@@ -2,6 +2,8 @@ import Loaders from "./Loaders.js";
 import { EventEmitter } from "events";
 import * as THREE from "three";
 import SceneManager from "./SceneManager.js";
+import ModelOptimizer from "./ModelOptimizer.js";
+import Experience from "../Experience.js";
 
 export default class Resources extends EventEmitter {
     constructor(assets) {
@@ -20,6 +22,21 @@ export default class Resources extends EventEmitter {
 
         // OPTIMIZATION: Combine shared and scene-specific assets
         this.startLoading();
+    }
+    
+    /**
+     * Get quality settings from PerformanceManager
+     * @returns {Object|null} Quality settings or null if not available
+     */
+    getQualitySettings() {
+        try {
+            if (Experience.instance && Experience.instance.performanceManager) {
+                return Experience.instance.performanceManager.getQualitySettings();
+            }
+        } catch (e) {
+            // Experience not available yet
+        }
+        return null;
     }
 
     startLoading() {
@@ -87,6 +104,19 @@ export default class Resources extends EventEmitter {
             this.loaders.gltfLoader.load(
                 asset.path,
                 (file) => {
+                    // OPTIMIZATION: Optimize model after loading
+                    if (file && file.scene) {
+                        // Get quality settings from PerformanceManager if available
+                        const qualitySettings = this.getQualitySettings();
+                        const textureQuality = qualitySettings?.textureQuality || 0.75;
+                        
+                        ModelOptimizer.optimizeModel(file.scene, {
+                            disableShadows: true,
+                            enableFrustumCulling: true,
+                            optimizeTextures: true,
+                            textureQuality: textureQuality
+                        });
+                    }
                     callback(asset, file);
                 },
                 (progress) => {

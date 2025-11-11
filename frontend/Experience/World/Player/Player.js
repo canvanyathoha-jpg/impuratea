@@ -97,6 +97,7 @@ export default class Player {
         console.log(`[Player] Collider start:`, this.player.collider.start);
         console.log(`[Player] Collider end:`, this.player.collider.end);
 
+        // Set initial camera target (original behavior)
         if (this.camera.controls) {
             this.camera.controls.target.copy(this.player.collider.end);
         }
@@ -425,7 +426,8 @@ export default class Player {
         const cameraMode = this.camera.getCameraMode();
         
         if (cameraMode === 'tpp' && this.camera.controls) {
-            // TPP Mode: Use OrbitControls target system
+            // TPP Mode: Original behavior - simple OrbitControls target following
+            // This is the original camera behavior before FPP/TPP feature
             this.player.body.position.sub(this.camera.controls.target);
             this.camera.controls.target.copy(this.player.collider.end);
             this.player.body.position.add(this.player.collider.end);
@@ -759,11 +761,9 @@ export default class Player {
                 this.avatar.avatar.visible = true;
             }
             
-            // Update camera target (handled by Camera.js and OrbitControls)
-            this.camera.updateCameraPosition(
-                this.player.collider.end,
-                null
-            );
+            // TPP: Don't call updateCameraPosition - let OrbitControls handle it naturally
+            // The camera target is already set in updateColliderMovement()
+            // This restores the original camera behavior before FPP/TPP feature
             
             // Rotate avatar based on camera angle (original behavior)
             if (

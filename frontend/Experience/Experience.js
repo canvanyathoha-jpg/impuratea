@@ -6,6 +6,7 @@ import Resources from "./Utils/Resources.js";
 import SceneManager from "./Utils/SceneManager.js";
 import ScoreManager from "./Utils/ScoreManager.js";
 import SoundManager from "./Utils/SoundManager.js";
+import PerformanceManager from "./Utils/PerformanceManager.js";
 import assets from "./Utils/assets.js";
 
 import Camera from "./Camera.js";
@@ -31,6 +32,7 @@ export default class Experience {
         this.time = new Time();
         this.scoreManager = new ScoreManager();
         this.soundManager = new SoundManager();
+        this.performanceManager = new PerformanceManager(); // Performance monitoring and quality management
 
         this.setScene();
         this.setCamera();
