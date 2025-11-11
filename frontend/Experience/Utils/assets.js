@@ -1,17 +1,23 @@
 // OPTIMIZATION: Shared assets that are used across multiple scenes
 // These will be loaded once and reused across all scenes
+// IMPORTANT: Cache busting will be added dynamically in Resources.js when loading
+// This ensures fresh model load every time, bypassing browser cache
 const SHARED_ASSETS = [
     {
         name: "male",
         type: "glbModel",
-        path: "/models/asian_male_animated.glb?v=" + Date.now(),
+        path: "/models/asian_male_animated.glb",
         shared: true,
+        // Flag to indicate this model needs cache busting
+        needsCacheBusting: true,
     },
     {
         name: "female",
         type: "glbModel",
-        path: "/models/asian_female_animated.glb?v=" + Date.now(),
+        path: "/models/asian_female_animated.glb",
         shared: true,
+        // Flag to indicate this model needs cache busting
+        needsCacheBusting: true,
     },
     {
         name: "collider",

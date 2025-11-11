@@ -133,69 +133,21 @@ export default class Player {
     }
 
     setJoyStick() {
-        // Check device preference from localStorage
-        const deviceType = localStorage.getItem('impuratea-device') || 'desktop';
-        
-        // Only create joystick if device is mobile
-        if (deviceType === 'mobile') {
-            // Show joystick area
-            if (this.domElements.joystickArea) {
-                this.domElements.joystickArea.style.display = 'block';
-            }
-            
-            this.options = {
-                zone: this.domElements.joystickArea,
-                mode: "dynamic",
-                color: "rgba(30, 64, 124, 0.8)",
-                size: 160,
-                threshold: 0.1,
-                fadeTime: 250,
-                multitouch: false,
-                maxNumberOfNipples: 1,
-                dataOnly: false,
-                position: { top: '50%', left: '50%' },
-                catchDistance: 200,
-            };
-            this.joystick = nipplejs.create(this.options);
+        this.options = {
+            zone: this.domElements.joystickArea,
+            mode: "dynamic",
+        };
+        this.joystick = nipplejs.create(this.options);
 
-            this.joystick.on("start", () => {
-                // Add active class for enhanced visual feedback
-                if (this.domElements.joystickArea) {
-                    this.domElements.joystickArea.classList.add('active');
-                }
-            });
+        this.joystick.on("move", (e, data) => {
+            this.actions.movingJoyStick = true;
+            this.joystickVector.z = -data.vector.y;
+            this.joystickVector.x = data.vector.x;
+        });
 
-            this.joystick.on("move", (e, data) => {
-                this.actions.movingJoyStick = true;
-                this.joystickVector.z = -data.vector.y;
-                this.joystickVector.x = data.vector.x;
-                
-                // Add active class for enhanced visual feedback
-                if (this.domElements.joystickArea) {
-                    this.domElements.joystickArea.classList.add('active');
-                }
-            });
-
-            this.joystick.on("end", () => {
-                this.actions.movingJoyStick = false;
-                
-                // Remove active class
-                if (this.domElements.joystickArea) {
-                    this.domElements.joystickArea.classList.remove('active');
-                }
-            });
-
-            this.joystick.on("dir", (evt, data) => {
-                // Optional: Add direction-based visual feedback
-                console.log("[Player] Joystick direction:", data.direction);
-            });
-        } else {
-            // Hide joystick area for desktop
-            if (this.domElements.joystickArea) {
-                this.domElements.joystickArea.style.display = 'none';
-            }
-            this.joystick = null;
-        }
+        this.joystick.on("end", () => {
+            this.actions.movingJoyStick = false;
+        });
     }
 
     /**
@@ -225,16 +177,44 @@ export default class Player {
      * Called by Preloader after avatar selection or from localStorage
      */
     createPlayerAvatar(avatarSkin) {
+        console.log(`[Player] createPlayerAvatar called with: ${avatarSkin}`);
+        console.log(`[Player] Current avatar exists:`, !!this.avatar);
+        console.log(`[Player] Resources available:`, Object.keys(this.resources.items));
+        console.log(`[Player] Model for ${avatarSkin} exists:`, !!this.resources.items[avatarSkin]);
+        
+        if (!this.resources.items[avatarSkin]) {
+            console.error(`[Player] ❌ Model ${avatarSkin} not found in resources!`);
+            console.error(`[Player] Available models:`, Object.keys(this.resources.items).filter(key => key === 'male' || key === 'female'));
+            return;
+        }
+        
         if (!this.avatar && this.resources.items[avatarSkin]) {
-            this.player.avatarSkin = avatarSkin;
-            this.avatar = new Avatar(
-                this.resources.items[avatarSkin],
-                this.scene,
-                undefined,
-                undefined,
-                avatarSkin // Pass avatarType ("male" or "female")
-            );
-            console.log(`[Player] Avatar created: ${avatarSkin}`);
+            try {
+                const avatarData = this.resources.items[avatarSkin];
+                console.log(`[Player] Avatar data:`, {
+                    hasScene: !!avatarData.scene,
+                    hasAnimations: !!avatarData.animations,
+                    animationCount: avatarData.animations?.length || 0
+                });
+                
+                this.player.avatarSkin = avatarSkin;
+                this.avatar = new Avatar(
+                    avatarData,
+                    this.scene,
+                    undefined,
+                    undefined,
+                    avatarSkin // Pass avatarType ("male" or "female")
+                );
+                console.log(`[Player] ✅ Avatar created successfully: ${avatarSkin}`);
+                console.log(`[Player] Avatar object:`, this.avatar);
+                console.log(`[Player] Avatar mesh visible:`, this.avatar.avatar.visible);
+                console.log(`[Player] Avatar position:`, this.avatar.avatar.position);
+            } catch (error) {
+                console.error(`[Player] ❌ Error creating avatar:`, error);
+                console.error(`[Player] Error stack:`, error.stack);
+            }
+        } else if (this.avatar) {
+            console.warn(`[Player] ⚠️ Avatar already exists, skipping creation`);
         }
     }
 

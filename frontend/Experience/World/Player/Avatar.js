@@ -4,16 +4,42 @@ import Nametag from "./Nametag.js";
 
 export default class Avatar {
     constructor(avatar, scene, name = "Anonymous", id, avatarType = null) {
+        console.log(`[Avatar] Creating avatar with type: ${avatarType}`);
+        console.log(`[Avatar] Avatar data:`, {
+            hasScene: !!avatar?.scene,
+            hasAnimations: !!avatar?.animations,
+            animationCount: avatar?.animations?.length || 0
+        });
+        
+        if (!avatar || !avatar.scene) {
+            console.error(`[Avatar] ❌ Invalid avatar data provided!`);
+            throw new Error('Invalid avatar data: scene is missing');
+        }
+        
         this.scene = scene;
         this.name = new Nametag();
         this.nametag = this.name.createNametag(16, 150, name);
-        this.avatar = SkeletonUtils.clone(avatar.scene);
+        
+        try {
+            this.avatar = SkeletonUtils.clone(avatar.scene);
+            console.log(`[Avatar] ✅ Avatar cloned successfully`);
+        } catch (error) {
+            console.error(`[Avatar] ❌ Error cloning avatar:`, error);
+            throw error;
+        }
+        
         this.avatar.userData.id = id;
         this.avatarType = avatarType;
 
-        this.avatar.animations = avatar.animations.map((clip) => {
-            return clip.clone();
-        });
+        if (avatar.animations && Array.isArray(avatar.animations)) {
+            this.avatar.animations = avatar.animations.map((clip) => {
+                return clip.clone();
+            });
+            console.log(`[Avatar] ✅ Cloned ${this.avatar.animations.length} animations`);
+        } else {
+            console.warn(`[Avatar] ⚠️ No animations found in avatar data`);
+            this.avatar.animations = [];
+        }
 
         // Normalise initial transform so the character always appears in front of the player
         this.avatar.position.set(0, 0, 0);
@@ -29,13 +55,16 @@ export default class Avatar {
         let scaleFactor;
         
         if (this.avatarType === "female") {
-            // Female character: Use very small target height to make character much smaller
-            // This ensures female character is proportionally smaller than male
-            const femaleTargetHeight = 0.16; // Very small target height for female character
+            // Female character: Use target height to control character size
+            // Increase femaleTargetHeight to make female character bigger
+            // Default: 0.16 (very small), try 0.2-0.3 for slightly bigger, 0.5+ for much bigger
+            const femaleTargetHeight = 5.5; // Increased from 0.16 to make female character bigger (3x the original)
             scaleFactor = femaleTargetHeight / (initialSize.y || 1);
         } else {
             // Male/default character: Use standard targetHeight approach
-            const targetHeight = 1;
+            // Increase targetHeight to make male character bigger
+            // Default: 1, try 1.2-1.5 for slightly bigger, 2.0 for much bigger
+            const targetHeight = 3; // Increased from 1 to make male character bigger
             scaleFactor = targetHeight / (initialSize.y || 1);
         }
         
@@ -75,15 +104,19 @@ export default class Avatar {
         });
 
         this.setAvatar();
+        console.log(`[Avatar] ✅ Avatar setup complete. Visible: ${this.avatar.visible}, Position:`, this.avatar.position);
     }
 
     setAvatar() {
+        console.log(`[Avatar] Setting up avatar in scene...`);
         this.speedAdjustment = 1;
 
         // OPTIMIZATION: Enable frustum culling for better performance
         // Only disable for very important objects that must always be visible
+        let meshCount = 0;
         this.avatar.traverse((child) => {
             if (child.isMesh) {
+                meshCount++;
                 child.frustumCulled = true; // OPTIMIZATION: Enable frustum culling
                 // OPTIMIZATION: Disable shadows for better performance
                 child.castShadow = false;
@@ -93,12 +126,18 @@ export default class Avatar {
                 }
             }
         });
+        console.log(`[Avatar] Found ${meshCount} meshes in avatar`);
 
         this.setAnimation();
+        
+        // Ensure avatar is visible before adding to scene
+        this.avatar.visible = true;
         this.scene.add(this.avatar);
+        console.log(`[Avatar] ✅ Avatar added to scene. Visible: ${this.avatar.visible}, In scene:`, this.scene.children.includes(this.avatar));
 
         if (this.avatar.userData.id) {
             this.scene.add(this.nametag);
+            console.log(`[Avatar] ✅ Nametag added to scene`);
         }
     }
 

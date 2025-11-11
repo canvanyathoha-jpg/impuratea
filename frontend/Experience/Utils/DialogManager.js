@@ -44,6 +44,9 @@ export default class DialogManager {
         this.dialogHistory = [];
         this.maxHistorySize = 50; // Maximum number of dialogs to keep in history
 
+        // Dialog minimize state
+        this.isMinimized = false;
+
         // Create permanent history button di pojok kiri atas
         this.createPermanentHistoryButton();
 
@@ -353,6 +356,9 @@ export default class DialogManager {
         dialogDiv.id = 'story-dialog';
         // Use very high z-index to ensure dialog is always on top
         // Also ensure visibility is explicitly set
+        // Reset minimized state when creating new dialog
+        this.isMinimized = false;
+        
         dialogDiv.style.cssText = `
             position: fixed !important;
             bottom: 80px !important;
@@ -374,9 +380,45 @@ export default class DialogManager {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
+            transition: all 0.3s ease !important;
         `;
 
         let html = '';
+        
+        // Add minimize/maximize button at the top
+        html += `
+            <div style="
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                margin-bottom: 10px;
+                position: relative;
+            ">
+                <button 
+                    id="dialog-minimize-btn"
+                    style="
+                        background: rgba(25, 118, 210, 0.1);
+                        border: 2px solid #1976d2;
+                        border-radius: 8px;
+                        padding: 6px 12px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        color: #1976d2;
+                        font-weight: bold;
+                        transition: all 0.2s;
+                        display: flex;
+                        align-items: center;
+                        gap: 5px;
+                    "
+                    title="Minimize Dialog"
+                >
+                    <span id="minimize-icon">−</span>
+                </button>
+            </div>
+        `;
+        
+        // Wrap content in a container that can be hidden when minimized
+        html += '<div id="dialog-content-container">';
 
         // Determine if this dialog text should be visually rendered by this UI.
         // Render SEMUA dialog di DialogManager untuk visibility yang jelas
@@ -587,6 +629,9 @@ export default class DialogManager {
                 ` : ''}
             </div>
         `;
+        
+        // Close dialog content container
+        html += '</div>';
 
         dialogDiv.innerHTML = html;
         
@@ -614,6 +659,7 @@ export default class DialogManager {
         // CRITICAL: Wait for DOM to be fully rendered before attaching events
         setTimeout(() => {
             this.attachEventListeners(config);
+            this.attachMinimizeButton();
         }, 10);
 
         // Add event listeners
@@ -1577,6 +1623,173 @@ export default class DialogManager {
 
     getScoreManager() {
         return this.scoreManager;
+    }
+
+    /**
+     * Attach minimize button event listener
+     */
+    attachMinimizeButton() {
+        const minimizeBtn = document.getElementById('dialog-minimize-btn');
+        if (minimizeBtn) {
+            minimizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleMinimize();
+            });
+            
+            // Hover effect
+            minimizeBtn.addEventListener('mouseenter', (e) => {
+                e.target.style.background = 'rgba(25, 118, 210, 0.2)';
+                e.target.style.transform = 'scale(1.05)';
+            });
+            minimizeBtn.addEventListener('mouseleave', (e) => {
+                e.target.style.background = 'rgba(25, 118, 210, 0.1)';
+                e.target.style.transform = 'scale(1)';
+            });
+        }
+    }
+
+    /**
+     * Toggle minimize/maximize dialog
+     */
+    toggleMinimize() {
+        const dialog = document.getElementById('story-dialog');
+        const contentContainer = document.getElementById('dialog-content-container');
+        const minimizeBtn = document.getElementById('dialog-minimize-btn');
+        const minimizeIcon = document.getElementById('minimize-icon');
+        
+        if (!dialog || !contentContainer || !minimizeBtn) return;
+        
+        this.isMinimized = !this.isMinimized;
+        
+        if (this.isMinimized) {
+            // Minimize: Hide content, make dialog smaller and more elegant
+            contentContainer.style.display = 'none';
+            dialog.style.width = '350px';
+            dialog.style.maxWidth = '350px';
+            dialog.style.padding = '18px 22px';
+            dialog.style.bottom = '25px';
+            dialog.style.borderRadius = '12px';
+            dialog.style.borderWidth = '2px';
+            dialog.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+            minimizeIcon.textContent = '+';
+            minimizeBtn.title = 'Maximize Dialog';
+            minimizeBtn.style.padding = '5px 10px';
+            minimizeBtn.style.fontSize = '16px';
+            
+            // Show only essential info in minimized state with better styling
+            const speaker = this.currentDialog?.speaker;
+            const hasChoices = this.currentDialog?.choices && this.currentDialog.choices.length > 0;
+            
+            // Determine speaker emoji and color
+            let speakerEmoji = '💬';
+            let speakerColor = '#1976d2';
+            if (speaker) {
+                const speakerText = this.languageManager.translate(speaker);
+                const isTeacher = speakerText.includes("Guru") || speakerText.toLowerCase().includes("teacher");
+                const isBatin = speakerText.includes("batin") || speakerText.toLowerCase().includes("inner");
+                speakerEmoji = isTeacher ? '👨‍🏫' : isBatin ? '💭' : '👤';
+                speakerColor = isTeacher ? '#b8860b' : isBatin ? '#1565c0' : '#1976d2';
+            }
+            
+            let minimizedContent = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-top: 8px;
+                ">
+            `;
+            
+            if (speaker) {
+                const speakerText = this.languageManager.translate(speaker);
+                minimizedContent += `
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        font-size: 15px;
+                        font-weight: 700;
+                        color: ${speakerColor};
+                        padding: 4px 0;
+                    ">
+                        <span style="font-size: 18px;">${speakerEmoji}</span>
+                        <span>${speakerText}</span>
+                    </div>
+                `;
+            }
+            
+            if (hasChoices) {
+                minimizedContent += `
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        font-size: 13px;
+                        color: #555;
+                        padding: 6px 12px;
+                        background: rgba(25, 118, 210, 0.08);
+                        border-radius: 8px;
+                        border-left: 3px solid #1976d2;
+                    ">
+                        <span style="font-size: 16px;">📋</span>
+                        <span><strong>${this.currentDialog.choices.length}</strong> pilihan tersedia</span>
+                    </div>
+                `;
+            } else {
+                minimizedContent += `
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        font-size: 13px;
+                        color: #555;
+                        padding: 6px 12px;
+                        background: rgba(0, 255, 255, 0.1);
+                        border-radius: 8px;
+                        border-left: 3px solid #00ffff;
+                        font-style: italic;
+                    ">
+                        <span style="font-size: 16px;">⏭️</span>
+                        <span>Klik untuk melanjutkan</span>
+                    </div>
+                `;
+            }
+            
+            minimizedContent += '</div>';
+            
+            // Insert minimized content after minimize button
+            const existingMinimized = document.getElementById('dialog-minimized-content');
+            if (existingMinimized) {
+                existingMinimized.remove();
+            }
+            
+            const minimizedDiv = document.createElement('div');
+            minimizedDiv.id = 'dialog-minimized-content';
+            minimizedDiv.innerHTML = minimizedContent;
+            minimizedDiv.style.cssText = 'margin-top: 0;';
+            minimizeBtn.parentElement.appendChild(minimizedDiv);
+            
+        } else {
+            // Maximize: Show content, restore original size
+            contentContainer.style.display = 'block';
+            dialog.style.width = '80%';
+            dialog.style.maxWidth = '800px';
+            dialog.style.padding = '30px';
+            dialog.style.bottom = '80px';
+            dialog.style.borderRadius = '15px';
+            dialog.style.borderWidth = '3px';
+            dialog.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2)';
+            minimizeIcon.textContent = '−';
+            minimizeBtn.title = 'Minimize Dialog';
+            minimizeBtn.style.padding = '6px 12px';
+            minimizeBtn.style.fontSize = '14px';
+            
+            // Remove minimized content
+            const minimizedContent = document.getElementById('dialog-minimized-content');
+            if (minimizedContent) {
+                minimizedContent.remove();
+            }
+        }
     }
 }
 

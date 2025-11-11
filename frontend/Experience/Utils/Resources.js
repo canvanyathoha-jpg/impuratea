@@ -101,8 +101,24 @@ export default class Resources extends EventEmitter {
     // OPTIMIZATION: Helper method to load a single asset (supports parallel loading)
     loadSingleAsset(asset, callback) {
         if (asset.type === "glbModel") {
+            // Add cache busting for GLB models to ensure fresh load
+            // This bypasses browser cache and ensures updated models are loaded
+            let modelPath = asset.path;
+            
+            // Add cache busting if needed (for models that are frequently updated)
+            if ((asset.needsCacheBusting || 
+                modelPath.includes('asian_male_animated.glb') || 
+                modelPath.includes('asian_female_animated.glb')) &&
+                !modelPath.includes('?v=')) {
+                // Use timestamp + random string to ensure unique URL every time
+                // This bypasses browser cache and ensures updated models are loaded
+                const cacheBuster = `?v=${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                modelPath = modelPath + cacheBuster;
+                console.log(`[Resources] 🔄 Adding cache busting to ${asset.name}: ${modelPath}`);
+            }
+            
             this.loaders.gltfLoader.load(
-                asset.path,
+                modelPath,
                 (file) => {
                     // OPTIMIZATION: Optimize model after loading
                     if (file && file.scene) {
