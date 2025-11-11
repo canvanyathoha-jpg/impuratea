@@ -31,7 +31,7 @@ export default class Avatar {
         if (this.avatarType === "female") {
             // Female character: Use very small target height to make character much smaller
             // This ensures female character is proportionally smaller than male
-            const femaleTargetHeight = 0.26; // Very small target height for female character
+            const femaleTargetHeight = 0.13; // Very small target height for female character
             scaleFactor = femaleTargetHeight / (initialSize.y || 1);
         } else {
             // Male/default character: Use standard targetHeight approach
