@@ -22,10 +22,11 @@ export default class PerformanceManager extends EventEmitter {
         this.targetFPS = 30; // Target FPS for laptops (lower than 60)
         this.minFPS = 20; // Minimum acceptable FPS
         
-        // Detect mobile device
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                        (window.innerWidth <= 768 && window.innerHeight <= 1024);
-        
+        // Detect device characteristics
+        this.deviceProfile = this.detectDeviceProfile();
+        const isMobile = this.deviceProfile.isMobile;
+        const isLowEnd = this.deviceProfile.isLowEnd;
+
         // Quality settings
         this.qualitySettings = {
             low: {
@@ -58,9 +59,10 @@ export default class PerformanceManager extends EventEmitter {
         };
         
         // Start with lower quality on mobile
-        if (isMobile) {
+        if (isLowEnd) {
             this.currentQuality = 'low';
-            console.log('[PerformanceManager] Mobile device detected, starting with LOW quality');
+            this.targetFPS = 24;
+            console.log('[PerformanceManager] Low-end device detected, starting with LOW quality');
         }
         
         // Start monitoring
@@ -118,6 +120,48 @@ export default class PerformanceManager extends EventEmitter {
     }
     
     /**
+     * Detect device profile for performance decisions
+     * @returns {{isMobile: boolean, isTablet: boolean, isLowEnd: boolean, hardwareConcurrency: number|null, deviceMemory: number|null}}
+     */
+    detectDeviceProfile() {
+        if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+            return {
+                isMobile: false,
+                isTablet: false,
+                isLowEnd: false,
+                hardwareConcurrency: null,
+                deviceMemory: null,
+            };
+        }
+
+        const ua = navigator.userAgent || '';
+        const isMobile = /Android|webOS|iPhone|iPod|IEMobile|Opera Mini/i.test(ua) ||
+            (window.innerWidth <= 768 && window.innerHeight <= 1024);
+        const isTablet = /iPad|Tablet|SM-T|Lenovo Tab|Tab\s?[A-Z0-9]+/i.test(ua);
+
+        const deviceMemory = typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null;
+        const hardwareConcurrency = typeof navigator.hardwareConcurrency === 'number' ? navigator.hardwareConcurrency : null;
+        const maxTouchPoints = typeof navigator.maxTouchPoints === 'number' ? navigator.maxTouchPoints : 0;
+
+        // Consider devices with limited CPU cores or memory as low end
+        const lowCpu = typeof hardwareConcurrency === 'number' && hardwareConcurrency > 0 && hardwareConcurrency <= 4;
+        const lowMemory = typeof deviceMemory === 'number' && deviceMemory > 0 && deviceMemory <= 4;
+
+        // Older iPads report as "Macintosh" in UA but have touch support
+        const isIPadOS = (!/iPhone/.test(ua) && /Macintosh/.test(ua) && maxTouchPoints > 1) || /iPad/.test(ua);
+
+        const isLowEnd = isMobile || isTablet || isIPadOS || lowCpu || lowMemory;
+
+        return {
+            isMobile: isMobile || isIPadOS,
+            isTablet: isTablet || isIPadOS,
+            isLowEnd,
+            hardwareConcurrency,
+            deviceMemory,
+        };
+    }
+    
+    /**
      * Set quality level
      * @param {string} quality - 'low', 'medium', or 'high'
      */
@@ -170,5 +214,42 @@ export default class PerformanceManager extends EventEmitter {
         if (this.fpsHistory.length === 0) return 60;
         return this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
     }
-}
 
+    /**
+     * Determine if post-processing effects should be enabled
+     * Heavy effects are skipped on low-end devices regardless of quality setting
+     * @returns {boolean}
+     */
+    shouldUsePostProcessing() {
+        if (!this.deviceProfile) return this.currentQuality === 'high';
+        return !this.deviceProfile.isLowEnd && this.currentQuality === 'high';
+    }
+
+    /**
+     * Determine if expensive dynamic shadows should be enabled
+     * @returns {boolean}
+     */
+    shouldEnableDynamicShadows() {
+        if (!this.deviceProfile) return this.getQualitySettings().shadows;
+        if (this.deviceProfile.isLowEnd) return false;
+        const settings = this.getQualitySettings();
+        return !!settings?.shadows;
+    }
+
+    /**
+     * Determine if advanced atmospheric effects should be used
+     * @returns {boolean}
+     */
+    shouldUseAdvancedAtmosphere() {
+        if (!this.deviceProfile) return this.currentQuality !== 'low';
+        return !this.deviceProfile.isLowEnd && this.currentQuality !== 'low';
+    }
+
+    /**
+     * Get detected device profile
+     * @returns {{isMobile: boolean, isTablet: boolean, isLowEnd: boolean, hardwareConcurrency: number|null, deviceMemory: number|null}}
+     */
+    getDeviceProfile() {
+        return this.deviceProfile || this.detectDeviceProfile();
+    }
+}

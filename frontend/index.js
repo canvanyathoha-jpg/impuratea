@@ -3,6 +3,7 @@ import "./index.scss";
 import Experience from "./Experience/Experience.js";
 import elements from "./Experience/Utils/functions/elements.js";
 import { languageManager } from "./Experience/Utils/LanguageManager.js";
+import { initDeviceClassManager } from "./Experience/Utils/deviceClassManager.js";
 
 // Dom Elements ----------------------------------
 
@@ -13,6 +14,9 @@ const domElements = elements({
     avatarLeftImg: ".avatar-left",
     avatarRightImg: ".avatar-right",
 });
+
+// Initialize device class manager (handles mobile vs desktop + orientation)
+initDeviceClassManager();
 
 // Experience ----------------------------------
 // No socket needed - game is offline single-player

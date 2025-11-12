@@ -13,6 +13,20 @@
     border: none;
     transform-origin: center center;
     z-index: 999999999999999999999999999999999;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+
+    @include media("<=tablet") {
+        top: calc(16px + env(safe-area-inset-top));
+        right: calc(16px + env(safe-area-inset-right));
+    }
+
+    @include media("<=phone") {
+        top: calc(12px + env(safe-area-inset-top));
+        right: calc(12px + env(safe-area-inset-right));
+        width: 44px;
+        height: 44px;
+    }
 
     &:hover {
         transform: scale(1.2, 1.2);

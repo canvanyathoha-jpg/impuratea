@@ -28,6 +28,9 @@ export default class Renderer {
             const qualitySettings = this.performanceManager 
                 ? this.performanceManager.getQualitySettings()
                 : { antialias: false, pixelRatio: 1.0 };
+            const allowShadows = this.performanceManager
+                ? this.performanceManager.shouldEnableDynamicShadows()
+                : false;
             
             this.renderer = new THREE.WebGLRenderer({
                 canvas: this.canvas,
@@ -40,13 +43,16 @@ export default class Renderer {
             this.renderer.toneMappingExposure = 1.5;
             
             // OPTIMIZATION: Disable shadows by default for better performance
-            this.renderer.shadowMap.enabled = false;
+            this.renderer.shadowMap.enabled = !!allowShadows;
             
             this.renderer.setSize(this.sizes.width, this.sizes.height);
             
             // Use quality-based pixel ratio
             const pixelRatio = qualitySettings.pixelRatio || this.sizes.pixelRatio;
             this.renderer.setPixelRatio(pixelRatio);
+
+            // Expose renderer instance for scenes that require direct access
+            this.instance = this.renderer;
             
             console.log('[Renderer] Initialized with settings:', {
                 antialias: qualitySettings.antialias,
@@ -91,7 +97,10 @@ export default class Renderer {
         this.renderer.setPixelRatio(pixelRatio);
         
         // Update shadow settings
-        this.renderer.shadowMap.enabled = settings.shadows || false;
+        const allowShadows = this.performanceManager
+            ? this.performanceManager.shouldEnableDynamicShadows()
+            : settings.shadows;
+        this.renderer.shadowMap.enabled = !!allowShadows;
         if (settings.shadowMapSize) {
             // Note: Shadow map size is set per light, not globally
             // This is handled in Environment.js
@@ -118,6 +127,14 @@ export default class Renderer {
     }
 
     update() {
+        if (this.performanceManager) {
+            const world = this.experience.world;
+            const composer = world?.currentScene?.composer;
+            if (composer && typeof composer.render === 'function' && this.performanceManager.shouldUsePostProcessing()) {
+                // Composer rendering handled inside the scene update loop
+                return;
+            }
+        }
         this.renderer.render(this.scene, this.camera.perspectiveCamera);
     }
 }

@@ -240,3 +240,37 @@
     z-index: 10000 !important;
     touch-action: none !important; // Prevent joystick from interfering with camera
 }
+
+#fps-display {
+    position: fixed;
+    top: 48px;
+    left: 48px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #00ff00;
+    z-index: 10000;
+    display: none;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    @include media("<=tablet") {
+        top: calc(20px + env(safe-area-inset-top));
+        left: calc(20px + env(safe-area-inset-left));
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 5px;
+    }
+
+    @include media("<=phone") {
+        top: calc(16px + env(safe-area-inset-top));
+        left: calc(16px + env(safe-area-inset-left));
+        font-size: 10px;
+        padding: 6px 8px;
+        border-radius: 4px;
+    }
+}

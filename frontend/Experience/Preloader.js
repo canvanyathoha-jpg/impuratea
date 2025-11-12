@@ -5,6 +5,7 @@ import lerp from "./Utils/functions/lerp.js";
 import elements from "./Utils/functions/elements.js";
 
 import gsap from "gsap";
+import { applyDeviceClasses } from "./Utils/deviceClassManager.js";
 
 export default class Preloader {
     constructor() {
@@ -376,6 +377,9 @@ export default class Preloader {
         // Save device selection to localStorage
         localStorage.setItem('impuratea-device', deviceType);
         console.log(`[Preloader] Device selected: ${deviceType}`);
+
+        // Update body classes to reflect selection
+        applyDeviceClasses(deviceType);
 
         // Show/hide joystick based on device selection
         const joystickArea = document.querySelector('.joystick-area');

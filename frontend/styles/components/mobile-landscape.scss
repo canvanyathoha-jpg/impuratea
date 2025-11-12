@@ -1,0 +1,315 @@
+// Mobile landscape specific tweaks applied when the player explicitly selects the mobile device option.
+
+body.mobile-device {
+    touch-action: manipulation;
+}
+
+body.mobile-device.mobile-landscape {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+body.mobile-device.mobile-landscape .language-selector {
+    top: calc(8px + env(safe-area-inset-top));
+    left: calc(8px + env(safe-area-inset-left));
+    transform: scale(0.95);
+    transform-origin: top left;
+}
+
+body.mobile-device.mobile-landscape .language-dropdown {
+    transform-origin: top left;
+}
+
+body.mobile-device.mobile-landscape .switch-camera-view {
+    top: calc(8px + env(safe-area-inset-top));
+    right: calc(8px + env(safe-area-inset-right));
+}
+
+body.mobile-device.mobile-landscape #fps-display {
+    top: calc(12px + env(safe-area-inset-top)) !important;
+    right: calc(12px + env(safe-area-inset-right)) !important;
+    left: auto !important;
+}
+
+body.mobile-device.mobile-landscape .joystick-area {
+    width: 120px;
+    height: 120px;
+    left: calc(16px + env(safe-area-inset-left));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+body.mobile-device.mobile-landscape .joystick-area::after {
+    width: 110px;
+    height: 110px;
+}
+
+body.mobile-device.mobile-landscape .joystick-area::before {
+    width: 42px;
+    height: 42px;
+}
+
+body.mobile-device.mobile-landscape #story-dialog,
+body.mobile-device.mobile-landscape #screen-speech-bubble {
+    width: calc(96vw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+    max-width: calc(96vw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+}
+
+body.mobile-device.mobile-landscape #story-dialog {
+    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+    padding: 16px 18px !important;
+    font-size: 13px !important;
+}
+
+body.mobile-device.mobile-landscape #story-dialog p {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+}
+
+body.mobile-device.mobile-landscape #story-dialog h3 {
+    font-size: 18px !important;
+}
+
+body.mobile-device.mobile-landscape #screen-speech-bubble {
+    bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+    padding: 18px 20px !important;
+}
+
+body.mobile-device.mobile-landscape #screen-speech-bubble p {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+}
+
+body.mobile-device.mobile-landscape .scene-choice-container,
+body.mobile-device.mobile-landscape .psychology-question-container {
+    max-width: 100% !important;
+    padding: 20px 16px !important;
+    max-height: 78vh;
+    overflow-y: auto;
+}
+
+body.mobile-device.mobile-landscape .scene-choice-buttons,
+body.mobile-device.mobile-landscape .psychology-options {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+}
+
+body.mobile-device.mobile-landscape .landing-container {
+    padding: calc(env(safe-area-inset-top) + 16px)
+        calc(env(safe-area-inset-right) + 16px)
+        calc(env(safe-area-inset-bottom) + 16px)
+        calc(env(safe-area-inset-left) + 16px);
+    align-items: stretch;
+}
+
+body.mobile-device.mobile-landscape .hero-section {
+    padding: 36px 12px 28px;
+}
+
+body.mobile-device.mobile-landscape .hero-badge {
+    padding: 8px 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+}
+
+body.mobile-device.mobile-landscape .landing-title {
+    font-size: 44px;
+    letter-spacing: 6px;
+    margin: 12px 0;
+}
+
+body.mobile-device.mobile-landscape .landing-subtitle {
+    font-size: 18px;
+    letter-spacing: 1.5px;
+}
+
+body.mobile-device.mobile-landscape .hero-tagline {
+    font-size: 15px;
+    margin: 16px auto 0;
+    padding: 0 12px;
+}
+
+body.mobile-device.mobile-landscape .section-title {
+    font-size: 28px;
+    margin-bottom: 24px;
+}
+
+body.mobile-device.mobile-landscape .game-overview,
+body.mobile-device.mobile-landscape .gameplay-section,
+body.mobile-device.mobile-landscape .themes-section {
+    margin: 32px auto;
+    padding: 28px 20px;
+}
+
+body.mobile-device.mobile-landscape .overview-text,
+body.mobile-device.mobile-landscape .gameplay-item div {
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+body.mobile-device.mobile-landscape .features-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 18px;
+    margin: 32px auto;
+    padding: 0 16px;
+}
+
+body.mobile-device.mobile-landscape .feature-card {
+    padding: 24px 18px;
+}
+
+body.mobile-device.mobile-landscape .feature-card h3 {
+    font-size: 20px;
+}
+
+body.mobile-device.mobile-landscape .feature-card p {
+    font-size: 14px;
+}
+
+body.mobile-device.mobile-landscape .story-section {
+    margin: 32px auto;
+    padding: 0 16px;
+}
+
+body.mobile-device.mobile-landscape .story-content {
+    padding: 28px 18px;
+}
+
+body.mobile-device.mobile-landscape .story-text {
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+body.mobile-device.mobile-landscape .story-question {
+    font-size: 18px;
+    padding: 20px 12px;
+    margin: 20px 0;
+}
+
+body.mobile-device.mobile-landscape .gameplay-item {
+    padding: 18px;
+    gap: 16px;
+}
+
+body.mobile-device.mobile-landscape .gameplay-bullet {
+    font-size: 22px;
+}
+
+body.mobile-device.mobile-landscape .themes-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 18px;
+}
+
+body.mobile-device.mobile-landscape .cta-section {
+    padding: 48px 20px 40px;
+    margin-top: 32px;
+}
+
+body.mobile-device.mobile-landscape .cta-title {
+    font-size: 30px;
+    line-height: 1.2;
+}
+
+body.mobile-device.mobile-landscape .cta-subtitle {
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+body.mobile-device.mobile-landscape .cta-buttons {
+    flex-direction: column;
+    gap: 12px;
+}
+
+body.mobile-device.mobile-landscape .partners-section {
+    padding: 48px 16px;
+}
+
+body.mobile-device.mobile-landscape .partner-category .partner-category-title {
+    font-size: 24px;
+}
+
+body.mobile-device.mobile-landscape .partner-item {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+    gap: 16px;
+}
+
+body.mobile-device.mobile-landscape .partner-item .partner-logo-wrapper {
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    padding: 16px;
+}
+
+body.mobile-device.mobile-landscape .partner-item .partner-info .partner-name {
+    font-size: 20px;
+}
+
+body.mobile-device.mobile-landscape .partner-item .partner-info .partner-description,
+body.mobile-device.mobile-landscape .partner-item .partner-info .partner-description-extended p {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+body.mobile-device.mobile-landscape .device-select-container {
+    gap: 18px;
+    padding: 0 12px;
+}
+
+body.mobile-device.mobile-landscape .device-select-title {
+    font-size: 36px;
+}
+
+body.mobile-device.mobile-landscape .device-select-subtitle {
+    font-size: 16px;
+}
+
+body.mobile-device.mobile-landscape .device-options-wrapper {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+}
+
+body.mobile-device.mobile-landscape .device-option {
+    width: calc(50% - 12px);
+    max-width: 220px;
+    padding: 24px 18px;
+}
+
+body.mobile-device.mobile-landscape .device-option .device-description {
+    font-size: 13px;
+}
+
+body.mobile-device.mobile-landscape .controls-info {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(96vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+    max-width: 480px;
+    padding: 14px 16px;
+    gap: 12px;
+}
+
+body.mobile-device.mobile-landscape .controls-info-content {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+body.mobile-device.mobile-landscape .dialog,
+body.mobile-device.mobile-landscape .modal,
+body.mobile-device.mobile-landscape .overlay {
+    padding: 18px !important;
+    max-height: 82vh;
+    overflow-y: auto;
+}
+
+body.mobile-device.mobile-landscape .dialog .dialog-content,
+body.mobile-device.mobile-landscape .modal .dialog-content {
+    max-height: 100%;
+    overflow-y: auto;
+}
+

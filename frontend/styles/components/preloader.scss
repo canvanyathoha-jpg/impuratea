@@ -7,7 +7,9 @@
         linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f0f4f8 100%);
     z-index: 9999999999999;
     width: 100vw;
+    width: 100dvw;
     height: 100vh;
+    height: 100dvh;
     touch-action: auto;
     overflow: hidden;
     position: fixed;

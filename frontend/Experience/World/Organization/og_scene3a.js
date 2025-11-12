@@ -8,6 +8,7 @@ import AIVoice from "../../Utils/AIVoice.js";
 import SceneLoadingIndicator from "../../Utils/SceneLoadingIndicator.js";
 import { languageManager } from "../../Utils/LanguageManager.js";
 import { ORG_TEXTS } from "./OrganizationTexts.js";
+import { getScenePerformanceProfile } from "./performanceProfile.js";
 
 // Post-processing imports for professional visual effects
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -24,6 +25,14 @@ export default class OrganizationScene3A {
         this.scene = this.experience.scene;
         this.resources = this.experience.resources;
         this.octree = this.experience.world.octree;
+
+        const performanceProfile = getScenePerformanceProfile(this.experience);
+        this.performanceManager = performanceProfile.performanceManager;
+        this.deviceProfile = performanceProfile.deviceProfile;
+        this.isLowEndDevice = performanceProfile.isLowEndDevice;
+        this.enablePostProcessing = performanceProfile.enablePostProcessing;
+        this.enableDynamicShadows = performanceProfile.enableDynamicShadows;
+        this.enableAdvancedAtmosphere = performanceProfile.enableAdvancedAtmosphere;
 
         this.npcVendor = null;
         this.uiManager = null;
@@ -345,10 +354,25 @@ export default class OrganizationScene3A {
                             
                             console.log("Organization Scene 3A (Cafe) loaded with full collision enabled.");
                             
-                            // Setup professional lighting and effects
-                            this.setupProfessionalLighting();
-                            this.setupAtmosphericEffects();
-                            this.setupPostProcessing();
+                            // Setup lighting and effects based on performance profile
+                            if (this.enableDynamicShadows && !this.isLowEndDevice) {
+                                this.setupProfessionalLighting();
+                            } else {
+                                this.setupMobileLighting();
+                            }
+
+                            if (this.enableAdvancedAtmosphere) {
+                                this.setupAtmosphericEffects();
+                            } else {
+                                console.log("[OrgScene3A] Skipping advanced atmospheric effects for low-end device");
+                            }
+
+                            if (this.enablePostProcessing) {
+                                this.setupPostProcessing();
+                            } else {
+                                console.log("[OrgScene3A] Skipping post-processing composer for low-end device");
+                                this.composer = null;
+                            }
                             
                             // Call callback when done
                             if (callback) callback();
@@ -608,15 +632,31 @@ export default class OrganizationScene3A {
         this.speechBubbleGroup.add(this.speechTextPlane);
     }
 
+    setupMobileLighting() {
+        console.log("[OrgScene3A] Applying lightweight lighting for low-end profile...");
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambient);
+        this.lights.ambient = ambient;
+
+        const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+        directional.position.set(18, 24, 12);
+        directional.castShadow = false;
+        this.scene.add(directional);
+        this.lights.directional = directional;
+    }
+
     setupProfessionalLighting() {
         console.log("[OrgScene3A] Setting up cinematic dark lighting system...");
 
+        const allowShadows = this.enableDynamicShadows && !this.isLowEndDevice;
+
         // Enable shadows for renderer with cinematic settings
         if (this.experience.renderer && this.experience.renderer.instance) {
-            this.experience.renderer.instance.shadowMap.enabled = true;
-            this.experience.renderer.instance.shadowMap.type = THREE.PCFSoftShadowMap;
-            this.experience.renderer.instance.toneMapping = THREE.CineonToneMapping; // Cinematic tone mapping
-            this.experience.renderer.instance.toneMappingExposure = 0.6; // Darker exposure for drama
+            this.experience.renderer.instance.shadowMap.enabled = allowShadows;
+            this.experience.renderer.instance.shadowMap.type = allowShadows ? THREE.PCFSoftShadowMap : THREE.BasicShadowMap;
+            this.experience.renderer.instance.toneMapping = allowShadows ? THREE.CineonToneMapping : THREE.ACESFilmicToneMapping;
+            this.experience.renderer.instance.toneMappingExposure = allowShadows ? 0.6 : 1.05;
         }
 
         // 1. Very low ambient light for dark atmosphere (AAA-quality darkness)
@@ -624,22 +664,24 @@ export default class OrganizationScene3A {
         this.scene.add(this.lights.ambient);
 
         // 2. Main directional light (cool moonlight/dramatic key light)
-        this.lights.directional = new THREE.DirectionalLight(0x6b7c9c, 0.8);
+        this.lights.directional = new THREE.DirectionalLight(0x6b7c9c, allowShadows ? 0.8 : 0.6);
         this.lights.directional.position.set(40, 60, 20);
-        this.lights.directional.castShadow = true;
+        this.lights.directional.castShadow = allowShadows;
 
-        // Ultra high-quality shadow settings for cinematic look
-        this.lights.directional.shadow.mapSize.width = 8192;
-        this.lights.directional.shadow.mapSize.height = 8192;
-        this.lights.directional.shadow.camera.near = 1;
-        this.lights.directional.shadow.camera.far = 200;
-        this.lights.directional.shadow.camera.left = -100;
-        this.lights.directional.shadow.camera.right = 100;
-        this.lights.directional.shadow.camera.top = 100;
-        this.lights.directional.shadow.camera.bottom = -100;
-        this.lights.directional.shadow.bias = -0.00005;
-        this.lights.directional.shadow.normalBias = 0.01;
-        this.lights.directional.shadow.radius = 2; // Soft shadows
+        if (allowShadows) {
+            // Ultra high-quality shadow settings for cinematic look
+            this.lights.directional.shadow.mapSize.width = 8192;
+            this.lights.directional.shadow.mapSize.height = 8192;
+            this.lights.directional.shadow.camera.near = 1;
+            this.lights.directional.shadow.camera.far = 200;
+            this.lights.directional.shadow.camera.left = -100;
+            this.lights.directional.shadow.camera.right = 100;
+            this.lights.directional.shadow.camera.top = 100;
+            this.lights.directional.shadow.camera.bottom = -100;
+            this.lights.directional.shadow.bias = -0.00005;
+            this.lights.directional.shadow.normalBias = 0.01;
+            this.lights.directional.shadow.radius = 2; // Soft shadows
+        }
 
         this.scene.add(this.lights.directional);
 
@@ -648,46 +690,52 @@ export default class OrganizationScene3A {
         this.scene.add(this.lights.hemisphere);
 
         // 4. Accent point lights with color (cinematic blue/orange contrast)
-        const pointLight1 = new THREE.PointLight(0xff6b35, 1.8, 50); // Warm orange
+        const pointLight1 = new THREE.PointLight(0xff6b35, allowShadows ? 1.8 : 0.9, 50); // Warm orange
         pointLight1.position.set(10, 12, 10);
-        pointLight1.castShadow = true;
-        pointLight1.shadow.mapSize.width = 2048;
-        pointLight1.shadow.mapSize.height = 2048;
+        pointLight1.castShadow = allowShadows;
+        if (allowShadows) {
+            pointLight1.shadow.mapSize.width = 2048;
+            pointLight1.shadow.mapSize.height = 2048;
+        }
         this.scene.add(pointLight1);
         this.lights.point1 = pointLight1;
 
-        const pointLight2 = new THREE.PointLight(0x4A90E2, 1.8, 50); // Cool blue
+        const pointLight2 = new THREE.PointLight(0x4A90E2, allowShadows ? 1.8 : 0.9, 50); // Cool blue
         pointLight2.position.set(-10, 12, 10);
-        pointLight2.castShadow = true;
-        pointLight2.shadow.mapSize.width = 2048;
-        pointLight2.shadow.mapSize.height = 2048;
+        pointLight2.castShadow = allowShadows;
+        if (allowShadows) {
+            pointLight2.shadow.mapSize.width = 2048;
+            pointLight2.shadow.mapSize.height = 2048;
+        }
         this.scene.add(pointLight2);
         this.lights.point2 = pointLight2;
 
         // 5. Dramatic rim light for character separation
-        this.lights.rim = new THREE.DirectionalLight(0x8badd6, 0.6);
+        this.lights.rim = new THREE.DirectionalLight(0x8badd6, allowShadows ? 0.6 : 0.4);
         this.lights.rim.position.set(-30, 40, -20);
         this.scene.add(this.lights.rim);
 
         // 6. Focused spot light on NPC for emphasis (red tint for tension)
-        this.lights.npcSpot = new THREE.SpotLight(0xffe5e5, 3.0);
+        this.lights.npcSpot = new THREE.SpotLight(0xffe5e5, allowShadows ? 3.0 : 1.3);
         this.lights.npcSpot.position.set(25, 28, 10);
         this.lights.npcSpot.angle = Math.PI / 7;
         this.lights.npcSpot.penumbra = 0.5; // Soft edges
         this.lights.npcSpot.decay = 2.5;
         this.lights.npcSpot.distance = 70;
-        this.lights.npcSpot.castShadow = true;
-        this.lights.npcSpot.shadow.mapSize.width = 4096;
-        this.lights.npcSpot.shadow.mapSize.height = 4096;
+        this.lights.npcSpot.castShadow = allowShadows;
+        if (allowShadows) {
+            this.lights.npcSpot.shadow.mapSize.width = 4096;
+            this.lights.npcSpot.shadow.mapSize.height = 4096;
+        }
         this.scene.add(this.lights.npcSpot);
 
         // 7. Additional accent lights for depth
-        const accentLight1 = new THREE.PointLight(0xff1744, 0.8, 30);
+        const accentLight1 = new THREE.PointLight(0xff1744, allowShadows ? 0.8 : 0.5, 30);
         accentLight1.position.set(20, 8, -10);
         this.scene.add(accentLight1);
         this.lights.accent1 = accentLight1;
 
-        const accentLight2 = new THREE.PointLight(0x00bcd4, 0.8, 30);
+        const accentLight2 = new THREE.PointLight(0x00bcd4, allowShadows ? 0.8 : 0.5, 30);
         accentLight2.position.set(-20, 8, -10);
         this.scene.add(accentLight2);
         this.lights.accent2 = accentLight2;
@@ -696,6 +744,11 @@ export default class OrganizationScene3A {
     }
 
     setupPostProcessing() {
+        if (!this.enablePostProcessing) {
+            console.log("[OrgScene3A] Post-processing skipped for current performance profile");
+            this.composer = null;
+            return;
+        }
         console.log("[OrgScene3A] Setting up advanced cinematic post-processing...");
 
         const renderer = this.experience.renderer.instance;
@@ -858,6 +911,11 @@ export default class OrganizationScene3A {
     }
 
     setupAtmosphericEffects() {
+        if (!this.enableAdvancedAtmosphere) {
+            console.log("[OrgScene3A] Advanced atmospheric effects disabled for this device");
+            this.scene.fog = new THREE.Fog(0x12121c, 35, 140);
+            return;
+        }
         console.log("[OrgScene3A] Setting up dark atmospheric effects...");
 
         // 1. Add dark cinematic fog for depth and mystery
