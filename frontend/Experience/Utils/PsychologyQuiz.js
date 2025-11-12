@@ -13,6 +13,7 @@ export default class PsychologyQuiz {
             const newLang = event.detail?.language || languageManager.getLanguage();
             console.log("[PsychologyQuiz] Language changed to:", newLang);
             this.buildQuestions();
+            this.updateTitle();
             this.renderQuestion();
             this.updateRecommendationTexts();
         };
@@ -71,13 +72,17 @@ export default class PsychologyQuiz {
         this.elements.progressText = this.elements.psychologyQuestion.querySelector('.question-progress');
         
         // Update title
+        this.updateTitle();
+
+        this.renderQuestion();
+        this.attachEventListeners();
+    }
+
+    updateTitle() {
         const titleElement = this.elements.psychologyQuestion.querySelector('.scene-choice-title');
         if (titleElement) {
             titleElement.textContent = languageManager.t('psychology.title');
         }
-
-        this.renderQuestion();
-        this.attachEventListeners();
     }
 
     renderQuestion() {
@@ -135,34 +140,32 @@ export default class PsychologyQuiz {
     }
 
     updateRecommendationTexts() {
-        // Update recommendation screen texts if it's visible
-        if (!this.elements.pathRecommendation.classList.contains('hidden')) {
-            const recommendationTitle = this.elements.pathRecommendation.querySelector('.scene-choice-title');
-            if (recommendationTitle) {
-                recommendationTitle.textContent = languageManager.t('psychology.recommendationTitle');
-            }
-            
-            const recommendationNarration = this.elements.pathRecommendation.querySelector('.scene-choice-narration');
-            if (recommendationNarration) {
-                recommendationNarration.textContent = languageManager.t('psychology.recommendationNarration');
-            }
-            
-            const btnAkademik = document.getElementById('btnAkademik');
-            const btnOrganisasi = document.getElementById('btnOrganisasi');
-            
-            if (btnAkademik) {
-                const btnTitle = btnAkademik.querySelector('.btn-title');
-                const btnDesc = btnAkademik.querySelector('.btn-desc');
-                if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnAkademik');
-                if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnAkademikDesc');
-            }
-            
-            if (btnOrganisasi) {
-                const btnTitle = btnOrganisasi.querySelector('.btn-title');
-                const btnDesc = btnOrganisasi.querySelector('.btn-desc');
-                if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnOrganisasi');
-                if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnOrganisasiDesc');
-            }
+        // Always update recommendation screen texts (even if hidden)
+        const recommendationTitle = this.elements.pathRecommendation.querySelector('.scene-choice-title');
+        if (recommendationTitle) {
+            recommendationTitle.textContent = languageManager.t('psychology.recommendationTitle');
+        }
+        
+        const recommendationNarration = this.elements.pathRecommendation.querySelector('.scene-choice-narration');
+        if (recommendationNarration) {
+            recommendationNarration.textContent = languageManager.t('psychology.recommendationNarration');
+        }
+        
+        const btnAkademik = document.getElementById('btnAkademik');
+        const btnOrganisasi = document.getElementById('btnOrganisasi');
+        
+        if (btnAkademik) {
+            const btnTitle = btnAkademik.querySelector('.btn-title');
+            const btnDesc = btnAkademik.querySelector('.btn-desc');
+            if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnAkademik');
+            if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnAkademikDesc');
+        }
+        
+        if (btnOrganisasi) {
+            const btnTitle = btnOrganisasi.querySelector('.btn-title');
+            const btnDesc = btnOrganisasi.querySelector('.btn-desc');
+            if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnOrganisasi');
+            if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnOrganisasiDesc');
         }
     }
 
