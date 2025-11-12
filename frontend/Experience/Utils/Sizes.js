@@ -50,7 +50,16 @@ export default class Sizes extends EventEmitter {
         
         // For mobile devices, use lower pixel ratio for better performance
         if (this.width <= 768 || this.height <= 768) {
-            this.pixelRatio = Math.min(this.pixelRatio, 1.0);
+            // Detect mobile device more accurately
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                            (this.width <= 768 && this.height <= 1024);
+            
+            if (isMobile) {
+                // More aggressive pixel ratio reduction for mobile
+                this.pixelRatio = Math.min(this.pixelRatio, 0.75);
+            } else {
+                this.pixelRatio = Math.min(this.pixelRatio, 1.0);
+            }
         }
     }
 }
