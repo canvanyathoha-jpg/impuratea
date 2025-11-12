@@ -80,6 +80,118 @@ export default class LanguageManager {
                 }
             },
             
+            // Psychology Quiz
+            psychology: {
+                title: {
+                    id: 'Kenali Dirimu',
+                    en: 'Know Yourself'
+                },
+                question1: {
+                    id: 'Bayangkan kamu punya waktu luang satu hari penuh. Apa yang paling ingin kamu lakukan?',
+                    en: 'Imagine you have a full day of free time. What would you most like to do?'
+                },
+                question2: {
+                    id: 'Ketika menghadapi masalah, kamu lebih suka...',
+                    en: 'When facing a problem, you prefer to...'
+                },
+                question3: {
+                    id: 'Prestasi yang paling membuatmu bangga adalah...',
+                    en: 'The achievement that makes you most proud is...'
+                },
+                option1a: {
+                    id: 'Membaca buku atau mempelajari hal baru yang menarik perhatianku',
+                    en: 'Read a book or learn something new that interests me'
+                },
+                option1b: {
+                    id: 'Berkumpul dengan teman-teman dan mengorganisir kegiatan seru bersama',
+                    en: 'Gather with friends and organize fun activities together'
+                },
+                option1c: {
+                    id: 'Mengerjakan proyek pribadi atau riset yang sudah lama ingin ku selesaikan',
+                    en: 'Work on a personal project or research that I\'ve long wanted to complete'
+                },
+                option1d: {
+                    id: 'Merencanakan event atau acara untuk komunitas kampus',
+                    en: 'Plan an event or activity for the campus community'
+                },
+                option2a: {
+                    id: 'Menganalisis secara mendalam dan mencari solusi berdasarkan data',
+                    en: 'Analyze in depth and find solutions based on data'
+                },
+                option2b: {
+                    id: 'Berdiskusi dengan banyak orang untuk mendapat berbagai perspektif',
+                    en: 'Discuss with many people to get various perspectives'
+                },
+                option2c: {
+                    id: 'Mencari referensi dari buku atau jurnal untuk solusi terbaik',
+                    en: 'Search for references from books or journals for the best solution'
+                },
+                option2d: {
+                    id: 'Membentuk tim dan mencari solusi bersama-sama',
+                    en: 'Form a team and find solutions together'
+                },
+                option3a: {
+                    id: 'Mendapat nilai sempurna atau menguasai topik yang sulit',
+                    en: 'Get a perfect score or master a difficult topic'
+                },
+                option3b: {
+                    id: 'Berhasil mengkoordinir acara besar yang disukai banyak orang',
+                    en: 'Successfully coordinate a large event that many people enjoy'
+                },
+                option3c: {
+                    id: 'Menyelesaikan penelitian atau karya ilmiah yang berkualitas',
+                    en: 'Complete quality research or scientific work'
+                },
+                option3d: {
+                    id: 'Membangun komunitas atau organisasi yang berdampak positif',
+                    en: 'Build a community or organization with positive impact'
+                },
+                questionProgress: {
+                    id: 'Pertanyaan {current} dari {total}',
+                    en: 'Question {current} of {total}'
+                },
+                recommendationTitle: {
+                    id: 'Rekomendasi Jalur Untukmu',
+                    en: 'Recommended Path For You'
+                },
+                recommendationNarration: {
+                    id: 'Namun, keputusan akhir ada di tanganmu. Silakan pilih jalur yang ingin kamu ambil:',
+                    en: 'However, the final decision is in your hands. Please choose the path you want to take:'
+                },
+                pathAkademik: {
+                    id: 'Jalur Akademik',
+                    en: 'Academic Path'
+                },
+                pathOrganisasi: {
+                    id: 'Jalur Organisasi',
+                    en: 'Organization Path'
+                },
+                pathAkademikDesc: {
+                    id: 'Berdasarkan jawabanmu, kamu memiliki kecenderungan untuk fokus pada pembelajaran dan pengembangan pengetahuan. Kamu suka menganalisis, meneliti, dan mendalami topik secara mendalam. Jalur Akademik cocok untukmu!',
+                    en: 'Based on your answers, you have a tendency to focus on learning and knowledge development. You like to analyze, research, and delve deep into topics. The Academic Path is right for you!'
+                },
+                pathOrganisasiDesc: {
+                    id: 'Berdasarkan jawabanmu, kamu memiliki jiwa kepemimpinan dan suka berinteraksi dengan banyak orang. Kamu senang mengorganisir kegiatan dan bekerja dalam tim. Jalur Organisasi cocok untukmu!',
+                    en: 'Based on your answers, you have leadership qualities and enjoy interacting with many people. You like organizing activities and working in teams. The Organization Path is right for you!'
+                },
+                btnAkademik: {
+                    id: 'Akademik',
+                    en: 'Academic'
+                },
+                btnAkademikDesc: {
+                    id: 'Masuk ke ruang kelas untuk belajar',
+                    en: 'Enter the classroom to learn'
+                },
+                btnOrganisasi: {
+                    id: 'Organisasi',
+                    en: 'Organization'
+                },
+                btnOrganisasiDesc: {
+                    id: 'Ikuti kegiatan organisasi kampus',
+                    en: 'Follow campus organization activities'
+                }
+            },
+            
             // Ending messages
             ending: {
                 id: {
