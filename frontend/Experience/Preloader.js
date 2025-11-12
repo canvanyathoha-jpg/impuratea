@@ -186,17 +186,20 @@ export default class Preloader {
             console.log('[Preloader] Welcome title exists:', !!this.domElements.welcomeTitle);
             console.log('[Preloader] Name form container exists:', !!this.domElements.nameFormContainer);
             
-            // Ensure elements are visible and accessible
+            // Ensure welcome title and name form are hidden initially to prevent click interference
+            // They will be shown and enabled later in the animation
             if (this.domElements.welcomeTitle) {
-                this.domElements.welcomeTitle.style.pointerEvents = 'auto';
+                this.domElements.welcomeTitle.style.pointerEvents = 'none';
+                this.domElements.welcomeTitle.style.visibility = 'hidden';
                 this.domElements.welcomeTitle.style.zIndex = '1000';
             }
             if (this.domElements.nameFormContainer) {
-                this.domElements.nameFormContainer.style.pointerEvents = 'auto';
+                this.domElements.nameFormContainer.style.pointerEvents = 'none';
+                this.domElements.nameFormContainer.style.visibility = 'hidden';
                 this.domElements.nameFormContainer.style.zIndex = '1000';
-                // Ensure name input button is visible
+                // Ensure name input button is also disabled initially
                 if (this.domElements.nameInputButton) {
-                    this.domElements.nameInputButton.style.pointerEvents = 'auto';
+                    this.domElements.nameInputButton.style.pointerEvents = 'none';
                 }
             }
             
@@ -237,14 +240,21 @@ export default class Preloader {
                         ease: "power4.out",
                         onStart: () => {
                             console.log('[Preloader] Name form container fade in started');
-                            // Ensure it's visible
+                            // Ensure it's visible and can receive pointer events
                             if (this.domElements.nameFormContainer) {
                                 this.domElements.nameFormContainer.style.display = 'flex';
                                 this.domElements.nameFormContainer.style.visibility = 'visible';
+                                this.domElements.nameFormContainer.style.pointerEvents = 'auto';
                             }
-                            // Show name input button
+                            // Show welcome title
+                            if (this.domElements.welcomeTitle) {
+                                this.domElements.welcomeTitle.style.visibility = 'visible';
+                                this.domElements.welcomeTitle.style.pointerEvents = 'none'; // Title doesn't need pointer events
+                            }
+                            // Show name input button and enable pointer events
                             if (this.domElements.nameInputButton) {
                                 this.domElements.nameInputButton.style.opacity = '1';
+                                this.domElements.nameInputButton.style.pointerEvents = 'auto';
                             }
                         },
                         onComplete: () => {

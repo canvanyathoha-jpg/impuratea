@@ -134,7 +134,17 @@
     @include media("<=tablet") {
         min-width: 320px;
         max-width: 90vw;
+        max-width: calc(90dvw - env(safe-area-inset-left) - env(safe-area-inset-right));
         padding: 20px;
+        padding: calc(20px + env(safe-area-inset-bottom));
+    }
+    
+    @include media("<=phone") {
+        min-width: 280px;
+        max-width: 95vw;
+        max-width: calc(95dvw - env(safe-area-inset-left) - env(safe-area-inset-right));
+        padding: 15px;
+        padding-bottom: calc(15px + env(safe-area-inset-bottom));
     }
 }
 
@@ -233,6 +243,25 @@
 
         .choice-description {
             font-size: 12px;
+        }
+    }
+    
+    @include media("<=phone") {
+        padding: 12px 15px;
+        font-size: 13px;
+        gap: 10px;
+
+        .choice-label {
+            font-size: 18px;
+            min-width: 28px;
+        }
+
+        .choice-text {
+            font-size: 14px;
+        }
+
+        .choice-description {
+            font-size: 11px;
         }
     }
 }

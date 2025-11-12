@@ -85,6 +85,9 @@ export default class World extends EventEmitter {
             console.log(`[World] URL updated to: ${newUrl}`);
         }
 
+        // Ensure joystick is visible if mobile device is selected
+        this.ensureJoystickVisibility();
+
         // Clear existing scene
         if (this.currentScene) {
             console.log(`[World] Clearing existing scene before loading new one`);
@@ -181,11 +184,41 @@ export default class World extends EventEmitter {
             console.log(`[World] New spawn point:`, newSpawnPoint);
             this.player.setSpawnPoint(newSpawnPoint);
             console.log(`[World] Player spawn point set`);
+            
+            // Ensure joystick is recreated for mobile devices after scene change
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
+                if (this.player && this.player.setJoyStick) {
+                    this.player.setJoyStick();
+                    console.log('[World] Joystick recreated after scene load');
+                }
+            }, 100);
         } else {
             console.log(`[World] No player found, skipping spawn point`);
         }
 
         console.log(`[World] loadScene completed`);
+    }
+
+    /**
+     * Ensure joystick visibility based on device selection from localStorage
+     * This ensures joystick is visible in all scenes if mobile device is selected
+     */
+    ensureJoystickVisibility() {
+        const deviceType = localStorage.getItem('impuratea-device');
+        const joystickArea = document.querySelector('.joystick-area');
+        
+        if (joystickArea) {
+            if (deviceType === 'mobile') {
+                joystickArea.style.display = 'block';
+                console.log('[World] Joystick enabled for mobile device');
+            } else {
+                joystickArea.style.display = 'none';
+                console.log('[World] Joystick disabled for desktop device');
+            }
+        } else {
+            console.warn('[World] Joystick area element not found');
+        }
     }
 
     clearCurrentScene() {

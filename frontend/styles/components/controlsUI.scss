@@ -8,6 +8,16 @@
     border-radius: 50%;
     pointer-events: auto;
     
+    // Responsive sizing for smaller mobile devices
+    @include media("<=phone") {
+        width: 140px;
+        height: 140px;
+        left: 3%;
+        bottom: 3%;
+        // Account for safe area (home indicator on iOS)
+        bottom: calc(3% + env(safe-area-inset-bottom));
+    }
+    
     // Modern glassmorphism background with visible base
     background: radial-gradient(
         circle at center,

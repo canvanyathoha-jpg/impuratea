@@ -4,15 +4,38 @@ export default class Sizes extends EventEmitter {
     constructor() {
         super();
         this.handleSizes();
+        
+        // Listen for window resize
         window.addEventListener("resize", () => {
             this.handleSizes();
             this.emit("resize");
         });
+        
+        // Listen for visual viewport resize (better for mobile, handles keyboard, etc.)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", () => {
+                this.handleSizes();
+                this.emit("resize");
+            });
+            window.visualViewport.addEventListener("scroll", () => {
+                this.handleSizes();
+                this.emit("resize");
+            });
+        }
     }
 
     handleSizes() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
+        // Use visual viewport if available (better for mobile)
+        const viewport = window.visualViewport || window;
+        this.width = viewport.width || window.innerWidth;
+        this.height = viewport.height || window.innerHeight;
+        
+        // Fallback to innerWidth/innerHeight if viewport not available
+        if (!this.width || !this.height) {
+            this.width = window.innerWidth;
+            this.height = window.innerHeight;
+        }
+        
         this.aspect = this.width / this.height;
         
         // OPTIMIZATION: Lower pixel ratio for better performance on laptops
@@ -22,6 +45,11 @@ export default class Sizes extends EventEmitter {
         
         // Further reduce for very high resolutions (4K+)
         if (this.width > 2560 || this.height > 1440) {
+            this.pixelRatio = Math.min(this.pixelRatio, 1.0);
+        }
+        
+        // For mobile devices, use lower pixel ratio for better performance
+        if (this.width <= 768 || this.height <= 768) {
             this.pixelRatio = Math.min(this.pixelRatio, 1.0);
         }
     }

@@ -308,8 +308,8 @@
 
 @include media("<=phone") {
     .language-selector {
-        top: 10px;
-        left: 10px;
+        top: calc(10px + env(safe-area-inset-top));
+        left: calc(10px + env(safe-area-inset-left));
     }
 
     .language-btn {

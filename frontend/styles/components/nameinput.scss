@@ -16,8 +16,9 @@
     text-align: center;
     z-index: 99999999999999;
     margin-bottom: 0;
-    pointer-events: auto;
-    visibility: visible;
+    // Disable pointer events when hidden to prevent click interference
+    pointer-events: none; // Disabled by default, will be enabled when visible
+    visibility: hidden; // Hidden by default
 
     @include media("<=phone") {
         font-size: 36px;
@@ -78,8 +79,19 @@
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    pointer-events: auto; // Ensure it can receive interactions
-    visibility: visible; // Ensure it's visible
+    // Disable pointer events when hidden to prevent click interference
+    pointer-events: none; // Disabled by default, will be enabled when visible
+    visibility: hidden; // Hidden by default
+
+    // Note: pointer-events and visibility are controlled via JavaScript
+    // when the form becomes visible
+    
+    // When landing container is visible, ensure name form doesn't interfere
+    .landing-container:not([style*="opacity: 0"]) ~ &,
+    body:has(.landing-container:not([style*="opacity: 0"])) & {
+        pointer-events: none !important;
+        visibility: hidden !important;
+    }
 
     @include media("<=phone") {
         max-width: 400px;

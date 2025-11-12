@@ -1,7 +1,9 @@
 .experience-wrapper {
     position: absolute;
     height: 100vh;
+    height: 100dvh; // Dynamic viewport height for mobile
     width: 100vw;
+    width: 100dvw; // Dynamic viewport width for mobile
     z-index: 1;  // Changed from -1 to 1 so canvas is interactive
     top: 0;
     left: 0;

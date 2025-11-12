@@ -30,7 +30,13 @@ export default class Player {
         this.initControls();
         // setPlayerSocket removed - no socket needed for offline single-player
         this.setAvatarFromLocalStorage();
-        this.setJoyStick();
+        this.ensureJoystickVisibility(); // Ensure joystick is visible if mobile device
+        
+        // Delay joystick initialization to ensure DOM is ready
+        setTimeout(() => {
+            this.setJoyStick();
+        }, 100);
+        
         this.addEventListeners();
     }
 
@@ -132,22 +138,125 @@ export default class Player {
         this.joystickVector = new THREE.Vector3();
     }
 
+    /**
+     * Ensure joystick visibility based on device selection from localStorage
+     * This ensures joystick is visible in all scenes if mobile device is selected
+     */
+    ensureJoystickVisibility() {
+        const deviceType = localStorage.getItem('impuratea-device');
+        const joystickArea = this.domElements.joystickArea || document.querySelector('.joystick-area');
+        
+        if (joystickArea) {
+            if (deviceType === 'mobile') {
+                joystickArea.style.display = 'block';
+                joystickArea.style.pointerEvents = 'auto';
+                console.log('[Player] Joystick enabled for mobile device');
+            } else if (deviceType === 'desktop') {
+                joystickArea.style.display = 'none';
+                console.log('[Player] Joystick disabled for desktop device');
+            } else {
+                // Device type not set yet - default to showing joystick (will be set later)
+                // Don't hide it, let it be visible by default
+                joystickArea.style.display = 'block';
+                joystickArea.style.pointerEvents = 'auto';
+                console.log('[Player] Device type not set, keeping joystick visible');
+            }
+        } else {
+            console.warn('[Player] Joystick area element not found');
+        }
+    }
+
     setJoyStick() {
+        // Ensure joystick is visible before creating it
+        this.ensureJoystickVisibility();
+        
+        // Check if joystick area is available
+        if (!this.domElements.joystickArea) {
+            console.warn('[Player] Joystick area element not found, retrying...');
+            // Retry after a short delay in case DOM isn't ready yet
+            setTimeout(() => {
+                this.setJoyStick();
+            }, 200);
+            return;
+        }
+        
+        // Check device type from localStorage
+        const deviceType = localStorage.getItem('impuratea-device');
+        
+        // If device type is desktop, don't create joystick
+        if (deviceType === 'desktop') {
+            console.log('[Player] Desktop device selected, skipping joystick creation');
+            return;
+        }
+        
+        // If device type is mobile or not set (fallback), create joystick
+        // But only if joystick area is visible
+        const joystickArea = this.domElements.joystickArea;
+        const isVisible = joystickArea.style.display !== 'none' && 
+                         window.getComputedStyle(joystickArea).display !== 'none';
+        
+        if (!isVisible && deviceType === 'mobile') {
+            // Force show joystick if mobile is selected
+            joystickArea.style.display = 'block';
+            console.log('[Player] Forcing joystick area to be visible for mobile');
+        }
+        
+        // Destroy existing joystick if it exists
+        if (this.joystick) {
+            try {
+                this.joystick.destroy();
+                console.log('[Player] Existing joystick destroyed');
+            } catch (error) {
+                console.warn('[Player] Error destroying existing joystick:', error);
+            }
+        }
+        
         this.options = {
             zone: this.domElements.joystickArea,
             mode: "dynamic",
         };
-        this.joystick = nipplejs.create(this.options);
+        
+        try {
+            this.joystick = nipplejs.create(this.options);
 
-        this.joystick.on("move", (e, data) => {
-            this.actions.movingJoyStick = true;
-            this.joystickVector.z = -data.vector.y;
-            this.joystickVector.x = data.vector.x;
-        });
+            this.joystick.on("start", () => {
+                // Joystick started - prepare for movement
+                console.log('[Player] Joystick started');
+            });
 
-        this.joystick.on("end", () => {
-            this.actions.movingJoyStick = false;
-        });
+            this.joystick.on("move", (e, data) => {
+                this.actions.movingJoyStick = true;
+                this.joystickVector.z = -data.vector.y;
+                this.joystickVector.x = data.vector.x;
+                
+                // Set walking animation when joystick is moved (same as WASD)
+                if (!this.actions.run && !this.actions.jump && this.player.onFloor) {
+                    this.player.animation = "walking";
+                }
+            });
+
+            this.joystick.on("end", () => {
+                this.actions.movingJoyStick = false;
+                
+                // Set animation to idle when joystick is released (same as WASD keyup)
+                if (this.player.onFloor && !this.actions.run) {
+                    // Only set to idle if no other movement keys are pressed
+                    if (!this.actions.forward && !this.actions.backward && 
+                        !this.actions.left && !this.actions.right) {
+                        this.player.animation = "idle";
+                    }
+                }
+            });
+            
+            console.log('[Player] Joystick created successfully');
+        } catch (error) {
+            console.error('[Player] Error creating joystick:', error);
+            // Retry after delay if creation failed
+            setTimeout(() => {
+                console.log('[Player] Retrying joystick creation...');
+                this.setJoyStick();
+            }, 500);
+        }
     }
 
     /**
@@ -506,33 +615,37 @@ export default class Player {
     // No other players to update in offline mode
 
     updateAvatarRotation() {
-        if (this.actions.forward) {
+        // Handle joystick rotation first (joystick takes priority)
+        if (this.actions.movingJoyStick) {
+            // Calculate direction from joystick vector
+            const joystickAngle = Math.atan2(this.joystickVector.x, this.joystickVector.z);
+            // Convert joystick angle to direction offset (matching WASD behavior)
+            this.player.directionOffset = joystickAngle;
+        } else if (this.actions.forward) {
             this.player.directionOffset = Math.PI;
-        }
-        if (this.actions.backward) {
+        } else if (this.actions.backward) {
             this.player.directionOffset = 0;
-        }
-
-        if (this.actions.left) {
+        } else if (this.actions.left) {
             this.player.directionOffset = -Math.PI / 2;
-        }
-
-        if (this.actions.forward && this.actions.left) {
-            this.player.directionOffset = Math.PI + Math.PI / 4;
-        }
-        if (this.actions.backward && this.actions.left) {
-            this.player.directionOffset = -Math.PI / 4;
-        }
-
-        if (this.actions.right) {
+        } else if (this.actions.right) {
             this.player.directionOffset = Math.PI / 2;
         }
 
-        if (this.actions.forward && this.actions.right) {
-            this.player.directionOffset = Math.PI - Math.PI / 4;
-        }
-        if (this.actions.backward && this.actions.right) {
-            this.player.directionOffset = Math.PI / 4;
+        // Handle diagonal movements (only if not using joystick)
+        if (!this.actions.movingJoyStick) {
+            if (this.actions.forward && this.actions.left) {
+                this.player.directionOffset = Math.PI + Math.PI / 4;
+            }
+            if (this.actions.backward && this.actions.left) {
+                this.player.directionOffset = -Math.PI / 4;
+            }
+
+            if (this.actions.forward && this.actions.right) {
+                this.player.directionOffset = Math.PI - Math.PI / 4;
+            }
+            if (this.actions.backward && this.actions.right) {
+                this.player.directionOffset = Math.PI / 4;
+            }
         }
 
         if (this.actions.forward && this.actions.left && this.actions.right) {
@@ -560,12 +673,30 @@ export default class Player {
     }
 
     updateAvatarAnimation() {
+        // Check if joystick is being used for movement
+        const isMoving = this.actions.movingJoyStick || 
+                        this.actions.forward || 
+                        this.actions.backward || 
+                        this.actions.left || 
+                        this.actions.right;
+        
         if (this.player.animation !== this.avatar.animation) {
+            // Handle joystick movement animation
+            if (this.actions.movingJoyStick && !this.actions.run && !this.actions.jump && this.player.onFloor) {
+                this.player.animation = "walking";
+            }
+            
+            // If joystick is not moving and no keyboard input, set to idle
+            if (!this.actions.movingJoyStick && !isMoving && this.player.onFloor && !this.actions.run) {
+                this.player.animation = "idle";
+            }
+            
             if (
                 this.actions.left &&
                 this.actions.right &&
                 !this.actions.forward &&
-                !this.actions.backward
+                !this.actions.backward &&
+                !this.actions.movingJoyStick
             ) {
                 this.player.animation = "idle";
             }
@@ -593,6 +724,7 @@ export default class Player {
                 !this.actions.right &&
                 !this.actions.forward &&
                 !this.actions.backward &&
+                !this.actions.movingJoyStick &&
                 this.actions.run
             ) {
                 this.player.animation = "idle";
@@ -720,6 +852,7 @@ export default class Player {
                     if (this.actions.run) {
                         this.player.animation = "running";
                     } else if (
+                        this.actions.movingJoyStick ||
                         this.actions.forward ||
                         this.actions.backward ||
                         this.actions.left ||
@@ -732,9 +865,38 @@ export default class Player {
                 }
             }
 
+            // Final check: if joystick is moving and not jumping/running, ensure walking animation
+            // This takes priority over other conditions
+            if (this.actions.movingJoyStick && 
+                this.player.animation !== "jumping" && 
+                !this.actions.run && 
+                this.player.onFloor) {
+                this.player.animation = "walking";
+            }
+
             this.avatar.animation.play(this.player.animation);
         } else {
-            this.avatar.animation.play("idle");
+            // Even if animation state hasn't changed, check if we need to update based on joystick
+            // This ensures joystick movement always triggers walking animation
+            if (this.actions.movingJoyStick && 
+                this.player.animation !== "walking" && 
+                !this.actions.run && 
+                !this.actions.jump && 
+                this.player.onFloor) {
+                this.player.animation = "walking";
+                this.avatar.animation.play(this.player.animation);
+            } else if (!this.actions.movingJoyStick && 
+                      !isMoving && 
+                      this.player.animation !== "idle" && 
+                      !this.actions.run && 
+                      !this.actions.jump && 
+                      this.player.onFloor) {
+                this.player.animation = "idle";
+                this.avatar.animation.play(this.player.animation);
+            } else {
+                // Keep playing current animation
+                this.avatar.animation.play(this.player.animation);
+            }
         }
     }
 
