@@ -44,7 +44,21 @@ export default class Resources extends EventEmitter {
         const sceneAssets = this.assets[0][this.currentScene]?.assets || [];
 
         // OPTIMIZATION: Combine all assets to load (shared + scene-specific)
-        const allAssets = [...sharedAssets, ...sceneAssets];
+        let allAssets = [...sharedAssets, ...sceneAssets];
+        
+        // MOBILE OPTIMIZATION: Prioritize critical assets on mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                        (window.innerWidth <= 768 && window.innerHeight <= 1024);
+        
+        if (isMobile) {
+            // Sort assets: critical first (player models, environment), then others
+            allAssets.sort((a, b) => {
+                const aPriority = (a.name === 'male' || a.name === 'female' || a.name === 'environment' || a.name === 'collider') ? 0 : 1;
+                const bPriority = (b.name === 'male' || b.name === 'female' || b.name === 'environment' || b.name === 'collider') ? 0 : 1;
+                return aPriority - bPriority;
+            });
+            console.log('[Resources] 📱 Mobile device detected - prioritizing critical assets');
+        }
 
         console.log(`[Resources] 🚀 Starting to load ${allAssets.length} assets (${sharedAssets.length} shared + ${sceneAssets.length} scene-specific)`);
         console.log(`[Resources] Asset list:`, allAssets.map(a => `${a.name} (${a.type})`));
@@ -126,11 +140,17 @@ export default class Resources extends EventEmitter {
                         const qualitySettings = this.getQualitySettings();
                         const textureQuality = qualitySettings?.textureQuality || 0.75;
                         
+                        // MOBILE OPTIMIZATION: More aggressive optimization on mobile
+                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                                        (window.innerWidth <= 768 && window.innerHeight <= 1024);
+                        
+                        const mobileTextureQuality = isMobile ? Math.min(textureQuality, 0.5) : textureQuality;
+                        
                         ModelOptimizer.optimizeModel(file.scene, {
                             disableShadows: true,
                             enableFrustumCulling: true,
                             optimizeTextures: true,
-                            textureQuality: textureQuality
+                            textureQuality: mobileTextureQuality
                         });
                     }
                     callback(asset, file);

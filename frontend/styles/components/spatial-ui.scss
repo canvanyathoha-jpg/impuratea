@@ -67,6 +67,16 @@
         max-width: 300px;
         font-size: 14px;
         padding: 12px 16px;
+        min-width: 180px;
+    }
+    
+    @include media("<=phone") {
+        max-width: calc(85vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+        min-width: 150px;
+        font-size: 13px;
+        padding: 10px 14px;
+        border-radius: 15px;
+        border-width: 2px;
     }
 }
 
@@ -109,6 +119,16 @@
     @include media("<=tablet") {
         font-size: 14px;
         padding: 10px 20px;
+    }
+    
+    @include media("<=phone") {
+        font-size: 12px;
+        padding: 8px 16px;
+        border-radius: 10px;
+        
+        .prompt-icon {
+            font-size: 20px;
+        }
     }
 }
 

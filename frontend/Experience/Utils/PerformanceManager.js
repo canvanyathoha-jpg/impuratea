@@ -22,23 +22,27 @@ export default class PerformanceManager extends EventEmitter {
         this.targetFPS = 30; // Target FPS for laptops (lower than 60)
         this.minFPS = 20; // Minimum acceptable FPS
         
+        // Detect mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                        (window.innerWidth <= 768 && window.innerHeight <= 1024);
+        
         // Quality settings
         this.qualitySettings = {
             low: {
-                pixelRatio: 0.75, // Lower pixel ratio for better performance
+                pixelRatio: isMobile ? 0.5 : 0.75, // Even lower for mobile
                 antialias: false, // Disable antialias
                 shadows: false, // Disable shadows
                 shadowMapSize: 512, // Smaller shadow map if enabled
-                textureQuality: 0.5, // Lower texture quality
+                textureQuality: isMobile ? 0.4 : 0.5, // Lower texture quality for mobile
                 maxLights: 2, // Limit number of lights
                 enableFrustumCulling: true, // Enable frustum culling
             },
             medium: {
-                pixelRatio: 1.0, // Standard pixel ratio
+                pixelRatio: isMobile ? 0.75 : 1.0, // Lower for mobile
                 antialias: false, // Disable antialias for better performance
                 shadows: false, // Disable shadows for better performance
                 shadowMapSize: 1024,
-                textureQuality: 0.75,
+                textureQuality: isMobile ? 0.6 : 0.75, // Lower for mobile
                 maxLights: 4,
                 enableFrustumCulling: true,
             },
@@ -53,10 +57,16 @@ export default class PerformanceManager extends EventEmitter {
             }
         };
         
+        // Start with lower quality on mobile
+        if (isMobile) {
+            this.currentQuality = 'low';
+            console.log('[PerformanceManager] Mobile device detected, starting with LOW quality');
+        }
+        
         // Start monitoring
         this.startMonitoring();
         
-        console.log('[PerformanceManager] Initialized with quality:', this.currentQuality);
+        console.log('[PerformanceManager] Initialized with quality:', this.currentQuality, isMobile ? '(Mobile)' : '(Desktop)');
     }
     
     /**

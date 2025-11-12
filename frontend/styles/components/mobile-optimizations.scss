@@ -1,0 +1,143 @@
+// Mobile-Specific Optimizations
+
+// Ensure all interactive elements have proper touch target sizes (minimum 44x44px)
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="checkbox"],
+input[type="radio"],
+select,
+.clickable,
+[role="button"] {
+    @include media("<=phone") {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        touch-action: manipulation; // Prevent double-tap zoom
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1); // Subtle tap highlight
+    }
+}
+
+// Optimize font sizes for mobile readability
+body {
+    @include media("<=phone") {
+        font-size: 16px; // Prevent zoom on iOS when focusing inputs
+        -webkit-text-size-adjust: 100%; // Prevent text size adjustment
+    }
+}
+
+// Improve touch scrolling
+* {
+    @include media("<=phone") {
+        -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+    }
+}
+
+// Prevent text selection on mobile (except for inputs)
+*:not(input):not(textarea) {
+    @include media("<=phone") {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+}
+
+// Allow text selection for inputs and textareas
+input,
+textarea {
+    @include media("<=phone") {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+    }
+}
+
+// Optimize images for mobile
+img {
+    @include media("<=phone") {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+// Improve form inputs on mobile
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+    @include media("<=phone") {
+        font-size: 16px !important; // Prevent zoom on iOS
+        padding: 12px !important; // Larger touch target
+        border-radius: 8px !important;
+    }
+}
+
+// Safe area handling for all fixed/absolute positioned elements
+.fixed-top,
+.fixed-bottom,
+[style*="position: fixed"],
+[style*="position: absolute"] {
+    @include media("<=phone") {
+        // Account for safe areas
+        &:not(.no-safe-area) {
+            // Top elements
+            &[style*="top"]:not([style*="bottom"]) {
+                top: calc(var(--top, 0) + env(safe-area-inset-top)) !important;
+            }
+            
+            // Bottom elements
+            &[style*="bottom"]:not([style*="top"]) {
+                bottom: calc(var(--bottom, 0) + env(safe-area-inset-bottom)) !important;
+            }
+            
+            // Left elements
+            &[style*="left"]:not([style*="right"]) {
+                left: calc(var(--left, 0) + env(safe-area-inset-left)) !important;
+            }
+            
+            // Right elements
+            &[style*="right"]:not([style*="left"]) {
+                right: calc(var(--right, 0) + env(safe-area-inset-right)) !important;
+            }
+        }
+    }
+}
+
+// Prevent pull-to-refresh on mobile (can interfere with game)
+body {
+    @include media("<=phone") {
+        overscroll-behavior-y: contain;
+        overscroll-behavior-x: contain;
+    }
+}
+
+// Optimize canvas for mobile
+canvas,
+.experience-canvas {
+    @include media("<=phone") {
+        touch-action: pan-x pan-y pinch-zoom; // Allow camera controls
+        -webkit-touch-callout: none; // Disable iOS callout
+    }
+}
+
+// Improve button spacing on mobile
+.button-group,
+.btn-group {
+    @include media("<=phone") {
+        gap: 12px !important; // Larger gap for easier tapping
+    }
+}
+
+// Optimize dialog/overlay spacing
+.dialog,
+.modal,
+.overlay {
+    @include media("<=phone") {
+        padding: 20px !important;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
