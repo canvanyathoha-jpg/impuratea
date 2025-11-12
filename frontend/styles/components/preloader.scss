@@ -605,6 +605,10 @@
         radial-gradient(ellipse at bottom, rgba(30, 64, 124, 0.08) 0%, transparent 50%),
         linear-gradient(135deg, #f8fafc 0%, #e8eef5 50%, #f0f4f8 100%);
     z-index: 99999999999998;
+    // Enable smooth scrolling and proper touch handling
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pinch-zoom;
+    overscroll-behavior-y: contain;
 
     // Custom scrollbar
     &::-webkit-scrollbar {

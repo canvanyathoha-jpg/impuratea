@@ -12,6 +12,15 @@ body {
     position: relative;
 }
 
+// Allow scroll when preloader (landing page) is active
+body:has(.preloader.active) {
+    overflow: visible;
+}
+
+html:has(.preloader.active) {
+    overflow: visible;
+}
+
 html,
 body,
 div,

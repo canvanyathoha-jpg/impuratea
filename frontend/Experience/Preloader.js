@@ -70,12 +70,20 @@ export default class Preloader {
         if (experienceWrapper) {
             experienceWrapper.style.pointerEvents = 'none';
             experienceWrapper.style.zIndex = '0';
+            experienceWrapper.style.touchAction = 'none';
             console.log('[Preloader] Canvas wrapper disabled for button clicks');
         }
         if (experienceCanvas) {
             experienceCanvas.style.pointerEvents = 'none';
+            experienceCanvas.style.touchAction = 'none';
             console.log('[Preloader] Canvas disabled for button clicks');
         }
+        
+        // Disable orbit controls when preloader is active to prevent touch event capture
+        // Use setTimeout to ensure experience is fully initialized
+        setTimeout(() => {
+            this.disableOrbitControls();
+        }, 100);
 
         // **** This is for updating a percentage ****
         this.resources.on("loading", (loaded, queue) => {
@@ -147,6 +155,13 @@ export default class Preloader {
                         duration: 1.5,
                         ease: "power4.out",
                         onComplete: () => {
+                            // Ensure landing container can scroll properly
+                            if (this.domElements.landingContainer) {
+                                this.domElements.landingContainer.style.touchAction = 'pan-y pinch-zoom';
+                                this.domElements.landingContainer.style.webkitOverflowScrolling = 'touch';
+                                // Force a reflow to ensure styles are applied
+                                this.domElements.landingContainer.offsetHeight;
+                            }
                             resolve();
                         },
                     },
@@ -477,6 +492,22 @@ export default class Preloader {
         });
     }
 
+    disableOrbitControls() {
+        // Disable orbit controls to prevent touch event capture during landing page scroll
+        if (this.experience && this.experience.camera && this.experience.camera.controls) {
+            this.experience.camera.controls.enabled = false;
+            console.log('[Preloader] Orbit controls disabled for landing page scroll');
+        }
+    }
+
+    enableOrbitControls() {
+        // Re-enable orbit controls when preloader is removed
+        if (this.experience && this.experience.camera && this.experience.camera.controls) {
+            this.experience.camera.controls.enabled = true;
+            console.log('[Preloader] Orbit controls re-enabled');
+        }
+    }
+
     async preloaderOutro() {
         return new Promise((resolve) => {
             // Immediately disable pointer events so camera can move
@@ -488,10 +519,15 @@ export default class Preloader {
             if (experienceWrapper) {
                 experienceWrapper.style.pointerEvents = 'auto';
                 experienceWrapper.style.zIndex = '1';
+                experienceWrapper.style.touchAction = 'auto';
             }
             if (experienceCanvas) {
                 experienceCanvas.style.pointerEvents = 'auto';
+                experienceCanvas.style.touchAction = 'auto';
             }
+            
+            // Re-enable orbit controls
+            this.enableOrbitControls();
 
             this.timeline4 = new gsap.timeline();
             this.timeline4.to(this.domElements.preloader, {

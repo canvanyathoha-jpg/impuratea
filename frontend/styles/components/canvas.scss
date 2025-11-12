@@ -19,10 +19,12 @@
 body:has(.preloader.active) .experience-wrapper {
     pointer-events: none !important;
     z-index: 0 !important;
+    touch-action: none !important; // Prevent canvas from capturing touch events
 }
 
 body:has(.preloader.active) .experience-canvas {
     pointer-events: none !important;
+    touch-action: none !important; // Prevent canvas from capturing touch events
 }
 
 .experience-canvas {
