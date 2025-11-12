@@ -50,8 +50,8 @@ const setupCameraToggle = () => {
             // Initial label update
             updateCameraModeLabel();
             
-            // Toggle camera mode on button click
-            cameraModeToggle.addEventListener('click', () => {
+            // Toggle camera mode on button click (desktop)
+            const handleToggle = () => {
                 if (experience && experience.camera && experience.camera.toggleCameraMode) {
                     try {
                         experience.camera.toggleCameraMode();
@@ -60,6 +60,15 @@ const setupCameraToggle = () => {
                         console.error('[Camera] Error toggling camera mode:', error);
                     }
                 }
+            };
+            
+            cameraModeToggle.addEventListener('click', handleToggle);
+            
+            // Add touch support for mobile
+            cameraModeToggle.addEventListener('touchend', (e) => {
+                e.preventDefault(); // Prevent double-tap zoom
+                e.stopPropagation(); // Prevent event bubbling
+                handleToggle();
             });
             
             console.log('[Camera] Camera toggle button setup complete');

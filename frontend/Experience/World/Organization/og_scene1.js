@@ -72,8 +72,13 @@ export default class Organization {
         this.canvas = this.experience.canvas;
         this.onMouseClick = this.onMouseClick.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
+        this.onTouchMove = this.onTouchMove.bind(this);
         this.canvas.addEventListener('click', this.onMouseClick);
         this.canvas.addEventListener('mousemove', this.onMouseMove);
+        // Add touch support for mobile
+        this.canvas.addEventListener('touchend', this.onTouchEnd, { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
         
         // Show opening story first
         this.initWithOpening();
@@ -1518,6 +1523,96 @@ export default class Organization {
         }
     }
 
+    onTouchEnd(event) {
+        if (!this.speechBubbleGroup) {
+            return;
+        }
+
+        // Get touch position
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+
+        // Calculate touch position in normalized device coordinates
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+
+        // Update raycaster
+        const activeCamera = this.experience.camera?.perspectiveCamera || this.experience.camera?.instance;
+        if (!activeCamera) {
+            return;
+        }
+        this.raycaster.setFromCamera(this.mouse, activeCamera);
+
+        // Check for intersection
+        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+
+        if (intersects.length > 0) {
+            console.log("[OrgScene1] Speech bubble touched!");
+
+            // Prevent default and stop propagation to avoid triggering camera controls
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Add click animation
+            this.speechBubbleGroup.scale.set(0.95, 0.95, 0.95);
+            setTimeout(() => {
+                this.speechBubbleGroup.scale.set(1.05, 1.05, 1.05);
+            }, 100);
+
+            this.playPendingDialogue();
+            this.showScreenSpeechBubble();
+        }
+    }
+
+    onTouchMove(event) {
+        if (!this.speechBubbleGroup) {
+            return;
+        }
+
+        // Get touch position
+        const touch = event.touches[0];
+        if (!touch) return;
+
+        // Calculate touch position in normalized device coordinates
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+
+        // Update raycaster
+        const activeCamera = this.experience.camera?.perspectiveCamera || this.experience.camera?.instance;
+        if (!activeCamera) {
+            return;
+        }
+        this.raycaster.setFromCamera(this.mouse, activeCamera);
+
+        // Check for intersection with speech bubble
+        const intersects = this.raycaster.intersectObject(this.speechBubbleGroup, true);
+
+        if (intersects.length > 0) {
+            // Prevent default to avoid triggering camera controls when hovering over bubble
+            event.preventDefault();
+            
+            // Change cursor to pointer (visual feedback)
+            this.canvas.style.cursor = 'pointer';
+
+            // Add hover effect
+            if (this.speechBubbleGroup.scale.x === 1) {
+                this.speechBubbleGroup.scale.set(1.05, 1.05, 1.05);
+                this.speechBubbleMaterial.color.setHex(0x2a2a3e);
+            }
+        } else {
+            // Reset cursor
+            this.canvas.style.cursor = 'default';
+
+            // Remove hover effect
+            if (this.speechBubbleGroup.scale.x === 1.05) {
+                this.speechBubbleGroup.scale.set(1, 1, 1);
+                this.speechBubbleMaterial.color.setHex(0x1a1a2e);
+            }
+        }
+    }
+
 
     createSpeechBubbleTooltip() {
         console.log("[OrgScene1] Creating speech bubble tooltip...");
@@ -2227,6 +2322,8 @@ export default class Organization {
         if (this.canvas && this.onMouseClick && this.onMouseMove) {
             this.canvas.removeEventListener('click', this.onMouseClick);
             this.canvas.removeEventListener('mousemove', this.onMouseMove);
+            this.canvas.removeEventListener('touchend', this.onTouchEnd);
+            this.canvas.removeEventListener('touchmove', this.onTouchMove);
         }
 
 

@@ -345,14 +345,70 @@ export default class Camera {
             this.isMouseDown = false;
         };
         
+        // Touch move handler for FPP look (mobile)
+        this.onTouchMove = (event) => {
+            // IMPORTANT: Only process touch movement if in FPP mode
+            if (this.cameraMode !== 'fpp') return;
+            
+            // Only rotate camera when touch is active
+            if (!this.isTouchActive) return;
+            
+            // Get first touch
+            if (event.touches.length === 0) return;
+            const touch = event.touches[0];
+            
+            // Calculate touch movement delta
+            const deltaX = touch.clientX - this.lastTouchX;
+            const deltaY = touch.clientY - this.lastTouchY;
+            
+            // Update rotation based on touch movement
+            this.fppRotationY -= deltaX * this.fppMouseSensitivity;
+            this.fppRotationX -= deltaY * this.fppMouseSensitivity;
+            
+            // Clamp vertical rotation to prevent flipping
+            this.fppRotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.fppRotationX));
+            
+            // Update last touch position
+            this.lastTouchX = touch.clientX;
+            this.lastTouchY = touch.clientY;
+        };
+        
+        // Touch start handler - start tracking touch position
+        this.onTouchStart = (event) => {
+            if (this.cameraMode !== 'fpp') return;
+            
+            // Only track if touching canvas (not on UI elements)
+            if (event.target === this.canvas && event.touches.length > 0) {
+                this.isTouchActive = true;
+                const touch = event.touches[0];
+                this.lastTouchX = touch.clientX;
+                this.lastTouchY = touch.clientY;
+            }
+        };
+        
+        // Touch end handler - stop tracking touch position
+        this.onTouchEnd = () => {
+            if (this.cameraMode !== 'fpp') return;
+            this.isTouchActive = false;
+        };
+        
+        // Track touch state
+        this.isTouchActive = false;
+        this.lastTouchX = 0;
+        this.lastTouchY = 0;
+        
         // NO POINTER LOCK - cursor always visible for clicking buttons
         // Add event listeners for drag-to-rotate
         try {
             document.addEventListener('mousemove', this.onMouseMove);
             document.addEventListener('mousedown', this.onMouseDown);
             document.addEventListener('mouseup', this.onMouseUp);
+            // Add touch support for mobile
+            this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
+            this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: false });
+            this.canvas.addEventListener('touchend', this.onTouchEnd, { passive: false });
             this.fppControlsSetup = true;
-            console.log('[Camera] FPP controls setup successfully (drag-to-rotate, no pointer lock)');
+            console.log('[Camera] FPP controls setup successfully (drag-to-rotate, touch support, no pointer lock)');
         } catch (error) {
             console.error('[Camera] Error setting up FPP controls:', error);
         }

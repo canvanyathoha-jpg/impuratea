@@ -59,6 +59,8 @@
     gap: 2px;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    touch-action: manipulation; // Prevent double-tap zoom on mobile
+    -webkit-tap-highlight-color: transparent; // Remove tap highlight on mobile
     
     svg {
         width: 20px;
@@ -83,5 +85,47 @@
     
     &:active {
         transform: scale(0.95);
+    }
+    
+    // Mobile responsive styles
+    @include media("<=tablet") {
+        top: 12px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
+        // Account for safe area (notch/status bar on mobile)
+        top: calc(12px + env(safe-area-inset-top));
+        right: calc(12px + env(safe-area-inset-right));
+        // Ensure button is above canvas and can receive touch events
+        pointer-events: auto;
+        
+        svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .camera-mode-label {
+            font-size: 7px;
+        }
+    }
+    
+    @include media("<=phone") {
+        top: 8px;
+        right: 8px;
+        width: 40px;
+        height: 40px;
+        top: calc(8px + env(safe-area-inset-top));
+        right: calc(8px + env(safe-area-inset-right));
+        // Ensure button is above canvas and can receive touch events
+        pointer-events: auto;
+        
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .camera-mode-label {
+            font-size: 6px;
+        }
     }
 }
