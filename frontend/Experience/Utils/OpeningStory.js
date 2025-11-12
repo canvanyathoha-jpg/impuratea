@@ -28,19 +28,19 @@ export default class OpeningStory {
         console.log(`[OpeningStory] Using quote: ${quote}`);
 
         // Hanya tampilkan judul jika title tidak kosong
-        const titleHTML = title ? `<h1 style="font-size: 48px; margin-bottom: 30px; color: #ff6b6b; text-shadow: 0 0 20px rgba(255,107,107,0.8); font-weight: bold;">${title}</h1>` : '';
+        const titleHTML = title ? `<h1 class="opening-story-title">${title}</h1>` : '';
         
         this.overlay.innerHTML = `
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: 'Arial', sans-serif; cursor: pointer;">
-                <div style="max-width: 800px; text-align: center; padding: 40px; opacity: 1; transform: translateY(0); transition: all 1s ease; background: rgba(0,0,0,0.95); border-radius: 20px; border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+            <div class="opening-story-overlay">
+                <div class="opening-story-container">
                     ${titleHTML}
-                    <div style="font-size: 24px; line-height: 1.8; margin-bottom: 40px; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">
+                    <div class="opening-story-content">
                         ${story.map(paragraph => 
-                            `<p style="margin-bottom: 20px; color: white;">${paragraph}</p>`
+                            `<p class="opening-story-paragraph">${paragraph}</p>`
                         ).join('')}
-                        <p style="font-style: italic; color: #4ecdc4; font-size: 22px; margin-top: 20px;">"${quote}"</p>
+                        <p class="opening-story-quote">"${quote}"</p>
                     </div>
-                    <div style="font-size: 16px; color: rgba(255,255,255,0.8); margin-top: 30px; font-style: italic;">
+                    <div class="opening-story-continue">
                         ${this.languageManager.translate({
                             id: "Klik di mana saja untuk melanjutkan...",
                             en: "Click anywhere to continue..."

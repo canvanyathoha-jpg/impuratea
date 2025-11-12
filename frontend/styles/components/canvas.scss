@@ -32,13 +32,22 @@ body:has(.preloader.active) .experience-canvas {
 .experience-canvas {
     height: 100%;
     width: 100%;
-    touch-action: auto;  // Changed from none to auto to allow camera controls
+    touch-action: pan-x pan-y pinch-zoom;  // Allow camera controls (pan and zoom)
     overflow: hidden;
     cursor: grab;
+    pointer-events: auto; // Ensure canvas can receive touch events
 
     &:active {
         cursor: grabbing;
     }
+}
+
+// Ensure joystick area touch events are not captured by canvas
+.joystick-area {
+    // Touch events should not propagate to canvas
+    touch-action: none !important;
+    pointer-events: auto !important;
+    z-index: 10000 !important;
 }
 
 canvas {

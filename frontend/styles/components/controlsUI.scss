@@ -4,9 +4,13 @@
     position: fixed;
     left: 5%;
     bottom: 5%;
-    z-index: 1000;
+    z-index: 10000 !important; // Higher z-index to ensure it's above other elements
     border-radius: 50%;
-    pointer-events: auto;
+    pointer-events: auto !important; // Ensure it can receive touch events
+    touch-action: none !important; // Prevent default touch behaviors
+    -webkit-touch-callout: none; // Disable iOS callout
+    -webkit-user-select: none; // Disable text selection
+    user-select: none;
     
     // Responsive sizing for smaller mobile devices
     @include media("<=phone") {
@@ -86,7 +90,8 @@
             0 0 20px rgba(30, 64, 124, 0.15);
     }
     
-    @include media(">=tablet") {
+    // Only hide on desktop, not on tablet (tablet can use joystick too)
+    @include media(">=desktop") {
         display: none;
     }
     
@@ -217,7 +222,21 @@
     height: 100vh;
     cursor: grab;
     overflow: hidden;
-    touch-action: auto;  // Changed from none to auto to allow camera controls
+    touch-action: pan-x pan-y pinch-zoom;  // Allow camera controls (pan and zoom)
     z-index: 25;
     pointer-events: all;  // Ensure it can receive events
+    
+    // Don't block joystick area
+    &:has(+ .joystick-area),
+    & ~ .joystick-area {
+        pointer-events: auto !important;
+    }
+}
+
+// Ensure joystick area is not blocked by control overlay
+.control-overlay ~ .joystick-area,
+.joystick-area {
+    pointer-events: auto !important;
+    z-index: 10000 !important;
+    touch-action: none !important; // Prevent joystick from interfering with camera
 }

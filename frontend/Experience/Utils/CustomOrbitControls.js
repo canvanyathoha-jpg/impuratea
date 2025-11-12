@@ -949,6 +949,41 @@ class OrbitControls extends EventDispatcher {
         }
 
         function onTouchStart(event) {
+            // Don't handle touch events if they originate from joystick area
+            // Check all touches in the event, not just the target
+            let shouldIgnore = false;
+            
+            if (event.touches) {
+                for (let i = 0; i < event.touches.length; i++) {
+                    const touch = event.touches[i];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (element && (
+                        element.closest('.joystick-area') || 
+                        element.closest('.nipple') ||
+                        element.classList.contains('joystick-area') ||
+                        element.classList.contains('nipple')
+                    )) {
+                        shouldIgnore = true;
+                        break;
+                    }
+                }
+            } else {
+                // Fallback: check target if touches array not available
+                const target = event.target;
+                if (target && (
+                    target.closest('.joystick-area') || 
+                    target.closest('.nipple') ||
+                    target.classList.contains('joystick-area') ||
+                    target.classList.contains('nipple')
+                )) {
+                    shouldIgnore = true;
+                }
+            }
+            
+            if (shouldIgnore) {
+                return; // Ignore touch events from joystick
+            }
+            
             trackPointer(event);
 
             switch (pointers.length) {
@@ -1022,6 +1057,41 @@ class OrbitControls extends EventDispatcher {
         }
 
         function onTouchMove(event) {
+            // Don't handle touch events if they originate from joystick area
+            // Check all touches in the event, not just the target
+            let shouldIgnore = false;
+            
+            if (event.touches) {
+                for (let i = 0; i < event.touches.length; i++) {
+                    const touch = event.touches[i];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (element && (
+                        element.closest('.joystick-area') || 
+                        element.closest('.nipple') ||
+                        element.classList.contains('joystick-area') ||
+                        element.classList.contains('nipple')
+                    )) {
+                        shouldIgnore = true;
+                        break;
+                    }
+                }
+            } else {
+                // Fallback: check target if touches array not available
+                const target = event.target;
+                if (target && (
+                    target.closest('.joystick-area') || 
+                    target.closest('.nipple') ||
+                    target.classList.contains('joystick-area') ||
+                    target.classList.contains('nipple')
+                )) {
+                    shouldIgnore = true;
+                }
+            }
+            
+            if (shouldIgnore) {
+                return; // Ignore touch events from joystick
+            }
+            
             trackPointer(event);
 
             switch (state) {

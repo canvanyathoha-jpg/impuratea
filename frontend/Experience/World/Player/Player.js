@@ -192,14 +192,33 @@ export default class Player {
         // If device type is mobile or not set (fallback), create joystick
         // But only if joystick area is visible
         const joystickArea = this.domElements.joystickArea;
+        const computedStyle = window.getComputedStyle(joystickArea);
         const isVisible = joystickArea.style.display !== 'none' && 
-                         window.getComputedStyle(joystickArea).display !== 'none';
+                         computedStyle.display !== 'none';
         
-        if (!isVisible && deviceType === 'mobile') {
-            // Force show joystick if mobile is selected
+        // Force show joystick if mobile is selected or device type not set
+        if ((!isVisible && deviceType === 'mobile') || !deviceType) {
             joystickArea.style.display = 'block';
-            console.log('[Player] Forcing joystick area to be visible for mobile');
+            joystickArea.style.visibility = 'visible';
+            joystickArea.style.opacity = '1';
+            console.log('[Player] Forcing joystick area to be visible', {
+                deviceType,
+                wasVisible: isVisible,
+                computedDisplay: computedStyle.display
+            });
         }
+        
+        // Ensure joystick area can receive touch events
+        joystickArea.style.pointerEvents = 'auto';
+        joystickArea.style.touchAction = 'none';
+        joystickArea.style.zIndex = '10000';
+        
+        // Add event listener to test if touch events work
+        const testTouch = (e) => {
+            console.log('[Player] Touch event detected on joystick area', e.type);
+        };
+        joystickArea.addEventListener('touchstart', testTouch, { once: true, passive: true });
+        joystickArea.addEventListener('touchend', testTouch, { once: true, passive: true });
         
         // Destroy existing joystick if it exists
         if (this.joystick) {
@@ -211,17 +230,57 @@ export default class Player {
             }
         }
         
+        // Configure nipplejs options with proper touch handling
         this.options = {
             zone: this.domElements.joystickArea,
             mode: "dynamic",
+            color: 'rgba(30, 64, 124, 0.8)',
+            size: 140,
+            threshold: 0.1,
+            fadeTime: 250,
+            multitouch: false,
+            maxNumberOfNipples: 1,
+            dataOnly: false,
+            position: { top: '50%', left: '50%' },
+            catchDistance: 200,
+            // Ensure joystick handles touch events properly
+            restOpacity: 0.5,
+            restJoystick: true
         };
         
         try {
+            // Ensure joystick area is ready and has correct styles
+            const joystickArea = this.domElements.joystickArea;
+            joystickArea.style.display = 'block';
+            joystickArea.style.visibility = 'visible';
+            joystickArea.style.opacity = '1';
+            joystickArea.style.pointerEvents = 'auto';
+            joystickArea.style.touchAction = 'none';
+            joystickArea.style.zIndex = '10000';
+            joystickArea.style.position = 'fixed';
+            
+            // Prevent canvas and other elements from capturing touch events on joystick area
+            joystickArea.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // Stop event from bubbling to canvas
+            }, { passive: false, capture: true });
+            
+            joystickArea.addEventListener('touchmove', (e) => {
+                e.stopPropagation(); // Stop event from bubbling to canvas
+            }, { passive: false, capture: true });
+            
+            joystickArea.addEventListener('touchend', (e) => {
+                e.stopPropagation(); // Stop event from bubbling to canvas
+            }, { passive: false, capture: true });
+            
+            // Force reflow to ensure styles are applied
+            joystickArea.offsetHeight;
+            
             this.joystick = nipplejs.create(this.options);
 
-            this.joystick.on("start", () => {
+            this.joystick.on("start", (e, data) => {
                 // Joystick started - prepare for movement
-                console.log('[Player] Joystick started');
+                console.log('[Player] Joystick started', e, data);
+                joystickArea.classList.add('active');
             });
 
             this.joystick.on("move", (e, data) => {
@@ -233,10 +292,18 @@ export default class Player {
                 if (!this.actions.run && !this.actions.jump && this.player.onFloor) {
                     this.player.animation = "walking";
                 }
+                
+                console.log('[Player] Joystick moved', {
+                    x: this.joystickVector.x,
+                    z: this.joystickVector.z,
+                    angle: data.angle,
+                    distance: data.distance
+                });
             });
 
-            this.joystick.on("end", () => {
+            this.joystick.on("end", (e, data) => {
                 this.actions.movingJoyStick = false;
+                joystickArea.classList.remove('active');
                 
                 // Set animation to idle when joystick is released (same as WASD keyup)
                 if (this.player.onFloor && !this.actions.run) {
@@ -246,11 +313,19 @@ export default class Player {
                         this.player.animation = "idle";
                     }
                 }
+                
+                console.log('[Player] Joystick ended');
             });
             
-            console.log('[Player] Joystick created successfully');
+            console.log('[Player] Joystick created successfully', {
+                zone: joystickArea,
+                options: this.options,
+                joystick: this.joystick
+            });
         } catch (error) {
             console.error('[Player] Error creating joystick:', error);
+            console.error('[Player] Joystick area:', this.domElements.joystickArea);
+            console.error('[Player] Options:', this.options);
             // Retry after delay if creation failed
             setTimeout(() => {
                 console.log('[Player] Retrying joystick creation...');

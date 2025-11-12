@@ -513,8 +513,25 @@ export default class Preloader {
     enableOrbitControls() {
         // Re-enable orbit controls when preloader is removed
         if (this.experience && this.experience.camera && this.experience.camera.controls) {
-            this.experience.camera.controls.enabled = true;
-            console.log('[Preloader] Orbit controls re-enabled');
+            const controls = this.experience.camera.controls;
+            controls.enabled = true;
+            controls.enableRotate = true;
+            controls.enablePan = true;
+            controls.enableZoom = true;
+            
+            // Ensure canvas can receive touch events
+            const canvas = this.experience.canvas;
+            if (canvas) {
+                canvas.style.touchAction = 'pan-x pan-y pinch-zoom';
+                canvas.style.pointerEvents = 'auto';
+            }
+            
+            console.log('[Preloader] Orbit controls re-enabled', {
+                enabled: controls.enabled,
+                enableRotate: controls.enableRotate,
+                enablePan: controls.enablePan,
+                enableZoom: controls.enableZoom
+            });
         }
     }
 
@@ -533,11 +550,25 @@ export default class Preloader {
             }
             if (experienceCanvas) {
                 experienceCanvas.style.pointerEvents = 'auto';
-                experienceCanvas.style.touchAction = 'auto';
+                experienceCanvas.style.touchAction = 'pan-x pan-y pinch-zoom'; // Allow camera controls
             }
             
             // Re-enable orbit controls
             this.enableOrbitControls();
+            
+            // Double-check after a short delay to ensure controls are enabled
+            setTimeout(() => {
+                if (this.experience && this.experience.camera && this.experience.camera.controls) {
+                    const controls = this.experience.camera.controls;
+                    if (!controls.enabled) {
+                        console.warn('[Preloader] OrbitControls was disabled, re-enabling...');
+                        controls.enabled = true;
+                        controls.enableRotate = true;
+                        controls.enablePan = true;
+                        controls.enableZoom = true;
+                    }
+                }
+            }, 100);
 
             this.timeline4 = new gsap.timeline();
             this.timeline4.to(this.domElements.preloader, {

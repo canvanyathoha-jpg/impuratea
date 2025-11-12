@@ -112,6 +112,149 @@
     }
 }
 
+// Opening Story Styles
+.opening-story-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    width: 100dvw;
+    height: 100%;
+    height: 100dvh;
+    background: rgba(0,0,0,0.95);
+    z-index: 10000000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    cursor: pointer;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    box-sizing: border-box;
+}
+
+.opening-story-container {
+    max-width: 800px;
+    width: 90%;
+    width: calc(90vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+    max-width: calc(800px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    text-align: center;
+    padding: 40px;
+    padding: calc(40px + env(safe-area-inset-top)) calc(40px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(40px + env(safe-area-inset-left));
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 1s ease;
+    background: rgba(0,0,0,0.95);
+    border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    box-sizing: border-box;
+    overflow-y: auto;
+    max-height: 90vh;
+    max-height: calc(90dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    
+    @include media("<=tablet") {
+        width: 95%;
+        width: calc(95vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+        padding: 30px;
+        padding: calc(30px + env(safe-area-inset-top)) calc(30px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(30px + env(safe-area-inset-left));
+        max-height: 85vh;
+        max-height: calc(85dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    }
+    
+    @include media("<=phone") {
+        width: 98%;
+        width: calc(98vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+        padding: 20px;
+        padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+        border-radius: 15px;
+        max-height: 90vh;
+        max-height: calc(90dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    }
+}
+
+.opening-story-title {
+    font-size: 48px;
+    margin-bottom: 30px;
+    color: #ff6b6b;
+    text-shadow: 0 0 20px rgba(255,107,107,0.8);
+    font-weight: bold;
+    
+    @include media("<=tablet") {
+        font-size: 36px;
+        margin-bottom: 20px;
+    }
+    
+    @include media("<=phone") {
+        font-size: 28px;
+        margin-bottom: 15px;
+    }
+}
+
+.opening-story-content {
+    font-size: 24px;
+    line-height: 1.8;
+    margin-bottom: 40px;
+    color: white;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    
+    @include media("<=tablet") {
+        font-size: 20px;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+    
+    @include media("<=phone") {
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+}
+
+.opening-story-paragraph {
+    margin-bottom: 20px;
+    color: white;
+    
+    @include media("<=phone") {
+        margin-bottom: 15px;
+    }
+}
+
+.opening-story-quote {
+    font-style: italic;
+    color: #4ecdc4;
+    font-size: 22px;
+    margin-top: 20px;
+    
+    @include media("<=tablet") {
+        font-size: 18px;
+        margin-top: 15px;
+    }
+    
+    @include media("<=phone") {
+        font-size: 14px;
+        margin-top: 10px;
+    }
+}
+
+.opening-story-continue {
+    font-size: 16px;
+    color: rgba(255,255,255,0.8);
+    margin-top: 30px;
+    font-style: italic;
+    
+    @include media("<=tablet") {
+        font-size: 14px;
+        margin-top: 20px;
+    }
+    
+    @include media("<=phone") {
+        font-size: 12px;
+        margin-top: 15px;
+    }
+}
+
 // Choice Panel
 .choice-panel {
     position: absolute;
@@ -124,6 +267,40 @@
     transition: opacity 0.3s ease;
     min-width: 450px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+    
+    // Override inline styles for responsive design
+    @include media("<=tablet") {
+        min-width: 320px !important;
+        max-width: 90vw !important;
+        max-width: calc(90dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+        padding: 20px !important;
+        padding: calc(20px + env(safe-area-inset-bottom)) !important;
+    }
+    
+    @include media("<=phone") {
+        min-width: 280px !important;
+        max-width: 95vw !important;
+        max-width: calc(95dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+        padding: 15px !important;
+        padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important;
+    }
+    
+    // Style for choice panel inner div (created inline in scene files)
+    > div {
+        @include media("<=tablet") {
+            max-width: 90vw !important;
+            max-width: calc(90dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+            padding: 30px !important;
+            padding: calc(30px + env(safe-area-inset-top)) calc(30px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(30px + env(safe-area-inset-left)) !important;
+        }
+        
+        @include media("<=phone") {
+            max-width: 95vw !important;
+            max-width: calc(95dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+            padding: 20px !important;
+            padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)) !important;
+        }
+    }
 
     .choice-panel-content {
         display: flex;
@@ -263,6 +440,77 @@
         .choice-description {
             font-size: 11px;
         }
+    }
+}
+
+// Override inline styles for choice buttons created in scene files
+#choice-panel button,
+#choice-panel [id^="choice-"] {
+    @include media("<=tablet") {
+        padding: 15px 18px !important;
+        font-size: 14px !important;
+        gap: 12px !important;
+    }
+    
+    @include media("<=phone") {
+        padding: 12px 15px !important;
+        font-size: 13px !important;
+        gap: 10px !important;
+    }
+}
+
+// Override inline styles for choice panel title and text
+#choice-panel [style*="font-size: 12px"] {
+    @include media("<=phone") {
+        font-size: 10px !important;
+    }
+}
+
+#choice-panel [style*="font-size: 15px"] {
+    @include media("<=phone") {
+        font-size: 13px !important;
+    }
+}
+
+#choice-panel [style*="font-size: 18px"] {
+    @include media("<=phone") {
+        font-size: 14px !important;
+    }
+}
+
+#choice-panel [style*="font-size: 24px"] {
+    @include media("<=tablet") {
+        font-size: 20px !important;
+    }
+    
+    @include media("<=phone") {
+        font-size: 18px !important;
+    }
+}
+
+// Override padding for choice panel inner content
+#choice-panel [style*="padding: 40px"] {
+    @include media("<=tablet") {
+        padding: 30px !important;
+        padding: calc(30px + env(safe-area-inset-top)) calc(30px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(30px + env(safe-area-inset-left)) !important;
+    }
+    
+    @include media("<=phone") {
+        padding: 20px !important;
+        padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)) !important;
+    }
+}
+
+// Override max-width for choice panel
+#choice-panel [style*="max-width: 600px"] {
+    @include media("<=tablet") {
+        max-width: 90vw !important;
+        max-width: calc(90dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+    }
+    
+    @include media("<=phone") {
+        max-width: 95vw !important;
+        max-width: calc(95dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
     }
 }
 
