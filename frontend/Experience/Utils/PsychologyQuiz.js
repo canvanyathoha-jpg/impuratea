@@ -1,37 +1,23 @@
+import { languageManager } from './LanguageManager.js';
+
 export default class PsychologyQuiz {
     constructor() {
         this.currentQuestion = 0;
         this.answers = [];
 
-        this.questions = [
-            {
-                question: "Bayangkan kamu punya waktu luang satu hari penuh. Apa yang paling ingin kamu lakukan?",
-                options: [
-                    { text: "Membaca buku atau mempelajari hal baru yang menarik perhatianku", value: "akademik" },
-                    { text: "Berkumpul dengan teman-teman dan mengorganisir kegiatan seru bersama", value: "organisasi" },
-                    { text: "Mengerjakan proyek pribadi atau riset yang sudah lama ingin ku selesaikan", value: "akademik" },
-                    { text: "Merencanakan event atau acara untuk komunitas kampus", value: "organisasi" }
-                ]
-            },
-            {
-                question: "Ketika menghadapi masalah, kamu lebih suka...",
-                options: [
-                    { text: "Menganalisis secara mendalam dan mencari solusi berdasarkan data", value: "akademik" },
-                    { text: "Berdiskusi dengan banyak orang untuk mendapat berbagai perspektif", value: "organisasi" },
-                    { text: "Mencari referensi dari buku atau jurnal untuk solusi terbaik", value: "akademik" },
-                    { text: "Membentuk tim dan mencari solusi bersama-sama", value: "organisasi" }
-                ]
-            },
-            {
-                question: "Prestasi yang paling membuatmu bangga adalah...",
-                options: [
-                    { text: "Mendapat nilai sempurna atau menguasai topik yang sulit", value: "akademik" },
-                    { text: "Berhasil mengkoordinir acara besar yang disukai banyak orang", value: "organisasi" },
-                    { text: "Menyelesaikan penelitian atau karya ilmiah yang berkualitas", value: "akademik" },
-                    { text: "Membangun komunitas atau organisasi yang berdampak positif", value: "organisasi" }
-                ]
-            }
-        ];
+        // Questions will be built dynamically from languageManager
+        this.buildQuestions();
+
+        // Listen for language changes
+        this.languageChangeHandler = (event) => {
+            const newLang = event.detail?.language || languageManager.getLanguage();
+            console.log("[PsychologyQuiz] Language changed to:", newLang);
+            this.buildQuestions();
+            this.updateTitle();
+            this.renderQuestion();
+            this.updateRecommendationTexts();
+        };
+        window.addEventListener('languageChanged', this.languageChangeHandler);
 
         this.elements = {
             psychologyQuestion: document.getElementById('psychologyQuestion'),
@@ -47,14 +33,56 @@ export default class PsychologyQuiz {
         this.init();
     }
 
+    buildQuestions() {
+        this.questions = [
+            {
+                question: languageManager.t('psychology.question1'),
+                options: [
+                    { text: languageManager.t('psychology.option1a'), value: "akademik" },
+                    { text: languageManager.t('psychology.option1b'), value: "organisasi" },
+                    { text: languageManager.t('psychology.option1c'), value: "akademik" },
+                    { text: languageManager.t('psychology.option1d'), value: "organisasi" }
+                ]
+            },
+            {
+                question: languageManager.t('psychology.question2'),
+                options: [
+                    { text: languageManager.t('psychology.option2a'), value: "akademik" },
+                    { text: languageManager.t('psychology.option2b'), value: "organisasi" },
+                    { text: languageManager.t('psychology.option2c'), value: "akademik" },
+                    { text: languageManager.t('psychology.option2d'), value: "organisasi" }
+                ]
+            },
+            {
+                question: languageManager.t('psychology.question3'),
+                options: [
+                    { text: languageManager.t('psychology.option3a'), value: "akademik" },
+                    { text: languageManager.t('psychology.option3b'), value: "organisasi" },
+                    { text: languageManager.t('psychology.option3c'), value: "akademik" },
+                    { text: languageManager.t('psychology.option3d'), value: "organisasi" }
+                ]
+            }
+        ];
+    }
+
     init() {
         // Get dynamic elements that will be created
         this.elements.questionText = this.elements.psychologyQuestion.querySelector('.psychology-question-text');
         this.elements.optionsContainer = this.elements.psychologyQuestion.querySelector('.psychology-options');
         this.elements.progressText = this.elements.psychologyQuestion.querySelector('.question-progress');
+        
+        // Update title
+        this.updateTitle();
 
         this.renderQuestion();
         this.attachEventListeners();
+    }
+
+    updateTitle() {
+        const titleElement = this.elements.psychologyQuestion.querySelector('.scene-choice-title');
+        if (titleElement) {
+            titleElement.textContent = languageManager.t('psychology.title');
+        }
     }
 
     renderQuestion() {
@@ -77,7 +105,10 @@ export default class PsychologyQuiz {
         });
 
         // Update progress
-        this.elements.progressText.textContent = `Pertanyaan ${this.currentQuestion + 1} dari ${this.questions.length}`;
+        const progressText = languageManager.t('psychology.questionProgress')
+            .replace('{current}', this.currentQuestion + 1)
+            .replace('{total}', this.questions.length);
+        this.elements.progressText.textContent = progressText;
 
         // Re-attach event listeners for new buttons
         this.attachEventListeners();
@@ -108,6 +139,36 @@ export default class PsychologyQuiz {
         }, 300);
     }
 
+    updateRecommendationTexts() {
+        // Always update recommendation screen texts (even if hidden)
+        const recommendationTitle = this.elements.pathRecommendation.querySelector('.scene-choice-title');
+        if (recommendationTitle) {
+            recommendationTitle.textContent = languageManager.t('psychology.recommendationTitle');
+        }
+        
+        const recommendationNarration = this.elements.pathRecommendation.querySelector('.scene-choice-narration');
+        if (recommendationNarration) {
+            recommendationNarration.textContent = languageManager.t('psychology.recommendationNarration');
+        }
+        
+        const btnAkademik = document.getElementById('btnAkademik');
+        const btnOrganisasi = document.getElementById('btnOrganisasi');
+        
+        if (btnAkademik) {
+            const btnTitle = btnAkademik.querySelector('.btn-title');
+            const btnDesc = btnAkademik.querySelector('.btn-desc');
+            if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnAkademik');
+            if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnAkademikDesc');
+        }
+        
+        if (btnOrganisasi) {
+            const btnTitle = btnOrganisasi.querySelector('.btn-title');
+            const btnDesc = btnOrganisasi.querySelector('.btn-desc');
+            if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnOrganisasi');
+            if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnOrganisasiDesc');
+        }
+    }
+
     showRecommendation() {
         // Count answers
         const akademikCount = this.answers.filter(a => a === 'akademik').length;
@@ -118,14 +179,41 @@ export default class PsychologyQuiz {
         // Update recommendation UI
         if (recommendedPath === 'akademik') {
             this.elements.recommendationIcon.textContent = '📚';
-            this.elements.recommendationPath.textContent = 'Jalur Akademik';
-            this.elements.recommendationDesc.textContent =
-                'Berdasarkan jawabanmu, kamu memiliki kecenderungan untuk fokus pada pembelajaran dan pengembangan pengetahuan. Kamu suka menganalisis, meneliti, dan mendalami topik secara mendalam. Jalur Akademik cocok untukmu!';
+            this.elements.recommendationPath.textContent = languageManager.t('psychology.pathAkademik');
+            this.elements.recommendationDesc.textContent = languageManager.t('psychology.pathAkademikDesc');
         } else {
             this.elements.recommendationIcon.textContent = '🎭';
-            this.elements.recommendationPath.textContent = 'Jalur Organisasi';
-            this.elements.recommendationDesc.textContent =
-                'Berdasarkan jawabanmu, kamu memiliki jiwa kepemimpinan dan suka berinteraksi dengan banyak orang. Kamu senang mengorganisir kegiatan dan bekerja dalam tim. Jalur Organisasi cocok untukmu!';
+            this.elements.recommendationPath.textContent = languageManager.t('psychology.pathOrganisasi');
+            this.elements.recommendationDesc.textContent = languageManager.t('psychology.pathOrganisasiDesc');
+        }
+        
+        // Update other recommendation texts
+        const recommendationTitle = this.elements.pathRecommendation.querySelector('.scene-choice-title');
+        if (recommendationTitle) {
+            recommendationTitle.textContent = languageManager.t('psychology.recommendationTitle');
+        }
+        
+        const recommendationNarration = this.elements.pathRecommendation.querySelector('.scene-choice-narration');
+        if (recommendationNarration) {
+            recommendationNarration.textContent = languageManager.t('psychology.recommendationNarration');
+        }
+        
+        // Update button texts
+        const btnAkademik = document.getElementById('btnAkademik');
+        const btnOrganisasi = document.getElementById('btnOrganisasi');
+        
+        if (btnAkademik) {
+            const btnTitle = btnAkademik.querySelector('.btn-title');
+            const btnDesc = btnAkademik.querySelector('.btn-desc');
+            if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnAkademik');
+            if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnAkademikDesc');
+        }
+        
+        if (btnOrganisasi) {
+            const btnTitle = btnOrganisasi.querySelector('.btn-title');
+            const btnDesc = btnOrganisasi.querySelector('.btn-desc');
+            if (btnTitle) btnTitle.textContent = languageManager.t('psychology.btnOrganisasi');
+            if (btnDesc) btnDesc.textContent = languageManager.t('psychology.btnOrganisasiDesc');
         }
 
         // Highlight recommended button
@@ -143,5 +231,13 @@ export default class PsychologyQuiz {
         // Hide question screen, show recommendation screen
         this.elements.psychologyQuestion.classList.add('hidden');
         this.elements.pathRecommendation.classList.remove('hidden');
+    }
+    
+    dispose() {
+        // Remove language change listener
+        if (this.languageChangeHandler) {
+            window.removeEventListener('languageChanged', this.languageChangeHandler);
+            this.languageChangeHandler = null;
+        }
     }
 }
