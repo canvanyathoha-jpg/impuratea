@@ -41,9 +41,32 @@ export default class NPC {
 
         // Clone the model
         this.model = SkeletonUtils.clone(avatarData.scene);
-        this.model.scale.set(9, 9, 9); // Same scale as player avatar
-        this.model.position.copy(this.position);
-        this.model.rotation.y = THREE.MathUtils.degToRad(this.initialRotation); // Set initial rotation
+        this.model.position.set(0, 0, 0);
+        this.model.rotation.set(0, 0, 0);
+        this.model.scale.set(1, 1, 1);
+
+        // Dynamically scale model to match standard NPC height
+        const initialBox = new THREE.Box3().setFromObject(this.model);
+        const initialSize = initialBox.getSize(new THREE.Vector3());
+
+        const targetHeight = this.gender === "female" ? 5.5 : 3; // Match Avatar scaling
+        const scaleFactor = targetHeight / (initialSize.y || 1);
+        this.model.scale.setScalar(scaleFactor);
+
+        // Re-centre model so feet rest at y = 0
+        const scaledBox = new THREE.Box3().setFromObject(this.model);
+        const min = scaledBox.min;
+        const max = scaledBox.max;
+
+        this.model.position.x -= (min.x + max.x) / 2;
+        this.model.position.z -= (min.z + max.z) / 2;
+        this.model.position.y -= min.y;
+
+        // Restore desired rotation
+        this.model.rotation.y = THREE.MathUtils.degToRad(this.initialRotation);
+
+        // Finally position NPC in world
+        this.model.position.add(this.position);
         
         // OPTIMIZATION: Enable frustum culling and disable shadows for better performance
         this.model.traverse((child) => {

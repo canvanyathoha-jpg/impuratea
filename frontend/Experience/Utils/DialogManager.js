@@ -4,6 +4,7 @@
  */
 
 import { languageManager } from './LanguageManager.js';
+import Ending from './Ending.js';
 
 export default class DialogManager {
     constructor(experience = null) {
@@ -1416,209 +1417,22 @@ export default class DialogManager {
         }
     }
 
-    // Show ending screen
+    // Show ending screen using professional Ending.js
     showEnding() {
         this.hideAll();
-        
+
         // Enable and show score UI at ending (reveal corruption level now)
         if (this.scoreManager) {
             this.scoreManager.enableScoreUI();
         }
 
-        const ending = this.scoreManager ? this.scoreManager.getEnding() : { title: 'Ending', message: 'The story has ended.' };
-        console.log('[DialogManager] Showing ending:', ending);
+        console.log('[DialogManager] Showing professional ending screen with Ending.js');
 
-        const endingDiv = document.createElement('div');
-        endingDiv.id = 'ending-screen';
-        endingDiv.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            animation: fadeIn 1s ease-in;
-        `;
-
-        endingDiv.innerHTML = `
-            <div style="
-                max-width: 580px;
-                text-align: center;
-                color: white;
-                padding: 10px 15px;
-                box-sizing: border-box;
-            ">
-                <h1 style="
-                    font-size: 28px;
-                    margin: 0 0 8px 0;
-                    color: ${ending.color};
-                    text-shadow: 0 0 20px ${ending.color};
-                ">
-                    ${ending.title}
-                </h1>
-                
-                <div style="
-                    font-size: 14px;
-                    margin: 10px 0;
-                    padding: 12px;
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 8px;
-                    line-height: 1.4;
-                ">
-                    ${ending.description}
-                </div>
-
-                <div style="
-                    font-size: 24px;
-                    margin: 10px 0;
-                    color: ${ending.color};
-                ">
-                    ${this.languageManager.t('ui.finalScore', 'Final Corruption Score')}: ${this.scoreManager ? this.scoreManager.getScore() : 0}%
-                </div>
-
-                <div style="
-                    margin: 10px 0;
-                    padding: 12px;
-                    background: linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(13, 71, 161, 0.2) 100%);
-                    border-left: 4px solid #1976d2;
-                    border-radius: 8px;
-                    text-align: left;
-                    box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
-                ">
-                    <h2 style="
-                        font-size: 16px;
-                        margin: 0 0 8px 0;
-                        color: #64b5f6;
-                    ">
-                        💡 ${this.languageManager.t('ui.wisdomTitle', 'Wisdom & Moral Message')}
-                    </h2>
-                    <div style="
-                        font-size: 12px;
-                        line-height: 1.3;
-                        color: #e3f2fd;
-                    ">
-                        <p style="margin: 6px 0;">
-                            <strong style="color: #90caf9;">✨ ${this.languageManager.t('ending.honestyFoundation', 'Honesty is the Foundation')}</strong><br/>
-                            ${this.languageManager.t('ending.honestyFoundationDesc', 'Every dishonest act damages integrity. Honesty builds trust.')}
-                        </p>
-                        <p style="margin: 6px 0;">
-                            <strong style="color: #90caf9;">🚫 ${this.languageManager.t('ending.corruptionStartsSmall', 'Corruption Starts from Small Things')}</strong><br/>
-                            ${this.languageManager.t('ending.corruptionStartsSmallDesc', 'Cheating and buying answers are academic corruption that can grow larger.')}
-                        </p>
-                        <p style="margin: 6px 0;">
-                            <strong style="color: #90caf9;">🌟 ${this.languageManager.t('ending.integrityMoreValuable', 'Integrity is More Valuable')}</strong><br/>
-                            ${this.languageManager.t('ending.integrityMoreValuableDesc', 'Strong character is more valuable than high grades obtained through cheating.')}
-                        </p>
-                    </div>
-                </div>
-
-                <div style="
-                    margin: 10px 0;
-                    padding: 10px;
-                    background: rgba(255, 193, 7, 0.15);
-                    border: 2px solid #ffc107;
-                    border-radius: 8px;
-                    text-align: center;
-                ">
-                    <div style="
-                        font-size: 14px;
-                        font-weight: bold;
-                        color: #ffc107;
-                        margin-bottom: 6px;
-                    ">
-                        📌 ${this.languageManager.t('ui.rememberMessage', 'Remember This Message')}
-                    </div>
-                    <div style="
-                        font-size: 12px;
-                        line-height: 1.3;
-                        color: #fff9c4;
-                        font-style: italic;
-                    ">
-                        "${this.languageManager.t('ending.rememberQuote', 'Choose honesty, because it is the best investment for the future.')}"
-                    </div>
-                </div>
-
-                <button id="restart-button" style="
-                    padding: 10px 25px;
-                    background: ${ending.color};
-                    border: none;
-                    border-radius: 8px;
-                    color: white;
-                    font-size: 16px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    margin-top: 8px;
-                    transition: all 0.3s;
-                ">
-                    ${this.languageManager.t('ui.restart', 'Play Again')}
-                </button>
-
-                <button id="back-to-menu" style="
-                    padding: 10px 25px;
-                    background: #333;
-                    border: 2px solid white;
-                    border-radius: 8px;
-                    color: white;
-                    font-size: 14px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    margin: 8px;
-                    transition: all 0.3s;
-                ">
-                    ${this.languageManager.t('ui.backToMenu', 'Back to Menu')}
-                </button>
-            </div>
-        `;
-
-        document.body.appendChild(endingDiv);
-
-        // Event listeners
-        const restartBtn = document.getElementById('restart-button');
-        const menuBtn = document.getElementById('back-to-menu');
-
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => {
-                // Play click sound for button
-                if (this.experience && this.experience.soundManager) {
-                    this.experience.soundManager.play('click', 0.6);
-                }
-                if (this.scoreManager) {
-                    this.scoreManager.resetScore();
-                }
-                window.location.href = window.location.pathname + '?scene=a_scene1';
-            });
-            restartBtn.addEventListener('mouseenter', (e) => {
-                e.target.style.transform = 'scale(1.1)';
-            });
-            restartBtn.addEventListener('mouseleave', (e) => {
-                e.target.style.transform = 'scale(1)';
-            });
-        }
-
-        if (menuBtn) {
-            menuBtn.addEventListener('click', () => {
-                // Play click sound for button
-                if (this.experience && this.experience.soundManager) {
-                    this.experience.soundManager.play('click', 0.6);
-                }
-                if (this.scoreManager) {
-                    this.scoreManager.resetScore();
-                }
-                window.location.href = window.location.pathname + '?scene=westgate';
-            });
-            menuBtn.addEventListener('mouseenter', (e) => {
-                e.target.style.transform = 'scale(1.05)';
-                e.target.style.background = '#555';
-            });
-            menuBtn.addEventListener('mouseleave', (e) => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.background = '#333';
-            });
-        }
+        // Use the new professional Ending.js
+        const ending = new Ending();
+        ending.show().then(() => {
+            console.log('[DialogManager] Ending screen shown successfully');
+        });
     }
 
     getScoreManager() {

@@ -277,7 +277,7 @@ export default class Preloader {
         }
 
         // Save username to localStorage
-        localStorage.setItem('impuratea-username', this.domElements.nameInput.value);
+        localStorage.setItem('impuritea-username', this.domElements.nameInput.value);
 
         this.nameInputOutro();
     };
