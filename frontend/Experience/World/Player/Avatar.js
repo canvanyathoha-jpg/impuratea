@@ -53,7 +53,7 @@ export default class Avatar {
         // Scale the avatar based on character type
         // Different scaling approach for female vs male characters
         const DEFAULT_TARGET_HEIGHTS = {
-            male: 14, // tinggi default avatar laki-laki
+            male: 6, // tinggi default avatar laki-laki
             female: 6, // tinggi default avatar perempuan
         };
 
