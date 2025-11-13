@@ -1860,13 +1860,6 @@ export default class Organization {
                                 line-height: 1.4;
                                 color: rgba(255,255,255,0.95);
                             ">${languageManager.translate(ORG_TEXTS.scene1.choices.a)}</div>
-                            <div style="
-                                font-size: 12px;
-                                opacity: 0.55;
-                                line-height: 1.5;
-                                color: rgba(255,255,255,0.7);
-                                font-family: 'Courier New', monospace;
-                            ">▸ ${languageManager.translate({id: "Jujur meski dapat tugas berat", en: "Honest despite heavy task"})}</div>
                         </div>
                     </button>
 
