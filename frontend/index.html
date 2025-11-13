@@ -48,24 +48,57 @@
 
         <!-- Preloader -->
         <div class="preloader">
+            <!-- Animated Background Particles -->
+            <div class="preloader-bg-particles"></div>
+            <div class="preloader-grid-overlay"></div>
+
             <div class="preloader-wrapper">
-                <!-- Centered logo with dedicated glass card wrapper -->
+                <!-- Logo -->
                 <div class="preloader-logo">
-                    <div class="preloader-logo-card">
-                        <img
-                            src="/media/android-chrome-192x192.png"
-                            alt="IMPURITEA Logo"
-                            class="svgLogo preloader-logo-image"
-                        />
+                    <img
+                        src="/images/logo impur.png"
+                        alt="IMPURITEA Logo"
+                        class="svgLogo preloader-logo-image"
+                    />
+                </div>
+
+                <!-- Brand Name -->
+                <div class="preloader-brand-container">
+                    <div class="preloader-brand-name">IMPURITEA</div>
+                    <div class="preloader-tagline">
+                        <span>WHERE INTEGRITY</span>
+                        <span class="tagline-separator">•</span>
+                        <span>MEETS COURAGE</span>
                     </div>
                 </div>
+
+                <!-- Loading Status with Tech Effect -->
+                <div class="preloader-status-container">
+                    <div class="preloader-loading-text">
+                        <span class="loading-dots">LOADING</span>
+                        <span class="loading-spinner"></span>
+                    </div>
+                </div>
+
+                <!-- Percentage Display -->
                 <div class="preloader-percentage">
                     <span class="preloader-percentage1">0</span>
                     <span class="preloader-percentage2">0</span>
+                    <span class="preloader-percent-symbol">%</span>
                 </div>
+
+                <!-- Advanced Progress Bar -->
                 <div class="progress-bar-container">
-                    <div class="progress-bar"></div>
+                    <div class="progress-bar-bg-glow"></div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-shine"></div>
+                        <div class="progress-bar-pulse"></div>
+                    </div>
+                    <div class="progress-bar-scan"></div>
                 </div>
+
+                <!-- Status Text -->
+                <div class="preloader-status-text">INITIALIZING GAME EXPERIENCE</div>
             </div>
             <!-- Landing Page Content -->
             <div class="landing-container">
@@ -283,7 +316,7 @@
                         placeholder="Tuliskan nama kamu di sini..."
                         id="name-input"
                         required
-                        maxlength="20"
+                        maxlength="40"
                     />
                 </div>
                 <button id="name-input-button" class="name-submit-btn">
@@ -470,6 +503,9 @@
 
         <!-- ResponsiveVoice API for Indonesian voices -->
         <script src="https://code.responsivevoice.org/responsivevoice.js?key=UHZCjeyW"></script>
+
+        <!-- jsPDF for Certificate Generation -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
         <script type="module" src="/index.js"></script>
     </body>

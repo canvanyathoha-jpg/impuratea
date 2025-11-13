@@ -52,22 +52,18 @@ export default class Avatar {
 
         // Scale the avatar based on character type
         // Different scaling approach for female vs male characters
-        let scaleFactor;
-        
-        if (this.avatarType === "female") {
-            // Female character: Use target height to control character size
-            // Increase femaleTargetHeight to make female character bigger
-            // Default: 0.16 (very small), try 0.2-0.3 for slightly bigger, 0.5+ for much bigger
-            const femaleTargetHeight = 5.5; // Increased from 0.16 to make female character bigger (3x the original)
-            scaleFactor = femaleTargetHeight / (initialSize.y || 1);
-        } else {
-            // Male/default character: Use standard targetHeight approach
-            // Increase targetHeight to make male character bigger
-            // Default: 1, try 1.2-1.5 for slightly bigger, 2.0 for much bigger
-            const targetHeight = 3; // Increased from 1 to make male character bigger
-            scaleFactor = targetHeight / (initialSize.y || 1);
-        }
-        
+        const DEFAULT_TARGET_HEIGHTS = {
+            male: 14, // tinggi default avatar laki-laki
+            female: 6, // tinggi default avatar perempuan
+        };
+
+        const targetHeight =
+            (this.avatarType && DEFAULT_TARGET_HEIGHTS[this.avatarType]) ||
+            DEFAULT_TARGET_HEIGHTS.male;
+
+        const scaleFactor =
+            targetHeight / (initialSize.y || 1);
+
         // Apply the calculated scale
         this.avatar.scale.setScalar(scaleFactor);
 

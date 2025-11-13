@@ -35,6 +35,14 @@ export default class SceneManager {
 
     switchToScene(sceneName) {
         console.log(`[SceneManager] Switching to scene: ${sceneName}`);
+
+        // Reset corruption score for new storyline selection
+        try {
+            localStorage.removeItem('academic_corruption_score');
+        } catch (error) {
+            console.warn('[SceneManager] Failed to clear stored score:', error);
+        }
+
         this.hideChoiceOverlay();
 
         // Reload page with scene parameter

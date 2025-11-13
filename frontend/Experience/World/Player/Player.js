@@ -372,7 +372,21 @@ export default class Player {
             return;
         }
         
-        if (!this.avatar && this.resources.items[avatarSkin]) {
+        if (this.avatar && this.avatar.avatar) {
+            console.log('[Player] Disposing existing avatar before creating new one');
+            if (this.scene && this.avatar.avatar.parent === this.scene) {
+                this.scene.remove(this.avatar.avatar);
+            }
+            if (this.scene && this.avatar.nametag && this.avatar.nametag.parent === this.scene) {
+                this.scene.remove(this.avatar.nametag);
+            }
+            if (this.avatar.animation && this.avatar.animation.mixer) {
+                this.avatar.animation.mixer.stopAllAction();
+            }
+            this.avatar = null;
+        }
+
+        if (this.resources.items[avatarSkin]) {
             try {
                 const avatarData = this.resources.items[avatarSkin];
                 console.log(`[Player] Avatar data:`, {
@@ -397,8 +411,6 @@ export default class Player {
                 console.error(`[Player] ❌ Error creating avatar:`, error);
                 console.error(`[Player] Error stack:`, error.stack);
             }
-        } else if (this.avatar) {
-            console.warn(`[Player] ⚠️ Avatar already exists, skipping creation`);
         }
     }
 
